@@ -1,0 +1,39 @@
+﻿if said("house, turn the bedroom lights on please", 5) then
+  BeepAsterisk()
+  Execute("C:\Dropbox\Projects\emerson\remotes\lights.pyw", "BedRoomLightsOn")
+  endif
+
+if said("house, turn the bedroom lights off please", 5) then
+  BeepAsterisk()
+  Execute("C:\Dropbox\Projects\emerson\remotes\lights.pyw", "BedRoomLightsOff")
+  endif
+
+if said("house, turn the bedroom lamp on please", 5) then
+  BeepAsterisk()
+  Execute("C:\Dropbox\Projects\emerson\remotes\lights.pyw", "BedRoomLampOn")
+  endif
+
+if said("house, turn the bedroom lamp off please", 5) then
+  BeepAsterisk()
+  Execute("C:\Dropbox\Projects\emerson\remotes\lights.pyw", "BedRoomLampOff")
+  endif
+
+if said("house, turn the livingroom lights on please", 5) then
+  BeepAsterisk()
+  Execute("C:\Dropbox\Projects\emerson\remotes\lights.pyw", "LivingRoomLightsOn")
+  endif
+
+if said("house, turn the livingroom lights off please", 5) then
+  BeepAsterisk()
+  Execute("C:\Dropbox\Projects\emerson\remotes\lights.pyw", "LivingRoomLightsOff")
+  endif
+
+if said("house, start the music please", 6) then
+  BeepAsterisk()
+  Execute("C:\Dropbox\Projects\emerson\remotes\lights.pyw", "Play")
+  endif
+  
+if said("house, stop the music please", 6) then
+  BeepAsterisk()
+  Execute("C:\Dropbox\Projects\emerson\remotes\lights.pyw", "Pause")
+  endif

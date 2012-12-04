@@ -1,0 +1,55 @@
+<meta name="viewport" content="width=640, height=device-height, initial-scale=0.5, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<!--<link rel="apple-touch-startup-image" href="title.png" />-->
+<title>Emerson</title>
+<style>
+* {
+  -webkit-touch-callout: none; /* prevent callout to copy image, etc when tap to hold */
+  -webkit-text-size-adjust: none; /* prevent webkit from resizing text to fit */
+  -webkit-tap-highlight-color: rgba(0,0,0,0); /* make transparent link selection, adjust last value opacity 0 to 1.0 */
+  -webkit-user-select: none; /* prevent copy paste, to allow, change 'none' to 'text' */
+}
+
+body {
+  background-color:black;
+  font-family:helvetica, arial, sans-serif;
+  font-size:32px;
+  color:#999;
+}
+p {
+  margin:0;
+}
+a {
+  color:#fff;
+  text-decoration:none;
+}
+a:hover {
+  background-color:#333;
+}
+a:active {
+  background-color:#f00;
+}
+</style>
+<script>
+function sendEvent(name) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/event/" + name, true);
+  xhr.send(null);
+  return false;
+}
+</script>
+<body>
+  MAIN<br />
+  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('LivingRoomLightsOn');">LIGHTS ON</a>
+  <a href="#" onclick="return sendEvent('LivingRoomLightsOff');">OFF</a>
+  <br />
+  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('Play');">SONOS ON</a>
+  <a href="#" onclick="return sendEvent('Pause');">OFF</a>
+  <br />
+  BED<br />
+  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('BedRoomLightsOn');">LIGHTS ON</a>
+  <a href="#" onclick="return sendEvent('BedRoomLightsOff');">OFF</a>
+  <br />
+  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('BedRoomLampOn');">LAMP ON</a>
+  <a href="#" onclick="return sendEvent('BedRoomLampOff');">OFF</a>
+</body>

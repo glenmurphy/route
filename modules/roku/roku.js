@@ -67,7 +67,7 @@ Roku.prototype.sendEvent = function(key) {
   var isFirstRequest = this.eventQueue.length == 0;
   this.eventQueue.push(key);
   if (isFirstRequest) {
-    setTimeout(this.sendNextEvent.bind(this),0);
+    setTimeout(this.sendNextEvent.bind(this),100);
   }
 }
 
@@ -114,7 +114,7 @@ Roku.prototype.getChannels = function() {
       }.bind(this));
     }.bind(this));
   }.bind(this));
-  request.on('error', function(e) {console.log(e)});
+  request.on('error', function(e) {console.log("! Roku error: Could not fetch channels (" + e + ")")});
   request.end();
 }
 

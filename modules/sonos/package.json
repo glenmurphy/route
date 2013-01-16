@@ -1,0 +1,4 @@
+{ 
+  "name" : "Sonos",
+  "main" : "./sonos.js"
+}

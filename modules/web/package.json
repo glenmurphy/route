@@ -1,0 +1,4 @@
+{ 
+  "name" : "Web",
+  "main" : "./web.js"
+}

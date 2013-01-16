@@ -1,0 +1,4 @@
+{ 
+  "name" : "Roku",
+  "main" : "./roku.js"
+}

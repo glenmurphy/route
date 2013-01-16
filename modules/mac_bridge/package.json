@@ -1,0 +1,4 @@
+{ 
+  "name" : "Mac Bridge",
+  "main" : "./mac_bridge.js"
+}

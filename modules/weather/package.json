@@ -1,0 +1,4 @@
+{ 
+  "name" : "Weather",
+  "main" : "./weather.js"
+}

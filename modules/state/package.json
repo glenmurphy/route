@@ -1,0 +1,4 @@
+{ 
+  "name" : "State",
+  "main" : "./state.js"
+}

@@ -1,0 +1,4 @@
+{ 
+	"name" : "Insteon",
+ 	"main" : "./insteon.js"
+}

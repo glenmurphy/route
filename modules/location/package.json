@@ -1,0 +1,4 @@
+{ 
+  "name" : "Location",
+  "main" : "./location.js"
+}

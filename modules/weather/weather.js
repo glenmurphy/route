@@ -1,22 +1,6 @@
-/*
-Copyright 2012 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
-var darksky = require("darksky");
+var darksky = require("darksky").Client;
 var SunCalc = require("suncalc");
 
 function Weather(data) {
@@ -42,7 +26,8 @@ Weather.prototype.fetchRainForecast = function() {
     function(err) {console.error(err);});
 }
 
-Weather.prototype.parseRainForecast = function(data) {
+Weather.prototype.parseRainForecast = function(err, data) {
+  if (!data) return null;
   data = data.toString();
   data = JSON.parse(data);
   var nextCheck = data["checkTimeout"];
@@ -57,12 +42,19 @@ Weather.prototype.calculateSunEvents = function() {
   this.emit("StateEvent", {sunEvents:times});
   this.emit("StateEvent", {sunPosition:position});
 
+  function pad(str, char, len) {
+    return str + new Array(Math.max(len - str.length, 0)).join(char);
+  }
+
+  var timeArray = ["nightEnd", "nauticalDawn", "dawn", "sunrise", "sunriseEnd", "goldenHourEnd", "goldenHour", "sunsetStart", "sunset", "dusk", "nauticalDusk", "night"];
   var logstring = "";
-  for (var attrname in times) {
-    logstring += attrname + ":" + times[attrname].getHours() + ":" +  times[attrname].getMinutes() + " ";
+  for (var i = 0; i < timeArray.length; i++) {
+    var attrname = timeArray[i];
+    logstring += times[attrname].getHours() + ":" + times[attrname].getMinutes() + " " + attrname + ", ";
     setDateTimeout(this.processSunEvent.bind(this, attrname), times[attrname]);
   }
-  console.log("Sun Events:" + logstring)
+
+  console.log("* Sun events calculated: " + logstring)
 
   // recalculate tomorrow at midnight;
   var tomorrow = new Date();

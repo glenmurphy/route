@@ -3,10 +3,11 @@
  */
 
 var PATH_TO_ROUTE = "../../";
-var Insteon = require(PATH_TO_ROUTE + 'modules/insteon').Insteon;
-var Sonos = require(PATH_TO_ROUTE + 'modules/sonos').Sonos;
-var RedEye = require(PATH_TO_ROUTE + 'modules/redeye').RedEye;
-var Web = require(PATH_TO_ROUTE + 'modules/web').Web;
+var PATH_TO_MODULES = "../../modules/";
+var Insteon = require(PATH_TO_MODULES + 'insteon').Insteon;
+var Sonos = require(PATH_TO_MODULES + 'sonos').Sonos;
+var RedEye = require(PATH_TO_MODULES + 'redeye').RedEye;
+var Web = require(PATH_TO_MODULES + 'web').Web;
 var Route = require(PATH_TO_ROUTE).Route;
 
 // Map of commands to routers that service that command.

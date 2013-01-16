@@ -1,77 +1,130 @@
-/*
-Copyright 2012 Google Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 String.prototype.camelcase = function() {
     return this.replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); }).replace(/ /g, "");
 };
+
+// Very simple voice processor
+// Converts input of "bake a pie" to "Voice.BakeAPie"
+// "the" is discarded
+// synonyms are remapped 
 
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 
 function Voice(data) {
   this.guardPhrase = data.guardPhrase;
-  this.timeout = null;
+  this.listeningTimeout = null;
   this.devices = data.devices;
+  this.timeoutDuration = data.timeoutDuration || 10000;
+  this.mappings = [];
+  this.synonyms = data.synonyms; 
 };
 
 util.inherits(Voice, EventEmitter);
 
+Voice.prototype.addMapping = function(mapping) {
+  this.mappings.push(mapping);
+}
+
 Voice.prototype.exec = function(command, params) {
   if (command == "VoiceInput") {
-    var context = this.devices[params.device];
-    params.device = null;
-    
-    var string = params.string;
-    if (!string) return;
-    var arguments = params;
-    var toIndex = string.indexOf(" to ");
-    if (toIndex > 0) {
-      query = string.substring(toIndex + 4);
-      string = string.substring(0, toIndex)
-      arguments.toValue = query;
+    this.handleVoiceInput(params);
+  }
+  else {
+    switch (command) {
+      case "StartedListening":
+        this.startedListening();
+        break;
+      case "StoppedListening":
+        this.stoppedListening();
+        break;
     }
+  }
+};
 
-    var ofIndex = string.indexOf(" of ");
-    if (ofIndex > 0) {
-      query = string.substring(ofIndex + 4);
-      string = string.substring(0, ofIndex)
-      arguments.ofValue = query;
-    }
+Voice.prototype.handleVoiceInput = function(params) {
+  var context = params.device ? this.devices[params.device] : null;
+  delete params.device;
+  params.context = context;
 
-    string = string.camelcase();
+  var strings = params.string;
+  if (typeof strings === 'string') strings = [strings];
+  var scores = params.score;
+  if (typeof strings === 'string') scores = [scores];
 
+  if (!strings) return;
+
+  // go through each possible voice string (usually only one)
+  // and break after the first succeeds
+
+  for (var i = 0; i < strings.length; i++) {
+    var string = strings[i];
+    var result = this.normalizeString(string);
+    var resultParams = result.params;
+
+    string = result.string;
     if (context) string = context + "." + string;
 
-    this.emit("DeviceEvent", string, params);
+    // manually call all listeners
+    // instead of this.emit("DeviceEvent", string, resultParams);
+
+    var matched = false;
+    var listeners = this.listeners('DeviceEvent');
+    for (var j = 0; j < listeners.length && !matched; j++) {
+      matched = listeners[j](string, resultParams);
+      if (!matched) console.log("No Match");
+    };
+
+    // Always succeed on the first result for now
+    // TODO: Check whether it is a valid event execution somehow
 
     if (params.string == this.guardPhrase) {
-      this.emit("StateEvent", {listening: true});
-      // this.timeout = setTimeout(10000, function () {
-      //   this.emit("StateEvent", {listening: false});
-      // }.bind(this));
+      this.startedListening(params);
     } else {
-      this.emit("StateEvent", {listening: false});
-      if (this.timeout) {
-        cancelTimeout(this.timeout);
-        this.timeout = null;
-      }
+      this.stoppedListening(params);
     }
-  } else if (command == "VoiceOutput") {
-    
- }
-};
+
+    if (matched == true) break;
+
+  }
+}
+
+Voice.prototype.normalizeString = function(string) {
+  var splitWords = ["to", "of", "for"];
+  var params = {};
+  for (var i = 0; i < splitWords.length; i++) {
+    var splitString = " " + splitWords[i] + " ";
+    var toIndex = string.indexOf(splitString);
+    if (toIndex > 0) {
+      query = string.substring(toIndex + splitString.length);
+      string = string.substring(0, toIndex)
+      params[splitWords[i] + "Value"] = query;
+    }
+  };
+
+    string = string.split(" the ").join(" ") // Ignore "the"
+
+  if (this.synonyms && this.synonyms[string]) {
+    string = this.synonyms[string] // Resolve a synonym
+    console.log("Using: " + string);
+  }
+  string = string.camelcase();
+  return {string:string, params:params};
+}
+
+Voice.prototype.startedListening = function(params) {
+  this.emit("DeviceEvent", "StartedListening", params);
+  this.emit("StateEvent", {listening: true});
+  this.listeningTimeout = setTimeout(this.stoppedListening.bind(this),
+                                     this.timeoutDuration);
+}
+
+Voice.prototype.stoppedListening = function(params) {
+  this.emit("DeviceEvent", "StoppedListening", params);
+  this.emit("StateEvent", {listening: false});
+  if (this.listeningTimeout) {
+    clearTimeout(this.listeningTimeout);
+    this.listeningTimeout = null;
+  }
+}
 
 exports.Voice = Voice;

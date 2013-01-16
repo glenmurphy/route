@@ -20,7 +20,6 @@ var util = require('util');
 var http = require('http');
 var xml2js = require('xml2js');
 
-
 /* SPOTIFY ------------------------------------------------------------------- */
 function Spotify(data) {
   this.bridge = data.bridge;
@@ -30,10 +29,11 @@ util.inherits(Spotify, EventEmitter);
 
 Spotify.prototype.exec = function(command, params) {
   console.log("*  Spotify Executing: " + command);
+  console.log(params);
   if (command == "Reconnect") {
     this.reconnect();
   } else if (command == "Listen") {
-    this.listenTo(params.toValue)
+    this.listenTo(params.query);
   } else {
     this.bridge.sendEvent("Spotify." + command);
   }
@@ -47,8 +47,12 @@ Spotify.prototype.searchByType = function(type, query, callback) {
     res.on('end', function () {
       var parser = new xml2js.Parser();
       parser.parseString(body, function (err, result) {
-        var array = result[type + "s"][type];                        
-        callback.bind(this)(array);
+        if (result) {
+          var array = result[type + "s"][type];                        
+          callback.bind(this)(array);          
+        } else {
+          console.log("! no spotify results");
+        }
       }.bind(this));
     }.bind(this));
   }.bind(this))
@@ -56,7 +60,8 @@ Spotify.prototype.searchByType = function(type, query, callback) {
 
 // Search artists and tracks to find the best match for a request
 Spotify.prototype.listenTo = function(query) {
-  this.client.write("Say: playing" + query.split(" by ").join(". by ") +  "\n");
+  console.log(query);
+  this.bridge.sendEvent("Say:playing " + query.split(" by ").join(". by ") +  "\n");
   query = query.split(" by ").join(" ");
   this.searchByType("artist", query, function (artists) {
     if (artists && artists.length && artists[0] && artists[0].popularity > 0.2) {

@@ -1,8 +1,13 @@
-var Insteon = require('./insteon').Insteon;
-var Sonos = require('./sonos').Sonos;
-var RedEye = require('./redeye').RedEye;
-var Web = require('./web').Web;
-var Route = require('./route').Route;
+/**
+ * This is what Glen uses to run his house
+ */
+
+var PATH_TO_ROUTE = "../../";
+var Insteon = require(PATH_TO_ROUTE + 'modules/insteon/insteon').Insteon;
+var Sonos = require(PATH_TO_ROUTE + 'modules/sonos/sonos').Sonos;
+var RedEye = require(PATH_TO_ROUTE + 'modules/redeye/redeye').RedEye;
+var Web = require(PATH_TO_ROUTE + 'modules/web/web').Web;
+var Route = require(PATH_TO_ROUTE + 'route').Route;
 
 // Map of commands to routers that service that command.
 var route = new Route();
@@ -60,7 +65,8 @@ var web = route.addDevice({
   type : Web,
   name : "Web",
   init : {
-    port : 8000
+    port : 8000,
+    dir : __dirname + "/web/"
   }
 });
 

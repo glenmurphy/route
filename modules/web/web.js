@@ -6,13 +6,16 @@ var util = require('util');
 
 function Web(data) {
   this.indexFileContent = '';
-  this.indexFileName = __dirname + "/web.html";
+  var filename = data.dir + "index.html";
+  this.indexFileName = filename;
   fs.watch(this.indexFileName, this.refreshIndex.bind(this));
-  this.refreshIndex(__dirname + "/web.html");
+  this.refreshIndex(filename);
 
   this.server = http.createServer(this.handleReq.bind(this)).listen(data.port ? data.port : 8080);
   console.log("Web Connected");
-};util.inherits(Web, EventEmitter);
+};
+
+util.inherits(Web, EventEmitter);
 
 Web.prototype.refreshIndex = function() {
   fs.readFile(this.indexFileName, "ascii", (function(error, file) {

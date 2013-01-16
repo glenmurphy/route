@@ -37,6 +37,8 @@ Bridge.prototype.exec = function(command, params) {
   console.log("*  Bridge Executing: " + command);
   if (command == "Reconnect") {
     this.reconnect();
+  } else if (command == "Say") {
+    this.sendEvent("Say:" + params.string);
   } else {
     this.sendEvent(command)
   }
@@ -61,7 +63,7 @@ Bridge.prototype.connect = function() {
 Bridge.prototype.reconnect = function() {
   if (this.reconnecting_) return;
   this.reconnecting_ = true;
-  setTimeout(this.connect.bind(this), 1000);
+  setTimeout(this.connect.bind(this), 5000);
 }
 
 Bridge.prototype.handleConnected = function() {
@@ -91,13 +93,14 @@ Bridge.prototype.handleData = function(data) {
 };
 
 Bridge.prototype.handleEnd = function() {
-  this.emit("DeviceEvent", "Bridge.Disconnected");
+  //this.emit("DeviceEvent", "Bridge.Disconnected");
   this.emit("StateEvent", {BridgeConnected:false});
+  this.reconnect();
 };
 
 Bridge.prototype.handleError = function(e) {
-  this.emit("DeviceEvent", "Bridge.Error");
-  console.log("! " + e);
+  console.log("! Could not connect to bridge: (" + e + ")");
+  this.reconnect();
 };
 
 exports.Bridge = Bridge;

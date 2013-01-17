@@ -12,11 +12,11 @@ function Insteon(data) {
   // Dupe preventer. Stores IDs.
   this.history = {};
 
-  // Get these from the SmartLinc scene > Click _here_ to customize controls.
-  this.commands = data.commands;
+  // Custom commands (name : insteon command)
+  this.commands = data.commands ? data.commands : {};
 
   // Map of device names to ids.
-  this.devices = data.devices;
+  this.devices = data.devices ? data.devices : {};
 
   // Create reverse devices map.
   this.device_ids = {};

@@ -26,9 +26,9 @@ var insteon = route.addDevice({
       "BedRoomLights" : "1FC81E",
       "LivingRoomLights" : "21",
       "DiningRemote" : "1C483B",
-      "LivingRoomRemote" : "1C4C33",
-      "BedRoomRemote" : "1C4943",
-      "Remote3" : "1C5418",
+      "FrontDoorRemote" : "1C4C33",
+      "StudyRemote" : "1C4943",
+      "BedRoomRemote" : "1C5418",
       "MotionLivingRoom" : "14DEDD"
     }
   }
@@ -68,18 +68,31 @@ var web = route.addDevice({
 
 // Simple map of events to commands.
 route.addEventMap({
-  "Insteon.LivingRoomRemote.Off.2" : ["Sonos.Pause"],
+  // Front door
+  "Insteon.FrontDoorRemote.Off.2" : ["Sonos.Pause"],
+  "Insteon.FrontDoorRemote.Off.4" : [
+    "Sonos.Pause",
+    "Insteon.LivingRoomLights.Off",
+    "Insteon.BedRoomLights.Off",
+    "Insteon.StudyLights.Off",
+  ],
 
+  // Bedroom
+  "Insteon.BedRoomRemote.On" : "Insteon.BedRoomLights.On",
+  "Insteon.BedRoomRemote.Off" : "Insteon.BedRoomLights.Off",
+
+  // Dining room
   "Insteon.DiningRemote.On.2" : [
     "Sonos.Play",
     "RedEye.InputSonos"
   ],
   "Insteon.DiningRemote.Off.2" : ["Sonos.Pause"],
 
-  "Insteon.BedRoomRemote.On" : "Insteon.StudyLights.On",
-  "Insteon.BedRoomRemote.Off" : "Insteon.StudyLights.Off",
-  "Insteon.BedRoomRemote.On.2" : "Insteon.StudyLamp.On",
-  "Insteon.BedRoomRemote.Off.2" : "Insteon.StudyLamp.Off",
+  // Study
+  "Insteon.StudyRemote.On" : "Insteon.StudyLights.On",
+  "Insteon.StudyRemote.Off" : "Insteon.StudyLights.Off",
+  "Insteon.StudyRemote.On.2" : "Insteon.StudyLamp.On",
+  "Insteon.StudyRemote.Off.2" : "Insteon.StudyLamp.Off",
 
   "Sonos.Started" : ["RedEye.InputSonos"],
   "Web.PlayPause" : ["Sonos.PlayPause"],
@@ -115,7 +128,7 @@ route.addEventMap({
 });
 
 // Programmatically added listeners
-route.on("Insteon.LivingRoomRemote.On.2", function() {
+route.on("Insteon.FrontDoorRemote.On.2", function() {
   sonos.exec("Play");
   redeye.exec("InputSonos");
 });

@@ -50,8 +50,8 @@ Sonos.prototype.exec = function(command, data) {
     case "PlayPause":
       this.playPause();
       break;
-    case "Prev":
-      this.prev();
+    case "Previous":
+      this.previous();
       break;
     case "Next":
       this.next();
@@ -109,7 +109,7 @@ Sonos.prototype.pause = function() {
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body);
 };
 
-Sonos.prototype.prev = function() {
+Sonos.prototype.previous = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Previous"'
   var body = '<u:Previous xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Previous>'
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function () {

@@ -8,7 +8,7 @@ var util = require('util');
 function Insteon(data) {
   this.host = data.host;
   this.connect();
-
+  
   // Dupe preventer. Stores IDs.
   this.history = {};
 
@@ -20,8 +20,22 @@ function Insteon(data) {
 
   // Create reverse devices map.
   this.device_ids = {};
-  for (var key in this.devices) {
-    this.device_ids[this.devices[key]] = key;
+  for (var name in this.devices) {
+    var id = this.devices[name];
+    this.device_ids[id] = name;
+
+    // Try to infer the command type by the size of the id
+    // two digits is a group, six is a device.
+    //
+    // TODO: Do this on the fly, so that we don't have to stuff
+    // the commands index.
+    if (id.length == 6) {
+      this.commands[name + ".On"] = "0262" + id + "0F11FF";
+      this.commands[name + ".Off"] = "0262" + id + "0F13FF";
+    } else if (id.length == 2) {
+       this.commands[name + ".On"] = "0261" + id + "11" + id;
+      this.commands[name + ".Off"] = "0261" + id + "13" + id;
+    }
   }
 }
 util.inherits(Insteon, EventEmitter);

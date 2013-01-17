@@ -1,13 +1,14 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
 var util = require('util');
+var xml2js = require('xml2js');
 
 /* SONOS ------------------------------------------------------------------- */
 function Sonos(data) {
   this.host = data.host;
   this.lastReqs = -1;
   this.playing = false;
-  this.volumeOnCall = data.volumeOnCall;
+  this.volume = 0;
   setInterval(this.poll.bind(this), Sonos.POLL_INTERVAL);
 }
 util.inherits(Sonos, EventEmitter);
@@ -17,7 +18,6 @@ Sonos.DSP_PATH = "/status/proc/driver/audio/dsp";
 Sonos.POLL_INTERVAL = 3000;
 Sonos.TRANSPORT_ENDPOINT = '/MediaRenderer/AVTransport/Control';
 Sonos.RENDERING_ENDPOINT = '/MediaRenderer/RenderingControl/Control';
-Sonos.VOLUME = 0;
 
 Sonos.prototype.fetchPage = function(host, port, path, resultHandler) {
   var request = http.request({
@@ -51,16 +51,13 @@ Sonos.prototype.exec = function(command, data) {
       this.playPause();
       break;
     case "Prev":
-      this.previous();
+      this.prev();
       break;
     case "Next":
       this.next();
       break;
-    case "LowerVolume":
-      this.lowerVolume();
-      break;
-    case "HigherVolume":
-      this.higherVolume();
+    case "TrackInfo":
+      this.getTrackInfo();
       break;
   }
 };
@@ -103,37 +100,29 @@ Sonos.prototype.playPause = function() {
 Sonos.prototype.play = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Play"'
   var body = '<u:Play xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Play>'
-  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body)
+  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body);
 };
 
 Sonos.prototype.pause = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Pause"'
   var body = '<u:Pause xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Pause>'
-  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body)
+  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body);
 };
 
-Sonos.prototype.previous = function() {
+Sonos.prototype.prev = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Previous"'
   var body = '<u:Previous xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Previous>'
-  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body)
+  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function () {
+    this.getTrackInfo();
+  }.bind(this));
 };
 
 Sonos.prototype.next = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Next"'
   var body = '<u:Next xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Next>'
-  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body)
-};
-
-Sonos.prototype.lowerVolume = function() {
-  this.getVolume((function (volume){
-    if (Sonos.VOLUME > this.volumeOnCall) {
-      this.setVolume(this.volumeOnCall);
-    }
-  }).bind(this));
-};
-
-Sonos.prototype.higherVolume = function() {
-  this.setVolume(Sonos.VOLUME);
+  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function () {
+    this.getTrackInfo();
+  }.bind(this));
 };
 
 Sonos.prototype.getVolume = function(callback) {
@@ -143,7 +132,8 @@ Sonos.prototype.getVolume = function(callback) {
   this.sendCommand(Sonos.RENDERING_ENDPOINT, action, body, function(data){
     var tmp = data.substring(data.indexOf('<CurrentVolume>') + '<CurrentVolume>'.length);
     var volume = tmp.substring(0, tmp.indexOf('<'));
-    Sonos.VOLUME = volume;
+    
+    this.volume = volume;
 
     if (callback) {
       callback(volume);
@@ -152,9 +142,39 @@ Sonos.prototype.getVolume = function(callback) {
 };
 
 Sonos.prototype.setVolume = function(volume) {
+  //SHOULD PROBABLY DO THIS IN A CALLBACK
+  this.volume = volume;
+
   var action = '"urn:schemas-upnp-org:service:RenderingControl:1#SetVolume"';
   var body = '<u:SetVolume xmlns:u="urn:schemas-upnp-org:service:RenderingControl:1"><InstanceID>0</InstanceID><Channel>Master</Channel><DesiredVolume>' + volume.toString() + '</DesiredVolume></u:SetVolume>';
   this.sendCommand(Sonos.RENDERING_ENDPOINT, action, body);
+};
+
+Sonos.prototype.getTrackInfo = function() {
+  var action = '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"';
+  var body = '<u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:GetPositionInfo>';
+  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function(data){
+    console.log(data);
+    var parser = new xml2js.Parser();
+    parser.parseString(data, function (err, result) {
+      var trackInfo = result["s:Envelope"]["s:Body"][0]["u:GetPositionInfoResponse"][0];
+      var trackURL = trackInfo.TrackURI[0];
+      console.log(trackInfo);
+      parser.parseString(trackInfo.TrackMetaData, function (err, meta) {
+        if (meta) {
+          meta = meta["DIDL-Lite"]["item"][0];
+          var playerInfo = {
+            "Player State" : "Playing",
+            Name : meta["dc:title"][0],
+            Artist : meta["dc:creator"][0],
+            Album : meta["upnp:album"][0],
+            Artwork : "http://" + this.host + ":" + Sonos.PORT + meta["upnp:albumArtURI"][0]
+          };
+          this.emit("StateEvent", {"sonos" : playerInfo});
+        }
+      }.bind(this));
+    }.bind(this));
+  }.bind(this));
 };
 
 Sonos.prototype.poll = function () {
@@ -173,9 +193,9 @@ Sonos.prototype.handlePoll = function (data) {
 };
 
 Sonos.prototype.newReqs = function (reqs) {
-  if (this.lastReqs == -1)
+  if (this.lastReqs == -1) {
     console.log("Sonos Connected");
-  else if (!this.playing && reqs != this.lastReqs) {
+  } else if (!this.playing && reqs != this.lastReqs) {
     this.playing = true;
     this.emit("DeviceEvent", "Started");
   } else if (this.playing && reqs == this.lastReqs) {

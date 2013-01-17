@@ -28,15 +28,13 @@ Route.prototype.handleEvent = function(device_name, event, params) {
   }
   console.log("\n" + pad("-- Event: " + event_name + ", " + date_string + " ", "-", "70"));
 
-  // If we don't have anything that can handle the event, check for wildcard
-  if (!(event_name in this.event_map)) {
-    event_name = this.allEventsMatchingName(event_name).shift();
-    if (!event_name) return false;
-  }
+  var matchingEvents = this.allEventsMatchingName(event_name);
 
   // Spew off commands attached to this event
-  var commands = this.event_map[event_name];
-  this.execCommands(commands, params);
+  for (var i = 0; i < matchingEvents.length; i++) {
+    var commands = this.event_map[matchingEvents[i]];
+    this.execCommands(commands, params);
+  };
 };
 
 Route.prototype.allEventsMatchingName = function(name) {
@@ -44,9 +42,10 @@ Route.prototype.allEventsMatchingName = function(name) {
   if (name in this.event_map) matches.push(name);
   for (var event in this.event_map) {
     if (event.indexOf("*") == -1) continue; // Skip plain strings
-    var regex = event.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-    regex = regex.replace(/\\\*/g, ".*");
-    if (name.match(regex)) matches.push(event);
+    var components = event.split("*");
+    if (name.indexOf(components[0]) !== 0) continue;
+    if (name.indexOf(components[1], name.length - components[1].length) === -1) continue;
+    matches.push(event);
   }
   return matches;
 }

@@ -103,13 +103,13 @@ Sonos.prototype.playPause = function() {
 Sonos.prototype.play = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Play"'
   var body = '<u:Play xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Play>'
-  this.sendCommand(action, body)
+  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body)
 };
 
 Sonos.prototype.pause = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Pause"'
   var body = '<u:Pause xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Pause>'
-  this.sendCommand(action, body)
+  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body)
 };
 
 Sonos.prototype.previous = function() {

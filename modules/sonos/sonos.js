@@ -1,15 +1,39 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
+var url = require('url');
 var util = require('util');
 var xml2js = require('xml2js');
 
 /* SONOS ------------------------------------------------------------------- */
 function Sonos(data) {
+  this.server = http.createServer(this.handleReq.bind(this)).listen(9000);
   this.host = data.host;
   this.lastReqs = -1;
   this.playing = false;
   this.volume = 0;
+  this.services = [
+      //{ "Service": "/ZoneGroupTopology/Event", "Description": "Zone Group" }, // The service notifications we want to subscribe to
+      //{ "Service": "/MediaRenderer/AVTransport/Event", "Description": "Transport Event" },
+      //{ "Service": "/MediaServer/ContentDirectory/Event", "Description": "Content Directory" },
+      //{ "Service": "/MediaRenderer/RenderingControl/Event", "Description": "Render Control" }
+      //{ "Service":"/AlarmClock/Event", "Description":"Alarm Clock" },
+      //{ "Service":"/MusicServices/Event", "Description":"Music Services" },
+      //{ "Service":"/AudioIn/Event", "Description":"Audio In" },
+      //{ "Service":"/DeviceProperties/Event", "Description":"Device Properties" },
+      //{ "Service":"/SystemProperties/Event", "Description":"System Properties" },
+      //{ "Service":"/ZoneGroupTopology/Event", "Description":"Zone Group" },
+      //{ "Service":"/GroupManagement/Event", "Description":"Group Management" },
+      //{ "Service":"/MediaServer/ContentDirectory/Event", "Description":"Content Directory" },
+      //{ "Service":"/MediaRenderer/RenderingControl/Event", "Description":"Render Control" },
+      //{ "Service":"/MediaRenderer/ConnectionManager/Event", "Description":"Connection Manager" },
+      { "Service":"/MediaRenderer/AVTransport/Event", "Description":"Transport Event" }
+    ];
+
+  this.subscribeEvents();
+
   setInterval(this.poll.bind(this), Sonos.POLL_INTERVAL);
+  //setInterval(this.getTrackInfo.bind(this), 10000);
+  //this.queueURI("x-sonos-spotify:spotify%3atrack%3a0xFomAiFsu5qCnLM0hu0UR?sid=12&flags=0");
 }
 util.inherits(Sonos, EventEmitter);
 
@@ -18,6 +42,24 @@ Sonos.DSP_PATH = "/status/proc/driver/audio/dsp";
 Sonos.POLL_INTERVAL = 3000;
 Sonos.TRANSPORT_ENDPOINT = '/MediaRenderer/AVTransport/Control';
 Sonos.RENDERING_ENDPOINT = '/MediaRenderer/RenderingControl/Control';
+
+Sonos.prototype.handleReq = function(req, res) {
+  var info = url.parse(req.url, true);
+  console.log(info);
+
+  var path = '/notify';
+  if (info.pathname.indexOf(path) == 0) {
+      res.writeHead(200);
+      res.end();
+
+      var data = '';
+      req.on('data', function(chunk) {
+        data += chunk;
+      }).on('end', function() {
+        console.log('data: %s', data);
+      });
+    }
+};
 
 Sonos.prototype.fetchPage = function(host, port, path, resultHandler) {
   var request = http.request({
@@ -50,8 +92,8 @@ Sonos.prototype.exec = function(command, data) {
     case "PlayPause":
       this.playPause();
       break;
-    case "Previous":
-      this.previous();
+    case "Prev":
+      this.prev();
       break;
     case "Next":
       this.next();
@@ -103,13 +145,22 @@ Sonos.prototype.play = function() {
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body);
 };
 
+Sonos.prototype.queueURI = function(uri) {
+  var action = '"urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI"'
+  var body = '<u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><CurrentURI>' + uri + '</CurrentURI><CurrentURIMetaData></CurrentURIMetaData></u:SetAVTransportURI>';  
+  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function (err) {
+console.log("err " + err);
+  }.bind(this));
+};
+
+
 Sonos.prototype.pause = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Pause"'
   var body = '<u:Pause xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Pause>'
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body);
 };
 
-Sonos.prototype.previous = function() {
+Sonos.prototype.prev = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Previous"'
   var body = '<u:Previous xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Previous>'
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function () {
@@ -175,6 +226,34 @@ Sonos.prototype.getTrackInfo = function() {
       }.bind(this));
     }.bind(this));
   }.bind(this));
+};
+
+Sonos.prototype.subscribeEvents = function() {
+  for (var service in this.services) {
+    this.subscribeEvent(this.services[service].Service, this.services[service].Description);
+  }
+};
+
+Sonos.prototype.subscribeEvent = function(service, description) {
+  //curl -X SUBSCRIBE -H "CALLBACK: <http://10.0.0.8:3000/callback>" -H "NT: upnp:event" -H "TIMEOUT: Second -3600" http://10.0.0.2:1400/MediaRenderer/AVTransport/Event -vvvvvvvv
+  //var data = "http://" + host + ":" + Sonos.PORT + service;
+
+  var request = http.request({
+    host: this.host,
+    port: Sonos.PORT,
+    path: service,
+    method: "SUBSCRIBE",
+    headers : {
+      "Cache-Control":"no-cache",
+      "Pragma"       :"no-cache",
+      //"USER-AGENT"   :"Linux UPnP/1.0 Sonos/16.7-48310 (PCDCR)",
+      "CALLBACK"     :"<http://10.0.0.6:9000/notify>",
+      "NT"           :"upnp:event",
+      "TIMEOUT"      :"Second-1800"
+    }
+  });
+  request.on('error', function() {});
+  request.end();
 };
 
 Sonos.prototype.poll = function () {

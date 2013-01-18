@@ -19,21 +19,16 @@ var insteon = route.addDevice({
   init : {
     host : "10.0.1.120",
     commands : {
-      "LivingRoomLightsOn" : "0261211121",
-      "LivingRoomLightsOff" : "0261211321",
-      "BedRoomLightsOn" : "0261011101",
-      "BedRoomLightsOff" : "0261011301",
-      "BedRoomLampOn" : "0261031103",
-      "BedRoomLampOff" : "0261031303"
     },
     devices : {
-      "BedRoomLamp" : "1AD883",
-      "BedRoomLights" : "201697",
-      "LivingRoomLights" : "1D23CC",
+      "StudyLamp" : "1AD883",
+      "StudyLights" : "01",
+      "BedRoomLights" : "1FC81E",
+      "LivingRoomLights" : "21",
       "DiningRemote" : "1C483B",
-      "LivingRoomRemote" : "1C4C33",
-      "BedRoomRemote" : "1C4943",
-      "Remote3" : "1C5418",
+      "FrontDoorRemote" : "1C4C33",
+      "StudyRemote" : "1C4943",
+      "BedRoomRemote" : "1C5418",
       "MotionLivingRoom" : "14DEDD"
     }
   }
@@ -73,31 +68,46 @@ var web = route.addDevice({
 
 // Simple map of events to commands.
 route.addEventMap({
-  "Insteon.LivingRoomRemote.Off.2" : ["Sonos.Pause"],
+  // Front door
+  "Insteon.FrontDoorRemote.Off.2" : ["Sonos.Pause"],
+  "Insteon.FrontDoorRemote.Off.4" : [
+    "Sonos.Pause",
+    "Insteon.LivingRoomLights.Off",
+    "Insteon.BedRoomLights.Off",
+    "Insteon.StudyLights.Off",
+  ],
 
+  // Bedroom
+  "Insteon.BedRoomRemote.On" : "Insteon.BedRoomLights.On",
+  "Insteon.BedRoomRemote.Off" : "Insteon.BedRoomLights.Off",
+
+  // Dining room
   "Insteon.DiningRemote.On.2" : [
     "Sonos.Play",
     "RedEye.InputSonos"
   ],
   "Insteon.DiningRemote.Off.2" : ["Sonos.Pause"],
 
-  "Insteon.BedRoomRemote.On" : "Insteon.BedRoomLightsOn",
-  "Insteon.BedRoomRemote.Off" : "Insteon.BedRoomLightsOff",
-  "Insteon.BedRoomRemote.On.2" : "Insteon.BedRoomLampOn",
-  "Insteon.BedRoomRemote.Off.2" : "Insteon.BedRoomLampOff",
+  // Study
+  "Insteon.StudyRemote.On" : "Insteon.StudyLights.On",
+  "Insteon.StudyRemote.Off" : "Insteon.StudyLights.Off",
+  "Insteon.StudyRemote.On.2" : "Insteon.StudyLamp.On",
+  "Insteon.StudyRemote.Off.2" : "Insteon.StudyLamp.Off",
 
   "Sonos.Started" : ["RedEye.InputSonos"],
   "Web.PlayPause" : ["Sonos.PlayPause"],
   "Web.Play" : ["Sonos.Play"],
   "Web.Pause" : ["Sonos.Pause"],
-  "Web.LivingRoomLightsOn" : ["Insteon.LivingRoomLightsOn"],
-  "Web.LivingRoomLightsOff" : ["Insteon.LivingRoomLightsOff"],
-  "Web.BedRoomLightsOn" : ["Insteon.BedRoomLightsOn"],
-  "Web.BedRoomLightsOff" : ["Insteon.BedRoomLightsOff"],
-  "Web.BedRoomLampOn" : ["Insteon.BedRoomLampOn"],
-  "Web.BedRoomLampOff" : ["Insteon.BedRoomLampOff"],
+  "Web.LivingRoomLightsOn" : ["Insteon.LivingRoomLights.On"],
+  "Web.LivingRoomLightsOff" : ["Insteon.LivingRoomLights.Off"],
+  "Web.BedRoomLightsOn" : ["Insteon.BedRoomLights.On"],
+  "Web.BedRoomLightsOff" : ["Insteon.BedRoomLights.Off"],
+  "Web.StudyLightsOn" : ["Insteon.StudyLights.On"],
+  "Web.StudyLightsOff" : ["Insteon.StudyLights.Off"],
+  "Web.StudyLampOn" : ["Insteon.StudyLamp.On"],
+  "Web.StudyLampOff" : ["Insteon.StudyLamp.Off"],
   "Web.MediaPCStarted" : [
-    "Insteon.LivingRoomLightsOff",
+    "Insteon.LivingRoomLights.Off",
     "Sonos.Pause",
     [
       "RedEye.ProjectorPower",
@@ -107,7 +117,7 @@ route.addEventMap({
     ]
   ],
   "Web.MediaPCEnded" : [
-    "Insteon.LivingRoomLightsOn",
+    "Insteon.LivingRoomLights.On",
     [
       "RedEye.ProjectorPower",
       "Wait.500",
@@ -118,7 +128,7 @@ route.addEventMap({
 });
 
 // Programmatically added listeners
-route.on("Insteon.LivingRoomRemote.On.2", function() {
+route.on("Insteon.FrontDoorRemote.On.2", function() {
   sonos.exec("Play");
   redeye.exec("InputSonos");
 });

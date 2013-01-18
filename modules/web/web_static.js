@@ -10,7 +10,7 @@ var WebSocketServer = require('ws').Server
 function Web(data) {
   this.server = http.createServer(this.handleReq.bind(this))
   this.server.listen(data.port ? data.port : 8080);
-  this.staticServer = new static.Server(__dirname + '/../web_static');
+  this.staticServer = new static.Server(data.dir);
   this.basedir = data.basedir;
 
   this.clients = [];
@@ -27,6 +27,8 @@ Web.prototype.setTextResponse = function (response) {
 
 Web.prototype.handleReq = function(req, res) {
   var info = url.parse(req.url, true);
+  console.log(info);
+
   // Emit requests to /event/pie?params as 'Web.pie?params'
   var prefix = "/event/";
   if (info.pathname.indexOf(prefix) == 0) {
@@ -41,7 +43,20 @@ Web.prototype.handleReq = function(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write(JSON.stringify(json));
     res.end();
-  }else if (info.pathname == "/" && this.basedir) {
+  }
+    // THIS IS A TEMP TEST AND SHOULD NOT STAY HERE!!!
+    else if (info.pathname.indexOf('/notify') == 0) {
+      res.writeHead(200);
+      res.end();
+
+      var data = '';
+      req.on('data', function(chunk) {
+        data += chunk;
+      }).on('end', function() {
+        console.log('data: %s', data);
+      });
+    }
+  else if (info.pathname == "/" && this.basedir) {
     console.log("[" + info.pathname + "]" + this.basedir);
 
     res.writeHead(302, {'Location': this.basedir});

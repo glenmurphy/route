@@ -28,26 +28,27 @@ Route.prototype.handleEvent = function(device_name, event, params) {
   }
   console.log("\n" + pad("-- Event: " + event_name + ", " + date_string + " ", "-", "70"));
 
-  // If we don't have anything that can handle the event, check for wildcard
-  if (!(event_name in this.event_map)) {
-    var items = event_name.split(".");
-    event_name = null;
-    for (var other_event in this.event_map) {
-      if (other_event.indexOf("*") == -1) continue;
-      var other_items = other_event.split(".");
-      if (other_items.length != items.length) continue;
-      for (var i = 0, valid = true; valid && i < other_items.length && i < items.length; i++)
-        valid = other_items[i] == items[i] || other_items[i] == "*";
-      if (valid) event_name = other_event;
-    }
-    if (!event_name) return;
-  }
+  var matchingEvents = this.allEventsMatchingName(event_name);
 
   // Spew off commands attached to this event
-  var commands = this.event_map[event_name];
-  this.execCommands(commands, params);
+  for (var i = 0; i < matchingEvents.length; i++) {
+    var commands = this.event_map[matchingEvents[i]];
+    this.execCommands(commands, params);
+  };
 };
 
+Route.prototype.allEventsMatchingName = function(name) {
+  var matches = [];
+  if (name in this.event_map) matches.push(name);
+  for (var event in this.event_map) {
+    if (event.indexOf("*") == -1) continue; // Skip plain strings
+    var components = event.split("*");
+    if (name.indexOf(components[0]) !== 0) continue;
+    if (name.indexOf(components[1], name.length - components[1].length) === -1) continue;
+    matches.push(event);
+  }
+  return matches;
+}
 
 /**
  * Takes an array of commands, and executes them. Commands can be
@@ -91,7 +92,7 @@ Route.prototype.execCommands = function(commands, params) {
     // Insert passed in parameters for $values in command string.
     for (var key in newparams) {
       if (newparams[key].charAt(0) == "$") {
-        newparams[key] = params[newparams[key].substring(1)];
+        newparams[key] = params ? params[newparams[key].substring(1)] : undefined;
       }
     }
 
@@ -133,6 +134,7 @@ Route.prototype.addEventMap = function(map) {
  * arrays if they exist.
  */
 Route.prototype.on = function(event_name, command) {
+  if (!command || undefined == command) return;
   if (event_name in this.event_map) {
     if (typeof this.event_map[event_name] == 'string' ||
         typeof this.event_map[event_name] == 'function') {

@@ -44,18 +44,6 @@ Web.prototype.handleReq = function(req, res) {
     res.write(JSON.stringify(json));
     res.end();
   }
-    // THIS IS A TEMP TEST AND SHOULD NOT STAY HERE!!!
-    else if (info.pathname.indexOf('/notify') == 0) {
-      res.writeHead(200);
-      res.end();
-
-      var data = '';
-      req.on('data', function(chunk) {
-        data += chunk;
-      }).on('end', function() {
-        console.log('data: %s', data);
-      });
-    }
   else if (info.pathname == "/" && this.basedir) {
     console.log("[" + info.pathname + "]" + this.basedir);
 

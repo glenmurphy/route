@@ -3,13 +3,15 @@ var http = require('http');
 var url = require('url');
 var util = require('util');
 var xml2js = require('xml2js');
+var os = require('os');
+
 
 /* SONOS ------------------------------------------------------------------- */
 function Sonos(data) {
   this.server = http.createServer(this.handleReq.bind(this)).listen(9000);
   this.host = data.host;
-  this.lastReqs = -1;
-  this.playing = false;
+  //this.lastReqs = -1;
+  this.player_state = "";
   this.volume = 0;
   this.services = [
       //{ "Service": "/ZoneGroupTopology/Event", "Description": "Zone Group" }, // The service notifications we want to subscribe to
@@ -29,39 +31,69 @@ function Sonos(data) {
       { "Service":"/MediaRenderer/AVTransport/Event", "Description":"Transport Event" }
     ];
 
+  var ip = null;
+  os.networkInterfaces().en0.forEach(function(details){
+    if (details.family=='IPv4') { ip = details.address}
+  });
+  this.listen_ip = data.listen_ip || ip;
+  this.listen_port = data.listen_port || 9000;
   this.subscribeEvents();
 
-  setInterval(this.poll.bind(this), Sonos.POLL_INTERVAL);
+  //setInterval(this.poll.bind(this), Sonos.POLL_INTERVAL);
   //setInterval(this.getTrackInfo.bind(this), 10000);
   //this.queueURI("x-sonos-spotify:spotify%3atrack%3a0xFomAiFsu5qCnLM0hu0UR?sid=12&flags=0");
 }
 util.inherits(Sonos, EventEmitter);
 
 Sonos.PORT = 1400;
-Sonos.DSP_PATH = "/status/proc/driver/audio/dsp";
-Sonos.POLL_INTERVAL = 3000;
+//Sonos.DSP_PATH = "/status/proc/driver/audio/dsp";
+//Sonos.POLL_INTERVAL = 3000;
 Sonos.TRANSPORT_ENDPOINT = '/MediaRenderer/AVTransport/Control';
 Sonos.RENDERING_ENDPOINT = '/MediaRenderer/RenderingControl/Control';
 
 Sonos.prototype.handleReq = function(req, res) {
   var info = url.parse(req.url, true);
-  console.log(info);
+  res.writeHead(200);
+  res.end();
 
-  var path = '/notify';
-  if (info.pathname.indexOf(path) == 0) {
-      res.writeHead(200);
-      res.end();
-
-      var data = '';
-      req.on('data', function(chunk) {
-        data += chunk;
-      }).on('end', function() {
-        console.log('data: %s', data);
-      });
-    }
+  var data = '';
+  req.on('data', function(chunk) {
+    data += chunk;
+  });
+  req.on('end', function() {
+    try {
+      var parser = new xml2js.Parser();
+      parser.parseString(data, function (err, result) {
+        var eventInfo = result["e:propertyset"]["e:property"][0].LastChange[0];
+        parser.parseString(eventInfo, function (err, result) {
+          var status = result.Event.InstanceID[0];
+          var state = status.TransportState[0].$.val;
+          var uri = status.CurrentTrackURI[0].$.val;
+          var metadata = status.CurrentTrackMetaData[0].$.val;
+          parser.parseString(metadata, function (err, result) {
+            if (result) {
+              var meta = result["DIDL-Lite"]["item"][0];
+              var playerInfo = {}
+              playerInfo["Player State"] = state;
+              this.player_state = state;
+              if (meta["dc:title"]) playerInfo.Name = meta["dc:title"][0];
+              if (meta["dc:creator"]) playerInfo.Artist = meta["dc:creator"][0];
+              if (meta["upnp:album"]) playerInfo.Album = meta["upnp:album"][0];
+              playerInfo.URI = uri;
+              if (meta["upnp:albumArtURI"]) playerInfo.Artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, meta["upnp:albumArtURI"][0]);
+              this.emit("StateEvent", {"sonos" : playerInfo});
+              // TODO: send next-track info too
+            }
+          }.bind(this));
+        }.bind(this));
+      }.bind(this));
+    } catch (e) {
+      console.log("Sonos: parse error" + e);
+    } 
+  }.bind(this));  
 };
 
-Sonos.prototype.fetchPage = function(host, port, path, resultHandler) {
+/*Sonos.prototype.fetchPage = function(host, port, path, resultHandler) {
   var request = http.request({
     port : port,
     host : host,
@@ -78,7 +110,7 @@ Sonos.prototype.fetchPage = function(host, port, path, resultHandler) {
     });
   });
   request.end();
-};
+};*/
 
 Sonos.prototype.exec = function(command, data) {
   console.log("*  Sonos Executing: " + command);
@@ -93,10 +125,13 @@ Sonos.prototype.exec = function(command, data) {
       this.playPause();
       break;
     case "Prev":
-      this.previous();
+    case "Previous":
+    case "PrevTrack":
+      this.prevTrack();
       break;
     case "Next":
-      this.next();
+    case "NextTrack":
+      this.nextTrack();
       break;
     case "TrackInfo":
       this.getTrackInfo();
@@ -133,7 +168,7 @@ Sonos.prototype.sendCommand = function(endpoint, action, body, callback) {
 };
 
 Sonos.prototype.playPause = function() {
-  if (this.playing)
+  if (this.player_state === "PLAYING")
     this.pause();
   else
     this.play();
@@ -149,7 +184,7 @@ Sonos.prototype.queueURI = function(uri) {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI"'
   var body = '<u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><CurrentURI>' + uri + '</CurrentURI><CurrentURIMetaData></CurrentURIMetaData></u:SetAVTransportURI>';  
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function (err) {
-console.log("err " + err);
+    console.log("err " + err);
   }.bind(this));
 };
 
@@ -160,7 +195,7 @@ Sonos.prototype.pause = function() {
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body);
 };
 
-Sonos.prototype.previous = function() {
+Sonos.prototype.prevTrack = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Previous"'
   var body = '<u:Previous xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Previous>'
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function () {
@@ -168,7 +203,7 @@ Sonos.prototype.previous = function() {
   }.bind(this));
 };
 
-Sonos.prototype.next = function() {
+Sonos.prototype.nextTrack = function() {
   var action = '"urn:schemas-upnp-org:service:AVTransport:1#Next"'
   var body = '<u:Next xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Next>'
   this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function () {
@@ -202,30 +237,33 @@ Sonos.prototype.setVolume = function(volume) {
 };
 
 Sonos.prototype.getTrackInfo = function() {
-  var action = '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"';
-  var body = '<u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:GetPositionInfo>';
-  this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function(data){
-    console.log(data);
-    var parser = new xml2js.Parser();
-    parser.parseString(data, function (err, result) {
-      var trackInfo = result["s:Envelope"]["s:Body"][0]["u:GetPositionInfoResponse"][0];
-      var trackURL = trackInfo.TrackURI[0];
-      console.log(trackInfo);
-      parser.parseString(trackInfo.TrackMetaData, function (err, meta) {
-        if (meta) {
-          meta = meta["DIDL-Lite"]["item"][0];
-          var playerInfo = {
-            "Player State" : "Playing",
-            Name : meta["dc:title"][0],
-            Artist : meta["dc:creator"][0],
-            Album : meta["upnp:album"][0],
-            Artwork : "http://" + this.host + ":" + Sonos.PORT + meta["upnp:albumArtURI"][0]
-          };
-          this.emit("StateEvent", {"sonos" : playerInfo});
-        }
+  try {
+    var action = '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"';
+    var body = '<u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:GetPositionInfo>';
+    this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function(data){
+      var parser = new xml2js.Parser();
+      parser.parseString(data, function (err, result) {
+        var trackInfo = result["s:Envelope"]["s:Body"][0]["u:GetPositionInfoResponse"][0];
+        var trackURL = trackInfo.TrackURI[0];
+        console.log(trackInfo);
+        parser.parseString(trackInfo.TrackMetaData, function (err, meta) {
+          if (meta) {
+            meta = meta["DIDL-Lite"]["item"][0];
+            var playerInfo = {
+              "Player State" : "Playing",
+              Name : meta["dc:title"][0],
+              Artist : meta["dc:creator"][0],
+              Album : meta["upnp:album"][0],
+              Artwork : url.resolve("http://" + this.host + ":" + Sonos.PORT, meta["upnp:albumArtURI"][0])
+            };
+            this.emit("StateEvent", {"sonos" : playerInfo});
+          }
+        }.bind(this));
       }.bind(this));
     }.bind(this));
-  }.bind(this));
+  } catch (e) {
+    console.log("Sonos parse error: " + e);
+  }
 };
 
 Sonos.prototype.subscribeEvents = function() {
@@ -247,7 +285,7 @@ Sonos.prototype.subscribeEvent = function(service, description) {
       "Cache-Control":"no-cache",
       "Pragma"       :"no-cache",
       //"USER-AGENT"   :"Linux UPnP/1.0 Sonos/16.7-48310 (PCDCR)",
-      "CALLBACK"     :"<http://10.0.0.6:9000/notify>",
+      "CALLBACK"     :"<http://" + this.listen_ip + ":" + this.listen_port + ">",
       "NT"           :"upnp:event",
       "TIMEOUT"      :"Second-1800"
     }
@@ -256,7 +294,7 @@ Sonos.prototype.subscribeEvent = function(service, description) {
   request.end();
 };
 
-Sonos.prototype.poll = function () {
+/*Sonos.prototype.poll = function () {
   this.fetchPage(this.host, Sonos.PORT, Sonos.DSP_PATH, this.handlePoll.bind(this));
 };
 
@@ -283,6 +321,6 @@ Sonos.prototype.newReqs = function (reqs) {
   }
 
   this.lastReqs = reqs;
-};
+};*/
 
 exports.Sonos = Sonos;

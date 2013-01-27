@@ -20,7 +20,7 @@ RedEye.prototype.exec = function(command) {
     host : this.host,
     path : "/cgi-bin/play_iph.sh?" + code + "%201"
   });
-  request.on('error', function() {});
+  request.on('error', function(e) { console.log("RedEye error: " + e)});
   request.end();
 };
 

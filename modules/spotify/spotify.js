@@ -25,6 +25,7 @@ Spotify.prototype.exec = function(command, params) {
 
 // Find matching spotify urls matching a type/query
 Spotify.prototype.searchByType = function(type, query, callback) {
+  console.log("http://ws.spotify.com/search/1/" + type + "?q=" + query);
   http.get("http://ws.spotify.com/search/1/" + type + "?q=" + query, function(res) {
     var body = '';
     res.on('data', function (d) {body += d;});
@@ -44,7 +45,7 @@ Spotify.prototype.searchByType = function(type, query, callback) {
 
 // Search artists and tracks to find the best match for a request
 Spotify.prototype.listenTo = function(query) {
-  console.log(query);
+  console.log("Searching for: " + query);
   this.bridge.sendEvent("Say:playing " + query.split(" by ").join(". by ") +  "\n");
   query = query.split(" by ").join(" ");
   this.searchByType("artist", query, function (artists) {

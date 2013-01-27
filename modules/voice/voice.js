@@ -16,7 +16,8 @@ function Voice(data) {
   this.devices = data.devices;
   this.timeoutDuration = data.timeoutDuration || 10000;
   this.mappings = [];
-  this.synonyms = data.synonyms; 
+  this.synonyms = data.synonyms;
+  this.route = data.route;
 };
 
 util.inherits(Voice, EventEmitter);
@@ -62,29 +63,20 @@ Voice.prototype.handleVoiceInput = function(params) {
     var resultParams = result.params;
 
     string = result.string;
-    if (context) string = context + "." + string;
+    if (context) string = context + "." + string; 
 
-    // manually call all listeners
-    // instead of this.emit("DeviceEvent", string, resultParams);
-
-    var matched = false;
-    var listeners = this.listeners('DeviceEvent');
-    for (var j = 0; j < listeners.length && !matched; j++) {
-      matched = listeners[j](string, resultParams);
-      if (!matched) console.log("No Match");
-    };
-
-    // Always succeed on the first result for now
-    // TODO: Check whether it is a valid event execution somehow
-
-    if (params.string == this.guardPhrase) {
-      this.startedListening(params);
-    } else {
-      this.stoppedListening(params);
+    var events = this.route.allEventsMatchingName("Voice." + string);
+    console.log(string, events);
+    var event = events.shift();
+    if (event) {
+      this.emit("DeviceEvent", event, resultParams);
+      if (params.string == this.guardPhrase) {
+        this.startedListening(params);
+      } else {
+        this.stoppedListening(params);
+      }
+      break;
     }
-
-    if (matched == true) break;
-
   }
 }
 

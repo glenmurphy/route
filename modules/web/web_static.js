@@ -27,7 +27,6 @@ Web.prototype.setTextResponse = function (response) {
 
 Web.prototype.handleReq = function(req, res) {
   var info = url.parse(req.url, true);
-  console.log(info);
 
   // Emit requests to /event/pie?params as 'Web.pie?params'
   var prefix = "/event/";
@@ -55,7 +54,6 @@ Web.prototype.handleReq = function(req, res) {
 };
 
 Web.prototype.handleEvent = function(info) {
-  console.log(info);
   this.emit("DeviceEvent", info.pathname, info.query);
 }
 

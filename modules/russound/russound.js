@@ -95,7 +95,7 @@ Russound.prototype.parseResponse = function(data) {
 Russound.prototype.handleNotification = function(data) {
   var changes = {};
   for (var key in data) {
-    changes["Russound." + key] = data[key]; 
+    changes["russound." + key] = data[key]; 
     this.status[key] = data[key];
   }
   this.emit("StateEvent", changes);
@@ -168,24 +168,21 @@ Russound.prototype.watchForChanges = function() {
   };
 }
 
-
 Russound.prototype.handleConnected = function() {
   this.emit("DeviceEvent", "Russound.Connected");
-  this.emit("StateEvent", {RussoundConnected:true});
+  this.emit("StateEvent", {russoundConnected:true});
   this.watchForChanges();
 };
 
 Russound.prototype.handleEnd = function() {
   this.emit("DeviceEvent", "Russound.Disconnected");
-  this.emit("StateEvent", {RussoundConnected:false});
+  this.emit("StateEvent", {russoundConnected:false});
 };
 
 Russound.prototype.handleError = function(e) {
   //this.emit("DeviceEvent", "Error");
   console.log("! Russound Error: " + e + "");
 };
-
-
 
 
 exports.Russound = Russound;

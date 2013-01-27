@@ -26,7 +26,7 @@ Route.prototype.handleEvent = function(device_name, event, params) {
   function pad(str, char, len) {
     return str + new Array(Math.max(len - str.length, 0)).join(char);
   }
-  console.log("\n" + pad("-- Event: " + event_name + ", " + date_string + " ", "-", "70"));
+  console.log("\n" + pad("-- Event: " + event_name + (JSON.stringify(params) || "") + ", " + date_string + " ", "-", "70"));
 
   var matchingEvents = this.allEventsMatchingName(event_name);
 

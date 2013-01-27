@@ -5,17 +5,17 @@ var url = require('url');
 var fs = require('fs');
 var util = require('util');
 var static = require('node-static');
-var WebSocketServer = require('ws').Server
+var io = require('socket.io');
 
 function Web(data) {
-  this.server = http.createServer(this.handleReq.bind(this))
+  this.server = http.createServer(this.handleReq.bind(this));
   this.server.listen(data.port ? data.port : 8080);
   this.staticServer = new static.Server(data.dir);
   this.basedir = data.basedir;
 
   this.clients = [];
-  this.wss = new WebSocketServer({server:this.server});
-  this.wss.on('connection', this.handleSocketConnection.bind(this));
+  this.socket = io.listen(this.server, { log: false });
+  this.socket.on('connection', this.handleSocketConnection.bind(this));
 
   this.textResponse = null;
 };
@@ -57,25 +57,22 @@ Web.prototype.handleEvent = function(info) {
   this.emit("DeviceEvent", info.pathname, info.query);
 }
 
-
-Web.prototype.handleSocketConnection = function(ws) {
+Web.prototype.handleSocketConnection = function(socket) {
   console.log('i Web client connected');
-  this.clients.push(ws);
-  var json = JSON.stringify(this.state.allValues());
-  ws.send(json);
-  ws.on('message', this.handleSocketMessage.bind(this));
-  ws.on('close', this.handleSocketClose.bind(this, ws));  
+  this.clients.push(socket);
+  socket.emit('state', this.state.allValues());
+  socket.on('message', this.handleSocketMessage.bind(this));
+  socket.on('disconnect', this.handleSocketClose.bind(this, socket));
 };
 
 Web.prototype.handleSocketMessage = function(message) {
-//  this.emit("DeviceEvent", message);
   this.handleEvent(url.parse(message, true));
 }
 
-Web.prototype.handleSocketClose = function(ws) {
+Web.prototype.handleSocketClose = function(socket) {
   console.log('i Web client disconnected');
   for (var i=0; i < this.clients.length; i++) {
-    if (this.clients[i] == ws) {
+    if (this.clients[i] == socket) {
       this.clients.splice(i, 1);
     }
   }
@@ -92,7 +89,7 @@ Web.prototype.setStateObject = function(object) {
 
 Web.prototype.stateChanged = function(newState) {
   for (var i=0; i < this.clients.length; i++) {
-      this.clients[i].send(JSON.stringify(newState));
+      this.clients[i].emit('state', newState);
   }
 };
 

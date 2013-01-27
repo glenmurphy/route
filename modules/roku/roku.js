@@ -8,6 +8,7 @@ function Roku(data) {
   this.host = data.host;
   this.getChannels();
   this.eventQueue = [];
+  this.name = data.name || "Roku";
 };
 util.inherits(Roku, EventEmitter);
 
@@ -110,11 +111,14 @@ Roku.prototype.getChannels = function() {
           channel.name = result[i]._
           channels.push(channel);
         };
-        this.emit("StateEvent", {"rokuChannels" : channels, "rokuIP" : this.host});
+        var state = {};
+        state["roku." + this.name + ".channels"] = channels;
+        state["roku." + this.name + ".ip"] = this.host;
+        this.emit("StateEvent", state);
       }.bind(this));
     }.bind(this));
   }.bind(this));
-  request.on('error', function(e) {console.log("! Roku error: Could not fetch channels (" + e + ")")});
+  request.on('error', function(e) {console.log("! " + this.name + " error: Could not fetch channels (" + e + ")")});
   request.end();
 }
 

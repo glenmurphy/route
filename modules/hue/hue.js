@@ -217,8 +217,7 @@ Hue.prototype.updateLightsList = function() {
     method: 'GET'
     }, function(res) {
       if (res.statusCode == 200) {
-        console.log(res.statusCode);
-        var body = '';
+        var body = ''; 
         res.on('data', function (d) {body += d;});
         res.on('end', function () {
           try {
@@ -236,7 +235,7 @@ Hue.prototype.updateLightsList = function() {
                 this.updateBulbState(key);                
                 count++;
               }
-              console.log("* HUE connected: " + count + " lights");
+              this.emit("DeviceEvent", "Connected");
             }
            
           } catch (e) {
@@ -246,7 +245,7 @@ Hue.prototype.updateLightsList = function() {
     }
   }.bind(this));
 
-  request.on('error', function(e) {console.log("! Hue Error: " + e.message)});
+  request.on('error', function(e) {console.log("! Hue:\t\t" + e)});
   request.end();
 }
 

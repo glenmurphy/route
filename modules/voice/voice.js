@@ -9,6 +9,8 @@ String.prototype.camelcase = function() {
 
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
+var url = require('url');
+var http = require('http');
 
 function Voice(data) {
   this.guardPhrase = data.guardPhrase;
@@ -18,9 +20,21 @@ function Voice(data) {
   this.mappings = [];
   this.synonyms = data.synonyms;
   this.route = data.route;
+  this.port = data.port || 9001
+  this.server = http.createServer(this.httpReq.bind(this)).listen(this.port);
+
 };
 
 util.inherits(Voice, EventEmitter);
+
+
+Voice.prototype.httpReq = function(req, res) {
+  var info = url.parse(req.url, true);
+  this.handleVoiceInput(info.query);
+  res.writeHead(200);
+  res.end();
+};
+
 
 Voice.prototype.addMapping = function(mapping) {
   this.mappings.push(mapping);
@@ -29,8 +43,7 @@ Voice.prototype.addMapping = function(mapping) {
 Voice.prototype.exec = function(command, params) {
   if (command == "VoiceInput") {
     this.handleVoiceInput(params);
-  }
-  else {
+  } else {
     switch (command) {
       case "StartedListening":
         this.startedListening();
@@ -46,6 +59,18 @@ Voice.prototype.handleVoiceInput = function(params) {
   var context = params.device ? this.devices[params.device] : null;
   delete params.device;
   params.context = context;
+
+
+  if (params.action == "started"
+      || params.string == this.guardPhrase) {
+      this.startedListening(params);
+    return;
+  }
+
+  if (params.action == "stopped") {
+    this.stoppedListening(params);
+    return;
+  }
 
   var strings = params.string;
   if (typeof strings === 'string') strings = [strings];
@@ -63,21 +88,22 @@ Voice.prototype.handleVoiceInput = function(params) {
     var resultParams = result.params;
 
     string = result.string;
-    if (context) string = context + "." + string; 
+    if (context) {
+      string = context + "." + string;
+      resultParams.context = context;
+    }
 
     var events = this.route.allEventsMatchingName("Voice." + string);
-    console.log(string, events);
+    console.log("Voice." + string + ":", events);
     var event = events.shift();
     if (event) {
-      this.emit("DeviceEvent", event, resultParams);
-      if (params.string == this.guardPhrase) {
-        this.startedListening(params);
-      } else {
-        this.stoppedListening(params);
-      }
+      this.emit("DeviceEvent", string, resultParams);
       break;
     }
   }
+
+  // Any input triggers stoppedListening
+  this.stoppedListening(params);
 }
 
 Voice.prototype.normalizeString = function(string) {
@@ -104,19 +130,25 @@ Voice.prototype.normalizeString = function(string) {
 }
 
 Voice.prototype.startedListening = function(params) {
+  this.listening = true;
   this.emit("DeviceEvent", "StartedListening", params);
   this.emit("StateEvent", {listening: true});
-  this.listeningTimeout = setTimeout(this.stoppedListening.bind(this),
-                                     this.timeoutDuration);
+  if (!this.listeningTimeout)
+    this.listeningTimeout = setTimeout(this.stoppedListening.bind(this),
+                                     this.timeoutDuration, params);
 }
 
 Voice.prototype.stoppedListening = function(params) {
-  this.emit("DeviceEvent", "StoppedListening", params);
-  this.emit("StateEvent", {listening: false});
   if (this.listeningTimeout) {
     clearTimeout(this.listeningTimeout);
     this.listeningTimeout = null;
   }
+
+  if (!this.listening) return;
+
+  this.listening = false;
+  this.emit("DeviceEvent", "StoppedListening", params);
+  this.emit("StateEvent", {listening: false});
 }
 
 exports.Voice = Voice;

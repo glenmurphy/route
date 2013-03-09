@@ -16,6 +16,7 @@ function Web(data) {
   this.clients = [];
   this.socket = io.listen(this.server, { log: false });
   this.socket.on('connection', this.handleSocketConnection.bind(this));
+  this.socket.on('error', this.handleSocketError.bind(this));
 
   this.textResponse = null;
 };
@@ -44,8 +45,7 @@ Web.prototype.handleReq = function(req, res) {
     res.end();
   }
   else if (info.pathname == "/" && this.basedir) {
-    console.log("[" + info.pathname + "]" + this.basedir);
-
+    //console.log("[" + info.pathname + "]" + this.basedir);
     res.writeHead(302, {'Location': this.basedir});
     res.end();
   } else {
@@ -62,8 +62,12 @@ Web.prototype.handleSocketConnection = function(socket) {
   this.clients.push(socket);
   socket.emit('state', this.state.allValues());
   socket.on('message', this.handleSocketMessage.bind(this));
+  socket.on('error', this.handleSocketError.bind(this));
   socket.on('disconnect', this.handleSocketClose.bind(this, socket));
 };
+Web.prototype.handleSocketError = function(socket) {
+console.log("! Web socket error", socket);
+}
 
 Web.prototype.handleSocketMessage = function(message) {
   this.handleEvent(url.parse(message, true));

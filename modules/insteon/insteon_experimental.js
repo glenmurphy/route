@@ -32,6 +32,7 @@ util.inherits(Insteon, EventEmitter);
 Insteon.SMARTLINC_PLM_PORT = 9761;
 
 Insteon.prototype.sendCommand = function(device_name, command_name, level) {
+console.log(device_name, command_name, level);
   var device_id = this.devices[device_name] || device_id;
   var command_id = Insteon.COMMAND_IDS[command_name];
   if (!command_id || !device_id) return;
@@ -48,11 +49,14 @@ Insteon.prototype.exec = function(command, params) {
   var string = this.commands[command];
   if (string) {
     this.sendString(string);
+  } else if (command == "SetLightState") {
+    
   } else { // Build a command manually
     var segments = command.split(".");
-    var command_name = segments.pop();
-    var device_name = segments.pop();
-    this.sendCommand(device_name, command_name);
+    var device_name = segments.shift();
+    var command_name = segments.shift();
+    var data = segments.shift();
+    this.sendCommand(device_name, command_name, data);
   }
 };
 
@@ -64,13 +68,17 @@ Insteon.prototype.sendString = function(string) {
 };
 
 Insteon.prototype.sendNextString = function() {
-  if (!this.writeQueue.length) return;
-  var string = this.writeQueue.shift();
-  console.log("\tSending: " + string);
-  string = new Buffer(string, "hex");
-  this.client.write(string, "UTF8", function () {
-    setTimeout(this.sendNextString.bind(this),1000);  
-  }.bind(this));
+  try {
+    if (!this.writeQueue.length) return;
+    var string = this.writeQueue.shift();
+    if (this.debug) console.log("\tInsteon Sending: " + string);
+    string = new Buffer(string, "hex");
+    this.client.write(string, "UTF8", function () {
+      setTimeout(this.sendNextString.bind(this),1000);  
+    }.bind(this));    
+  } catch (e) {
+    console.log("Insteon " + e)
+  }
 }
 
 
@@ -88,12 +96,12 @@ Insteon.prototype.reconnect = function() {
   if (this.reconnecting_) return;
 
   this.reconnecting_ = true;
-  setTimeout(this.connect.bind(this), 1000);
+  setTimeout(this.connect.bind(this), 10000);
 }
 
 Insteon.prototype.handleConnected = function() {
   this.emit("DeviceEvent", "Insteon.Connected");
-  this.sendStatusRequests();
+  //this.sendStatusRequests();
 };
 
 Insteon.prototype.sendStatusRequests = function() {
@@ -157,6 +165,7 @@ function bit_test(num,bit){
     return ((num>>bit) % 2 != 0)
 }
 
+// TODO: this returns undefined for 0250 21D57C 110101 0 6 00
 Insteon.prototype.parseCommand = function(data) {
   var info = {cmd : data};
   var parsed = data.match(/(....)(......)(......)(.)(.)(..)(..)/);
@@ -217,24 +226,21 @@ Insteon.prototype.handleData = function(data) {
   try {
     // Try to decode the string.
     var cmd = data.substr(0, 4);
+    var info = this.parseCommand(data);
     switch (cmd) {
       case '0250':
-        var info = this.parseCommand(data);
         if (info.isAck) {
-          this.printCommand(info);
-
         } else if (info && info.target == this.hostid) {
           this.emitDeviceStatus(info);
-          this.printCommand(info);
         }
         break;
       default:
-        this.printCommand(this.parseCommand(data));
-        //!this.emit("DeviceEvent", data);
         break;
     }
+    if (this.debug)
+      this.printCommand(info);
   } catch (e) {
-    console.log("Insteon data error: " + data + "" + e)
+    console.log("Insteon data error:", data, e)
   }
 };
 
@@ -266,12 +272,15 @@ Insteon.prototype.emitDeviceStatus = function(info) {
   ];
   // if (data.control > 1)
   //   out.push(data.control);
+  var state = {};
+  state["insteon." + info.device_name] = info.command_name;
   this.emit("DeviceEvent", out.join("."));
+  this.emit("StateEvent", state);
 }
 
 Insteon.prototype.handleError = function(e) {
-  this.emit("DeviceEvent", "Insteon.Error");
-  console.log(e);
+  this.emit("ErrorEvent", "Insteon", e);
+  console.error("! Insteon\t" + e);
   this.reconnect();
 };
 

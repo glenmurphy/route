@@ -4,7 +4,7 @@ var util = require('util');
 function Dummy(data) {
   this.host = data.host;
 };
-util.inherits(Dummy, EventEmitter);
+utils.inherits(Dummy, EventEmitter);
 
 Dummy.prototype.exec = function(command, data) {
   this.log(command);

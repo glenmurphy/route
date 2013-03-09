@@ -1,121 +1,84 @@
 var EventEmitter = require('events').EventEmitter;
-var net = require('net');
 var util = require('util');
 
 // Protocol documentation at:
 // http://www.lutron.com/TechnicalDocumentLibrary/RS232ProtocolCommandSet.040196d.pdf
-// This may only apply to GRX systems, not QSX or others
 
 function Lutron(data) {
   this.host = data.host;
-  this.login = data.login || "nwk";
-  this.controlUnits = data.controlUnits;
-  this.keypads = data.keypads;
+  this.login = data.login;
   this.commandQueue = [];
-  this.connect();
 };
 util.inherits(Lutron, EventEmitter);
 
 Lutron.prototype.exec = function(command, data) {
-  console.log("*  Lutron Executing: " + command);
-
-  if (command == "SetScene") {
-    var scene = data.scene;
-    var unit = data.zone || data.controlUnit;
-    unit = this.controlUnits[unit];
-    this.selectScene([unit], scene)
-  } else if (command == "AllOff") {
-    this.allOff();
-  } else {
-  }
-
+  this.log(command);
 };
 
 Lutron.prototype.sendCommand = function(string) {
   var isFirstRequest = this.commandQueue.length == 0;
-  this.commandQueue.push(string + "\r\n");
-  //if (isFirstRequest) this.sendNextCommand();
-  if (isFirstRequest) process.nextTick(this.sendNextCommand.bind(this));
+  this.commandQueue.push(string);
+  if (isFirstRequest) setTimeout(this.sendNextString.bind(this),10);
 };
 
 Lutron.prototype.sendNextCommand = function() {
   if (!this.commandQueue.length) return;
   var string = this.commandQueue.shift();
+  console.log("\tSending: " + string);
+  string = new Buffer(string, "hex");
   this.client.write(string, "UTF8", function () {
-    setTimeout(this.sendNextCommand.bind(this),1000);  
+    setTimeout(this.sendNextString.bind(this),1000);  
   }.bind(this));
 }
 
 Lutron.prototype.sendStatusRequests = function() {
-  this.sendCommand("G");
-  // for (var unit in this.controlUnits) {
-  //      this.sendCommand("rzi " + this.controlUnits[unit]);
-  //  }
-}
-
-Lutron.prototype.allOff = function () {
-  this.sendCommand("A01234");
+ for (var unit in this.controlUnits) {
+      this.sendCommand(":rzi " + this.controlUnits[unit]);
+  }
+  this.sendCommand(":G");
 }
 
 Lutron.prototype.selectScene = function(units, scene) {
-  this.sendCommand("A" + scene + units.join(""));
+  this.sendCommand(":A" + scene + units.join(""));
 }
 
 Lutron.prototype.zoneRaise = function(unit, zones) {
-  this.sendCommand("B" + unit + zones.join(""));
+  this.sendCommand(":B" + unit + zones.join(""));
 }
 
 Lutron.prototype.zoneLower = function(unit, zones) {
-  this.sendCommand("D" + unit + zones.join(""));
+  this.sendCommand(":D" + unit + zones.join(""));
 }
 
 
 Lutron.prototype.parseData = function(data) {
-  var parsed = data.match(/~?:?([^ ]*) ?(.*)/);
+  var parsed = data.match(/~:([^ ]*)(.*)/);
   var command = parsed[1];
   var data = parsed[2];
 
-  if (this.debug) console.log("Lutron", command, data);
   switch (command) {
-
     case ("zi"):
-      var levels = data.split(" ");
-      levels.pop();
-      levels.pop();
-      var unit = levels.shift();
-      for (var i = 0; i < levels.length; i++) {
-        levels[i] = parseInt(levels[i],16);
-        if (i && levels[i] == i) levels[i] = null;
-      };
-      var state = {};
-      state[("insteon.levels" + unit)] = levels;
-      this.emit("StateEvent", state);
+      console.log(data);
       break;
     case ("ss"):
       var scenes = {}
       for (var i = 0; i < 8; i++) {
-        var value = parseInt(data.charAt(i), 16);
-        if (value != null) scenes[i] = value;
+        scenes[i] = parseInt(data.charAt(i), 16);
       };
-      this.emit("StateEvent", {"insteon.scenes" : scenes});
-
-      if (this.debug) console.log("Scene status:" + JSON.stringify(scenes));
+      console.log("Scene status:" + scenes);
       break;
     case ("ERROR"):
       console.log(data);
       break;      
     default:
-      if (command.length == 2) {
-        var code = command.charAt(0);
-        var key = code.toLowerCase();
-        var pressed = (code != key);
-        var button = command.charAt(1);
-        var name = this.keypads[key];
-        this.emit("DeviceEvent", name + "." + button + "." + (pressed ? "Press" : "Release"));
-      }
-      break;
   }
+  //~:zi [Control Unit] [Int1] [Int2] [Int3] [Int4] [Int5] [Int6] [Int7] [Int8]
+  // (or M)
 }
+
+
+
+
 
 // Connection
 
@@ -127,7 +90,6 @@ Lutron.prototype.connect = function() {
     host : this.host,
     port : Lutron.COM_PORT
   }, this.handleConnected.bind(this));
-  this.client.setEncoding();
   this.client.on('data', this.handleData.bind(this));
   this.client.on('error', this.handleError.bind(this));
 };
@@ -136,25 +98,21 @@ Lutron.prototype.reconnect = function() {
   if (this.reconnecting_) return;
 
   this.reconnecting_ = true;
-  setTimeout(this.connect.bind(this), 10000);
+  setTimeout(this.connect.bind(this), 1000);
 }
 
 Lutron.prototype.handleConnected = function() {
+  this.emit("DeviceEvent", "Lutron.Connected");
 };
 
 Lutron.prototype.handleData = function(data) {
-  if (data == "login: ") {
-    this.client.write(this.login + "\r\n", "UTF8");
-  } else if (data == "connection established\r\n") {
-    this.emit("DeviceEvent", "Connected");
-    this.sendStatusRequests();
-  } else {
-    this.parseData(data.split("\r\n").shift());
-  }
+  data = new Buffer(data).toString("hex").toUpperCase();
+  this.parseData(data);
 }
 
 Lutron.prototype.handleError = function(e) {
-  console.log("! Lutron\t" + e);
+  this.emit("DeviceEvent", "Lutron.Error");
+  console.log(e);
   this.reconnect();
 };
 

@@ -33,7 +33,7 @@ Route.prototype.handleEvent = function(device_name, event, params) {
   // Spew off commands attached to this event
   for (var i = 0; i < matchingEvents.length; i++) {
     var commands = this.event_map[matchingEvents[i]];
-    this.execCommands(commands, params, event_name);
+    this.execCommands(commands, params);
   };
 };
 
@@ -57,7 +57,7 @@ Route.prototype.allEventsMatchingName = function(name) {
  * of the subsequent commands in that array, which is useful for IR 
  * macros.
  */
-Route.prototype.execCommands = function(commands, params, event_name) {
+Route.prototype.execCommands = function(commands, params) {
   if (!commands) return;
 
   var command;
@@ -80,16 +80,14 @@ Route.prototype.execCommands = function(commands, params, event_name) {
   // fire off an execCommands chain.
   if (typeof command == "function") {
     try {
-      command(params, event_name);
+      command(params);
     } catch(e) {
-      console.log("!! Error executing custom function: ", e, e.stack);
+      console.log("!! Error executing custom function: " + e);
     }
   } else if (typeof command == "string") {
     var command_info = url.parse(command, true);
     var newparams = command_info.query;
     command = command_info.pathname;
-
-
 
     // Insert passed in parameters for $values in command string.
     for (var key in newparams) {
@@ -115,11 +113,11 @@ Route.prototype.execCommands = function(commands, params, event_name) {
     }
   } else if (command.length) {
     console.log(">  Recursing:");
-    this.execCommands(command, params, event_name);
+    this.execCommands(command, params);
   }
 
   if (remaining.length)
-    setTimeout(this.execCommands.bind(this, remaining, params, event_name), delay);
+    setTimeout(this.execCommands.bind(this, remaining, params), delay);
 };
 
 /**

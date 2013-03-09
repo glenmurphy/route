@@ -118,7 +118,7 @@ Roku.prototype.getChannels = function() {
       }.bind(this));
     }.bind(this));
   }.bind(this));
-  request.on('error', function(e) {console.error("! " + this.name + "\t" + e)}.bind(this));
+  request.on('error', function(e) {console.log("! " + this.name + " error: Could not fetch channels (" + e + ")")});
   request.end();
 }
 

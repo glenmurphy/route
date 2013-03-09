@@ -1,4 +1,0 @@
-{ 
-  "name" : "SNMP",
-  "main" : "./snmp.js"
-}

@@ -24,7 +24,7 @@ Bridge.prototype.exec = function(command, params) {
   } else if (command == "Say") {
     this.sendEvent("Say:" + params.string);
   } else {
-    this.sendEvent(command + (params.string ? ":" + params.string : ""));
+    this.sendEvent(command)
   }
 };
 
@@ -47,7 +47,7 @@ Bridge.prototype.connect = function() {
 Bridge.prototype.reconnect = function() {
   if (this.reconnecting_) return;
   this.reconnecting_ = true;
-  setTimeout(this.connect.bind(this), 10000);
+  setTimeout(this.connect.bind(this), 5000);
 }
 
 Bridge.prototype.handleConnected = function() {
@@ -83,7 +83,7 @@ Bridge.prototype.handleEnd = function() {
 };
 
 Bridge.prototype.handleError = function(e) {
-  console.log("! Mac Bridge\t" + e);
+  console.log("! Could not connect to bridge: (" + e + ")");
   this.reconnect();
 };
 

@@ -1,6 +1,6 @@
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
-var https = require('https');
+var darksky = require("darksky").Client;
 var SunCalc = require("suncalc");
 
 function Weather(data) {
@@ -9,6 +9,8 @@ function Weather(data) {
   this.location = data.location;
   this.darkskyKey = data.darkskyKey
   setTimeout(this.calculateSunEvents.bind(this), 1000);
+
+  this.darksky = new darksky(this.darkskyKey);
   this.fetchRainForecast();
 };
 util.inherits(Weather, EventEmitter);
@@ -19,37 +21,19 @@ function setDateTimeout(fn, d){
 }
 
 Weather.prototype.fetchRainForecast = function() {
-  var path = '/v1/forecast/'+this.darkskyKey+'/'+this.latitude+','+this.longitude;
-  var req = https.get({
-    host: 'api.darkskyapp.com',
-    port: 443,
-    path : path
-  }, function(res) {
-    res.setEncoding("utf8");
-    res.data = '';
-    res.on('data', function(d) { res.data += d; });
-    res.on('end', function() { this.parseRainForecast(res.data);}.bind(this));
-  }.bind(this)).on('error', function(e) {
-    console.log("Darksky: " + e);
-  });
-  req.on('error', function(e) {
-    console.log('Darksky: ' + e.message);
-  });
-
-  req.end();
+  this.darksky.forecast(this.latitude, this.longitude,
+    this.parseRainForecast.bind(this) ,
+    function(err) {console.error(err);});
 }
 
-Weather.prototype.parseRainForecast = function(data) {
+Weather.prototype.parseRainForecast = function(err, data) {
   if (!data) return null;
-  try {
-    data = JSON.parse(data);
-    var nextCheck = data["checkTimeout"];
-    nextCheck = Math.min(nextCheck, 1800);
-    setTimeout(this.fetchRainForecast.bind(this), nextCheck * 1000);
-    this.emit("StateEvent", {weather:data});    
-  } catch(e) {
-    console.log("Darksky: Error parsing:" + e);
-  }
+  data = data.toString();
+  data = JSON.parse(data);
+  var nextCheck = data["checkTimeout"];
+  nextCheck = Math.min(nextCheck, 1800);
+  setTimeout(this.fetchRainForecast.bind(this), nextCheck * 1000);
+  this.emit("StateEvent", {weather:data});
 }
 
 Weather.prototype.calculateSunEvents = function() {
@@ -70,7 +54,7 @@ Weather.prototype.calculateSunEvents = function() {
     setDateTimeout(this.processSunEvent.bind(this, attrname), times[attrname]);
   }
 
-  if (this.debug) console.log("* Weather: Sun events: " + logstring)
+  console.log("* Sun events calculated: " + logstring)
 
   // recalculate tomorrow at midnight;
   var tomorrow = new Date();

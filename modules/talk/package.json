@@ -1,0 +1,4 @@
+{ 
+  "name" : "Talk",
+  "main" : "./talk.js"
+}

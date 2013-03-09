@@ -17,9 +17,9 @@ Spotify.prototype.exec = function(command, params) {
   if (command == "Reconnect") {
     this.reconnect();
   } else if (command == "Listen") {
-    this.listenTo(params.query);
+    this.listenTo(params.query, params.context);
   } else {
-    this.bridge.sendEvent("Spotify." + command);
+    this.bridge.exec("Spotify." + command);
   }
 };
 
@@ -43,14 +43,22 @@ Spotify.prototype.searchByType = function(type, query, callback) {
   }.bind(this))
 }
 
+Spotify.prototype.playArtistByURI = function(uri) {
+
+
+}
+
+
 // Search artists and tracks to find the best match for a request
-Spotify.prototype.listenTo = function(query) {
+Spotify.prototype.listenTo = function(query, context) {
   console.log("Searching for: " + query);
-  this.bridge.sendEvent("Say:playing " + query.split(" by ").join(". by ") +  "\n");
+  if (!query) return;
+  this.bridge.exec("Say", {string : "playing " + query.split(" by ").join(". by ") +  "\n"});
   query = query.split(" by ").join(" ");
   this.searchByType("artist", query, function (artists) {
     if (artists && artists.length && artists[0] && artists[0].popularity > 0.2) {
-      return this.playInContext(artists[0]['$']['href']);
+      return this.playArtist(artists[0]['$']['href']);
+      return this.playInContext(artists[0]['$']['href'], null, context);
     }
     console.log("no artist matches");
     this.searchByType("track", query, function (tracks) {
@@ -58,15 +66,15 @@ Spotify.prototype.listenTo = function(query) {
         var track = tracks[0]['$']['href'];
         var album = tracks[0]['album'][0]['$']['href'];
         console.log(album);
-        return this.playInContext(track, album);
+        return this.playInContext(track, album, context);
       }
       console.log("no track matches");
     }.bind(this));
   }.bind(this)); 
 }
 
-Spotify.prototype.playInContext = function(track, context) {
-  this.bridge.sendEvent("Spotify.ListenTo:" + track + (context ? "/" + context : ""));
+Spotify.prototype.playInContext = function(track, container, context) {
+  this.bridge.exec("Spotify.ListenTo", {string : track, container : container, context : context});
 }
 
 exports.Spotify = Spotify;

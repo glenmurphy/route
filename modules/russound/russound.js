@@ -9,6 +9,7 @@ function Russound(data) {
   this.connect();
   this.callbackStack = [];
   this.status = {};
+  this.debug = data.debug;
 };
 util.inherits(Russound, EventEmitter);
 
@@ -16,17 +17,18 @@ Russound.prototype.exec = function(command, params) {
   var event = command;
   var controller = params.controller || "1"
   var zone = params.zone || this.zoneNames[params.zoneName];
+
   var eventText = "EVENT C[" + controller + "].Z[" + zone + "]!" + event + " " + params.data1 + " " + (params.data2 || "")
   this.sendEvent(null, zone, event, params.data1, params.data2);
   console.log("*  Russound Executing: " + eventText);
 };
 
-Russound.prototype.getVolume = function(context, zone) {
-  return this.status["C["+context+"].Z["+zone+"].volume"];
+Russound.prototype.getVolume = function(controller, zone) {
+  return this.status["C["+ (controller || 1) +"].Z["+zone+"].volume"];
 }
 
-Russound.prototype.setVolume = function(context, zone, value) {
-  this.sendEvent(context, zone, "SetVolume", value);
+Russound.prototype.setVolume = function(controller, zone, value) {
+  this.sendEvent(controller, zone, "KeyPress", "Volume", value);
 }
 
 Russound.prototype.log = function(data) {
@@ -79,7 +81,7 @@ Russound.prototype.sendEvent = function(controller, zone, event, data1, data2) {
   var command = "EVENT C[" + (controller || 1) + "].Z[" + zone + "]!" + event;
   if (data1) command += " " + data1;
   if (data2) command += " " + data2;
-
+  if (this.debug) console.log("Russound:", command);
   this.sendCommand(command);
 }
 
@@ -91,19 +93,19 @@ Russound.prototype.parseResponse = function(data) {
   data = JSON.parse("{" + data + "}");
   return data;
 }
-
+var notificationkeys = ["System.status"];
 Russound.prototype.handleNotification = function(data) {
   var changes = {};
   for (var key in data) {
     changes["russound." + key] = data[key]; 
     this.status[key] = data[key];
+    if (this.debug) console.log("Russound", key, data[key])
   }
   this.emit("StateEvent", changes);
 }
 
 Russound.prototype.handleData = function(data) {
   if (!data.endsWith("\r\n")) return;
-
   var lines = data.split("\r\n");
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
@@ -128,9 +130,9 @@ Russound.prototype.handleData = function(data) {
 };
 
 Russound.prototype.handleStatus = function (status) {
-console.log("Status", status);
-
+  //console.log("Status", status);
 }
+
 Russound.prototype.updateSources = function() {
   var keys = [];
   for (var i = 1; i < 9; i++) {
@@ -158,6 +160,14 @@ Russound.prototype.connect = function() {
   this.client.on('end', this.handleEnd.bind(this));
   this.client.on('error', this.handleError.bind(this));
 };
+
+Russound.prototype.reconnect = function() {
+  if (this.reconnecting_) return;
+
+  this.reconnecting_ = true;
+  setTimeout(this.connect.bind(this), 10000);
+}
+
 Russound.prototype.watchForChanges = function() {
   this.sendCommand("WATCH System ON");
   for (var i = 1; i < 9; i++) {
@@ -167,11 +177,17 @@ Russound.prototype.watchForChanges = function() {
    this.sendCommand("WATCH S["+ i +"] ON");
   };
 }
+Russound.prototype.keepAlive = function() {
+  this.sendCommand("");
+}
 
 Russound.prototype.handleConnected = function() {
-  this.emit("DeviceEvent", "Russound.Connected");
+  this.emit("DeviceEvent", "Connected");
   this.emit("StateEvent", {russoundConnected:true});
   this.watchForChanges();
+  if (!this.keepAliveInterval) {
+    this.keepAliveInterval = setInterval(this.keepAlive.bind(this), 10000);
+  }
 };
 
 Russound.prototype.handleEnd = function() {
@@ -180,8 +196,8 @@ Russound.prototype.handleEnd = function() {
 };
 
 Russound.prototype.handleError = function(e) {
-  //this.emit("DeviceEvent", "Error");
-  console.log("! Russound Error: " + e + "");
+  console.log("! Russound\t" + e + "");
+  this.reconnect();
 };
 
 

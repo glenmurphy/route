@@ -13,6 +13,8 @@ function Weather(data) {
 };
 util.inherits(Weather, EventEmitter);
 
+Weather.TIMEARRAY = ["NightEnd", "NauticalDawn", "Dawn", "Sunrise", "SunriseEnd", "GoldenHourEnd", "SolarNoon", "GoldenHour", "SunsetStart", "Sunset", "Dusk", "NauticalDusk", "Night"];
+
 function setDateTimeout(fn, d){
     var t = d.getTime() - (new Date()).getTime();
     if (t > 0) return setTimeout(fn, t);
@@ -54,18 +56,20 @@ Weather.prototype.parseRainForecast = function(data) {
 
 Weather.prototype.calculateSunEvents = function() {
   var times = SunCalc.getTimes(new Date(), this.latitude, this.longitude);
+  times = this.normalizeStrings(times);
   var position = SunCalc.getPosition(new Date(), this.latitude, this.longitude);
-  this.emit("StateEvent", {sunEvents:times});
-  this.emit("StateEvent", {sunPosition:position});
+  this.emit("StateEvent", {SunEvents:times});
+  this.emit("StateEvent", {SunPosition:position});
+
+  this.emit("StateEvent", {SunEvent:this.getSunEvent(new Date(), times)});
 
   function pad(str, char, len) {
     return str + new Array(Math.max(len - str.length, 0)).join(char);
   }
 
-  var timeArray = ["nightEnd", "nauticalDawn", "dawn", "sunrise", "sunriseEnd", "goldenHourEnd", "goldenHour", "sunsetStart", "sunset", "dusk", "nauticalDusk", "night"];
   var logstring = "";
-  for (var i = 0; i < timeArray.length; i++) {
-    var attrname = timeArray[i];
+  for (var i = 0; i < Weather.TIMEARRAY.length; i++) {
+    var attrname = Weather.TIMEARRAY[i];
     logstring += times[attrname].getHours() + ":" + times[attrname].getMinutes() + " " + attrname + ", ";
     setDateTimeout(this.processSunEvent.bind(this, attrname), times[attrname]);
   }
@@ -81,8 +85,32 @@ Weather.prototype.calculateSunEvents = function() {
   setDateTimeout(this.calculateSunEvents.bind(this), tomorrow);
 }
 
+Weather.prototype.getSunEvent = function (date, sunEvents) {
+  var sunEvent; 
+
+  for (var i = 0; i < Weather.TIMEARRAY.length; i++) {
+    var attrname = Weather.TIMEARRAY[i];
+
+    if (sunEvents[attrname] < date) {
+      sunEvent = attrname;
+    }
+  }
+
+  return sunEvent;
+}
+
+Weather.prototype.normalizeStrings = function(obj) {
+  var newObj = {};
+  for (i in obj) {
+    newObj[i.charAt(0).toUpperCase() + i.slice(1)] = obj[i];
+  }
+
+  return newObj;
+}
+
 Weather.prototype.processSunEvent = function (type) {
   this.emit("DeviceEvent", type);
+  this.emit("StateEvent", {SunEvent:type});
 }
 
 Weather.prototype.exec = function(command, data) {

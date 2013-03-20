@@ -19,8 +19,8 @@ Russound.prototype.exec = function(command, params) {
   var zone = params.zone || this.zoneNames[params.zoneName];
 
   var eventText = "EVENT C[" + controller + "].Z[" + zone + "]!" + event + " " + params.data1 + " " + (params.data2 || "")
-  this.sendEvent(null, zone, event, params.data1, params.data2);
   console.log("*  Russound Executing: " + eventText);
+  this.sendEvent(null, zone, event, params.data1, params.data2);
 };
 
 Russound.prototype.getVolume = function(controller, zone) {
@@ -47,6 +47,7 @@ Russound.prototype.wake = function(event) {
 }
 
 Russound.prototype.sendCommand = function(command, callback) {
+  if (this.debug) console.log("Russound >", command);
   this.client.write(command + "\r");
   this.callbackStack.push(callback);
 }
@@ -73,7 +74,14 @@ Russound.prototype.allOff = function(zone, source) {
 }
 
 Russound.prototype.setDND = function(zone, state) {
-  this.sendEvent(null, zone, "DoNotDisturb", state);
+  this.sendEvent(null, zone, "DoNotDisturb", state ? "ON" : "OFF");
+}
+
+Russound.prototype.setPageTarget = function(zone) {
+  for (var i = 1; i < 9; i++) {
+    this.setDND(i, i != zone);
+  }
+
 }
 
 
@@ -81,7 +89,6 @@ Russound.prototype.sendEvent = function(controller, zone, event, data1, data2) {
   var command = "EVENT C[" + (controller || 1) + "].Z[" + zone + "]!" + event;
   if (data1) command += " " + data1;
   if (data2) command += " " + data2;
-  if (this.debug) console.log("Russound:", command);
   this.sendCommand(command);
 }
 
@@ -105,6 +112,7 @@ Russound.prototype.handleNotification = function(data) {
 }
 
 Russound.prototype.handleData = function(data) {
+  if (this.debug) console.log("Russound <", data);
   if (!data.endsWith("\r\n")) return;
   var lines = data.split("\r\n");
   for (var i = 0; i < lines.length; i++) {

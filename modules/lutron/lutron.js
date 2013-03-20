@@ -105,13 +105,15 @@ Lutron.prototype.parseData = function(data) {
       console.log(data);
       break;      
     default:
-      if (command.length == 2) {
+      if (command.length >=2 && command.length <= 3) {
         var code = command.charAt(0);
         var key = code.toLowerCase();
         var pressed = (code != key);
-        var button = command.charAt(1);
+        var button = command.substring(1);
         var name = this.keypads[key];
         this.emit("DeviceEvent", name + "." + button + "." + (pressed ? "Press" : "Release"));
+      } else {
+        console.log("! Lutron unknown command:", command);
       }
       break;
   }

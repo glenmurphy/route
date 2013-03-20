@@ -31,11 +31,14 @@ Roku.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 Roku.prototype.searchRoku = function (query) {
-  this.launchChannel(18681);
+  this.sendEvent("HOME");
+  setTimeout(function(){
+    this.launchChannel(18681);
+  }.bind(this), 300);
   setTimeout(function(){
     this.sendText(query);
     this.sendEvent("Play");
-  }.bind(this), 2000);
+  }.bind(this), 3300);
 }
 Roku.prototype.launchChannel = function (channelID) {
   var request = http.request({
@@ -68,7 +71,7 @@ Roku.prototype.sendEvent = function(key) {
   var isFirstRequest = this.eventQueue.length == 0;
   this.eventQueue.push(key);
   if (isFirstRequest) {
-    setTimeout(this.sendNextEvent.bind(this),100);
+    setTimeout(this.sendNextEvent.bind(this),200);
   }
 }
 

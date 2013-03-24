@@ -22,7 +22,7 @@ function Voice(data) {
   this.route = data.route;
   this.port = data.port || 9001
   this.server = http.createServer(this.httpReq.bind(this)).listen(this.port);
-
+  this.lastEvent = null;
 };
 
 util.inherits(Voice, EventEmitter);
@@ -46,20 +46,20 @@ Voice.prototype.exec = function(command, params) {
   } else {
     switch (command) {
       case "StartedListening":
-        this.startedListening();
+        this.startedListening(params);
         break;
       case "StoppedListening":
-        this.stoppedListening();
+        this.stoppedListening(params);
         break;
     }
   }
 };
 
+
 Voice.prototype.handleVoiceInput = function(params) {
   var context = params.device ? this.devices[params.device] : null;
   delete params.device;
   params.context = context;
-
 
   if (params.action == "started"
       || params.string == this.guardPhrase) {
@@ -97,7 +97,15 @@ Voice.prototype.handleVoiceInput = function(params) {
     console.log("Voice." + string + ":", events);
     var event = events.shift();
     if (event) {
-      this.emit("DeviceEvent", string, resultParams);
+      if (this.lastEvent != string) { // Ignore repeated events within one second (handle multiple listeners)
+        this.emit("DeviceEvent", string, resultParams);
+        this.lastEvent = string;
+        if (this.lastEventTimeout) clearTimeout(this.lastEventTimeout);
+        this.lastEventTimeout = setTimeout(function (){ this.lastEvent = null }.bind(this), 1000);
+      } else {
+        console.log('ignoring duplicate event', string);
+      }
+
       break;
     }
   }
@@ -119,7 +127,7 @@ Voice.prototype.normalizeString = function(string) {
     }
   };
 
-    string = string.split(" the ").join(" ") // Ignore "the"
+  string = string.split(" the ").join(" ") // Ignore "the"
 
   if (this.synonyms && this.synonyms[string]) {
     string = this.synonyms[string] // Resolve a synonym

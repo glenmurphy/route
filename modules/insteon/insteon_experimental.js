@@ -100,7 +100,7 @@ Insteon.prototype.reconnect = function() {
 }
 
 Insteon.prototype.handleConnected = function() {
-  this.emit("DeviceEvent", "Insteon.Connected");
+  this.emit("DeviceEvent", "Connected");
   //this.sendStatusRequests();
 };
 
@@ -285,7 +285,7 @@ Insteon.prototype.handleError = function(e) {
 };
 
 Insteon.prototype.handleEnd = function() {
-  this.emit("DeviceEvent", "Insteon.Disconnected");
+  this.emit("DeviceEvent", "Disconnected");
   this.reconnect();
 };
 

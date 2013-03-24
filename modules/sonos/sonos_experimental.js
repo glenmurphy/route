@@ -48,7 +48,6 @@ function Sonos(data) {
 
   setTimeout(this.subscribeEvents.bind(this), 3000); // subscribe to events. Ideally this should be gated on UID fetching
   setInterval(this.subscribeEvents.bind(this), 59 * 60 * 1000); // Resubscribe every 59 minutes (1m overlap)
-  //this.queueURI("x-sonos-spotify:spotify%3atrack%3a0xFomAiFsu5qCnLM0hu0UR?sid=12&flags=0");
 }
 util.inherits(Sonos, EventEmitter);
 
@@ -60,6 +59,8 @@ Sonos.ENDPOINTS = {
 }
 
 Sonos.SERVICES = [
+  { "Service":"/MediaRenderer/RenderingControl/Event", "Description":"Render Control" },
+  { "Service":"/MediaRenderer/AVTransport/Event", "Description":"Transport Event" },
   //{ "Service": "/ZoneGroupTopology/Event", "Description": "Zone Group" }, // The service notifications we want to subscribe to
   //{ "Service": "/MediaRenderer/AVTransport/Event", "Description": "Transport Event" },
   //{ "Service": "/MediaServer/ContentDirectory/Event", "Description": "Content Directory" },
@@ -72,13 +73,10 @@ Sonos.SERVICES = [
   //{ "Service":"/ZoneGroupTopology/Event", "Description":"Zone Group" },
   //{ "Service":"/GroupManagement/Event", "Description":"Group Management" },
   //{ "Service":"/MediaServer/ContentDirectory/Event", "Description":"Content Directory" },
-  { "Service":"/MediaRenderer/RenderingControl/Event", "Description":"Render Control" },
   //{ "Service":"/MediaRenderer/ConnectionManager/Event", "Description":"Connection Manager" },
-  { "Service":"/MediaRenderer/AVTransport/Event", "Description":"Transport Event" }
 ];
 
 Sonos.prototype.exec = function(command, params) {
-  
   if (!component) {
     var commandComponents = command.split(".");
     var component = commandComponents.shift();
@@ -307,7 +305,6 @@ SonosComponent.prototype.queueContainerURI = function(uri, metadata, callback) {
 }
 
 
-
 SonosComponent.prototype.getVolume = function(callback) {
   this.callAction("RenderingControl", "GetVolume", {InstanceID : 0, Channel : "Master"}, this.deviceid,
     function (data) {
@@ -319,6 +316,7 @@ SonosComponent.prototype.getVolume = function(callback) {
       }
     });
 };
+
 SonosComponent.prototype.setVolume = function(volume) {
   this.volume = volume;
   this.callAction("RenderingControl", "SetVolume", {DesiredVolume : volume, InstanceID : 0, Channel : "Master"}, this.deviceid);
@@ -421,8 +419,6 @@ SonosComponent.prototype.handleReq = function(req, res) {
   }.bind(this));  
 };
 
-
-
 function xmlValue(element, key) {
   try {
     var value = element[key][0];
@@ -432,6 +428,7 @@ function xmlValue(element, key) {
     return undefined;
   }
 }
+
 SonosComponent.prototype.parseXMStreamContent = function (string) {
   var record = {};
   if (!string) return record;
@@ -518,8 +515,6 @@ SonosComponent.prototype.parseNotification = function (data) {
               break;
             default:
               //console.log(key, status[key]);
-
-            
           }
         }
         var state = {};
@@ -539,45 +534,10 @@ SonosComponent.prototype.parseNotification = function (data) {
 
 Sonos.prototype.metadataForInfo = function (info) {
 return '<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">'
-+ '<item>' //id="00030000spotify%3atrack%3a6ol4ZSifr7r3Lb2a9L5ZAB" parentID="00020064track:call me maybe" restricted="true"
-+ '<dc:title>Call Me Maybe</dc:title>'
++ '<item>'
++ '<dc:title>' + info.title+ '</dc:title>'
 + '<upnp:class>object.item.audioItem.musicTrack</upnp:class>'
-+ '<desc id="cdudn" nameSpace="urn:schemas-rinconnetworks-com:metadata-1-0/">SA_RINCON3079_nicholasjitkoff</desc>'
-+ '</item></DIDL-Lite>' ;
-
++ '</item></DIDL-Lite>';
 }
 
 exports.Sonos = Sonos;
-
-
-
-// Sonos.prototype.getTrackInfo = function() {
-  
-//   try {
-//     var action = '"urn:schemas-upnp-org:service:AVTransport:1#GetPositionInfo"';
-//     var body = '<u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:GetPositionInfo>';
-//     this.sendCommand(Sonos.TRANSPORT_ENDPOINT, action, body, function(data){
-//       var parser = new xml2js.Parser();
-//       parser.parseString(data, function (err, result) {
-//         var trackInfo = result["s:Envelope"]["s:Body"][0]["u:GetPositionInfoResponse"][0];
-//         var trackURL = trackInfo.TrackURI[0];
-//         console.log(trackInfo);
-//         parser.parseString(trackInfo.TrackMetaData, function (err, meta) {
-//           if (meta) {
-//             meta = meta["DIDL-Lite"]["item"][0];
-//             var playerInfo = {
-//               "Player State" : "Playing",
-//               Name : meta["dc:title"][0],
-//               Artist : meta["dc:creator"][0],
-//               Album : meta["upnp:album"][0],
-//               Artwork : url.resolve("http://" + this.host + ":" + Sonos.PORT, meta["upnp:albumArtURI"][0])
-//             };
-//             this.emit("StateEvent", {"sonos" : playerInfo});
-//           }
-//         }.bind(this));
-//       }.bind(this));
-//     }.bind(this));
-//   } catch (e) {
-//     console.log("Sonos parse error: " + e);
-//   }
-// };

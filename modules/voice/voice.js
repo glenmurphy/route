@@ -46,10 +46,10 @@ Voice.prototype.exec = function(command, params) {
   } else {
     switch (command) {
       case "StartedListening":
-        this.startedListening();
+        this.startedListening(params);
         break;
       case "StoppedListening":
-        this.stoppedListening();
+        this.stoppedListening(params);
         break;
     }
   }

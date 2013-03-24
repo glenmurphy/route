@@ -69,8 +69,8 @@ Russound.prototype.selectSource = function(zone, source) {
   this.sendEvent(null, zone, "SelectSource", source);
 }
 
-Russound.prototype.allOff = function(zone, source) {
-  this.sendEvent(null, zone, "AllOff", source);
+Russound.prototype.allOff = function() {
+  this.sendEvent(null, 1, "AllOff");
 }
 
 Russound.prototype.setDND = function(zone, state) {

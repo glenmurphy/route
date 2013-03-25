@@ -129,6 +129,60 @@ Sonos.prototype.getComponentByID = function(id) {
   return undefined;
 };
 
+// Notifications
+Sonos.prototype.subscribeEvents = function() {
+  for (var component in this.components) {
+    for (var service in Sonos.SERVICES) {
+      this.subscribeEvent(this.components[component].host, Sonos.SERVICES[service].Service, Sonos.SERVICES[service].Description);
+    }
+  };
+};
+
+Sonos.prototype.subscribeEvent = function(host, service, description) {
+  //curl -X SUBSCRIBE -H "CALLBACK: <http://10.0.0.8:3000/callback>" -H "NT: upnp:event" -H "TIMEOUT: Second -3600" http://10.0.0.2:1400/MediaRenderer/AVTransport/Event -vvvvvvvv
+
+  if (this.debug) console.log("* Sonos: Subscribed " + this.listenIp + " to " + host + " " + description);
+  var request = http.request({
+    host: host,
+    port: Sonos.PORT,
+    path: service,
+    method: "SUBSCRIBE",
+    headers : {
+      "Cache-Control":"no-cache",
+      "Pragma"       :"no-cache",
+      //"USER-AGENT"   :"Linux UPnP/1.0 Sonos/16.7-48310 (PCDCR)",
+      "CALLBACK"     :"<http://" + this.listenIp + ":" + this.listenPort + ">",
+      "NT"           :"upnp:event",
+      "TIMEOUT"      :"Second-3600"
+    }
+  });
+  request.on('error', function() {});
+  request.end();
+};
+
+Sonos.prototype.componentForIP = function(ip) {
+  var match =  Object.keys(this.components).filter(function(key) {return this.components[key].host === ip}.bind(this)).shift();
+  return this.components[match];
+};
+
+Sonos.prototype.handleReq = function(req, res) {
+  var address = req.connection.remoteAddress;
+  var component = this.componentForIP(address);
+  component.handleReq(req,res);
+};
+
+Sonos.prototype.metadataForInfo = function (info) {
+  return '<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">'
+  + '<item>'
+  + '<dc:title>' + info.title+ '</dc:title>'
+  + '<upnp:class>object.item.audioItem.musicTrack</upnp:class>'
+  + '</item></DIDL-Lite>';
+};
+
+
+/**
+ * 
+ */
 function SonosComponent(data) {
   this.name = data.name;
   this.host = data.host;
@@ -200,15 +254,15 @@ SonosComponent.prototype.playSpotifyTrack = function (url, metadata) {
   var uri = "x-sonos-spotify:" + encodeURIComponent(url) + "?sid=12&amp;flags=0"
   console.log(uri);
   this.playURI(uri, metadata);
-}
+};
 
 SonosComponent.prototype.isPlaying = function() {
   return this.player_state === "PLAYING";
-}
+};
 
 SonosComponent.prototype.playPause = function() {
   this.isPlaying() ? this.pause() : this.play();
-}
+};
 
 SonosComponent.prototype.play = function() {
   if (this.muteState) this.setMute(false);
@@ -216,11 +270,11 @@ SonosComponent.prototype.play = function() {
 };
 
 SonosComponent.prototype.pause = function() {
- this.callAction("AVTransport", "Pause", {InstanceID : 0}, this.deviceid);
+  this.callAction("AVTransport", "Pause", {InstanceID : 0}, this.deviceid);
 };
 
 SonosComponent.prototype.prevTrack = function() {
-   this.callAction("AVTransport", "Previous", {InstanceID : 0}, this.deviceid);
+  this.callAction("AVTransport", "Previous", {InstanceID : 0}, this.deviceid);
 };
 
 SonosComponent.prototype.nextTrack = function() {
@@ -232,12 +286,12 @@ SonosComponent.prototype.removeAllTracksFromQueue = function(callback) {
 };
 
 SonosComponent.prototype.addURIToQueue = function(uri, metadata, callback) {
-  this.callAction("AVTransport", "AddURIToQueue",
-    {InstanceID : 0,
-     EnqueuedURI: uri,
-     EnqueuedURIMetaData: encodeHTML(metadata || ""),
-     DesiredFirstTrackNumberEnqueued : 0,
-     EnqueueAsNext: 0
+  this.callAction("AVTransport", "AddURIToQueue", {
+      InstanceID : 0,
+      EnqueuedURI: uri,
+      EnqueuedURIMetaData: encodeHTML(metadata || ""),
+      DesiredFirstTrackNumberEnqueued : 0,
+      EnqueueAsNext: 0
     }, this.deviceid, callback);
 };
 
@@ -251,16 +305,16 @@ SonosComponent.prototype.setPlayMode = function(mode, callback) { // NORMAL, REP
 };
 
 SonosComponent.prototype.becomeStandalone = function () {
-    this.callAction("AVTransport", "BecomeCoordinatorOfStandaloneGroup", {InstanceID : 0}, this.deviceid);
-}
+  this.callAction("AVTransport", "BecomeCoordinatorOfStandaloneGroup", {InstanceID : 0}, this.deviceid);
+};
 
 SonosComponent.prototype.addGroupMember = function (newComponent) {
   newComponent.setCurrentURI("x-rincon:" + this.uid);
-}
+};
 
 SonosComponent.prototype.removeGroupMember = function (newComponent) {
   newComponent.becomeStandalone();
-}
+};
 
 SonosComponent.prototype.playFavorite = function(name) {
   for (var f in this.system.favorites) {
@@ -272,13 +326,7 @@ SonosComponent.prototype.playFavorite = function(name) {
     }
   }
   console.log("! Sonos: Favorite not found", name);
-}
-
-function encodeHTML(string) {
-    return string.replace(/&/g, '&amp;')
-               .replace(/</g, '&lt;')
-               .replace(/>/g, '&gt;');
-}
+};
 
 SonosComponent.prototype.setCurrentURI = function(uri, metadata, callback) {
   this.callAction("AVTransport", "SetAVTransportURI",
@@ -305,8 +353,7 @@ SonosComponent.prototype.queueContainerURI = function(uri, metadata, callback) {
       this.playQueue();
     }.bind(this));
   }.bind(this));
-}
-
+};
 
 SonosComponent.prototype.getVolume = function(callback) {
   this.callAction("RenderingControl", "GetVolume", {InstanceID : 0, Channel : "Master"}, this.deviceid,
@@ -367,49 +414,6 @@ SonosComponent.prototype.getFavorites = function(callback) {
     }.bind(this));
 };
 
-// Notifications
-
-Sonos.prototype.subscribeEvents = function() {
-  for (var component in this.components) {
-    for (var service in Sonos.SERVICES) {
-      this.subscribeEvent(this.components[component].host, Sonos.SERVICES[service].Service, Sonos.SERVICES[service].Description);
-    }
-  };
-};
-
-Sonos.prototype.subscribeEvent = function(host, service, description) {
-  //curl -X SUBSCRIBE -H "CALLBACK: <http://10.0.0.8:3000/callback>" -H "NT: upnp:event" -H "TIMEOUT: Second -3600" http://10.0.0.2:1400/MediaRenderer/AVTransport/Event -vvvvvvvv
-
-  if (this.debug) console.log("* Sonos: Subscribed " + this.listenIp + " to " + host + " " + description);
-  var request = http.request({
-    host: host,
-    port: Sonos.PORT,
-    path: service,
-    method: "SUBSCRIBE",
-    headers : {
-      "Cache-Control":"no-cache",
-      "Pragma"       :"no-cache",
-      //"USER-AGENT"   :"Linux UPnP/1.0 Sonos/16.7-48310 (PCDCR)",
-      "CALLBACK"     :"<http://" + this.listenIp + ":" + this.listenPort + ">",
-      "NT"           :"upnp:event",
-      "TIMEOUT"      :"Second-3600"
-    }
-  });
-  request.on('error', function() {});
-  request.end();
-};
-
-Sonos.prototype.componentForIP = function(ip) {
-  var match =  Object.keys(this.components).filter(function(key) {return this.components[key].host === ip}.bind(this)).shift();
-  return this.components[match];
-}
-
-Sonos.prototype.handleReq = function(req, res) {
-  var address = req.connection.remoteAddress;
-  var component = this.componentForIP(address);
-  component.handleReq(req,res);
-}
-
 SonosComponent.prototype.handleReq = function(req, res) {
   var data = '';
   req.on('data', function(chunk) {
@@ -425,21 +429,10 @@ SonosComponent.prototype.handleReq = function(req, res) {
   });
 };
 
-function xmlValue(element, key) {
-  try {
-    var value = element[key][0];
-    if (undefined == (value.substring)) value = undefined;
-    return value;
-  } catch (e) {
-    return undefined;
-  }
-}
-
 SonosComponent.prototype.parseXMStreamContent = function (string) {
   var record = {};
   if (!string) return record;
   var fields = string.split("|");
- //            'BR P|TYPE=SNG|TITLE The Night Out|ARTIST Martin Solveig' 
   for (var i = 0; i < fields.length; i++) {
     var namesplit = fields[i].indexOf(" ");
     record[fields[i].substring(0,namesplit).toLowerCase()] = fields[i].substring(namesplit);
@@ -448,30 +441,30 @@ SonosComponent.prototype.parseXMStreamContent = function (string) {
 }
 
 SonosComponent.prototype.parseMetadata = function (metadata, callback) {
-  var metaInfo = {};
   var parser = new xml2js.Parser();
   parser.parseString(metadata, function (err, result) {
-    if (result) {
-      var meta = result["DIDL-Lite"]["item"][0];
-      if (this.debug) console.log("metadata", meta);
-      var streamcontent = xmlValue(meta, "r:streamContent");
-      streamcontent = this.parseXMStreamContent(streamcontent);
-      metaInfo.Name =  streamcontent.title || xmlValue(meta, "dc:title");
-      metaInfo.Artist = streamcontent.artist || xmlValue(meta, "dc:creator");
-      metaInfo.Album = xmlValue(meta, "upnp:album");
-      if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.Artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
-      // TODO: send next-track info too
-      callback(metaInfo);
-    }
+    if (!result) return;
+
+    var metaInfo = {};
+    var meta = result["DIDL-Lite"]["item"][0];
+    if (this.debug) console.log("metadata", meta);
+    var streamcontent = xmlValue(meta, "r:streamContent");
+    streamcontent = this.parseXMStreamContent(streamcontent);
+    metaInfo.Name =  streamcontent.title || xmlValue(meta, "dc:title");
+    metaInfo.Artist = streamcontent.artist || xmlValue(meta, "dc:creator");
+    metaInfo.Album = xmlValue(meta, "upnp:album");
+    if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.Artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
+    
+    callback(metaInfo);
   }.bind(this));
 };
 
 SonosComponent.prototype.updatePlayingState = function(state) {
-  if (this.playingState != state) {
-    this.emit("DeviceEvent", this.name + (state == "PLAYING" ? ".Started" : ".Stopped"));
-    this.emit("StateEvent", this.name + ".PlayingState", { state : state });
-    this.playingState = state;
-  }
+  if (this.playingState == state) return;
+
+  this.emit("DeviceEvent", this.name + (state == "PLAYING" ? ".Started" : ".Stopped"));
+  this.emit("StateEvent", this.name + ".PlayingState", { state : state });
+  this.playingState = state;
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {
@@ -512,7 +505,6 @@ SonosComponent.prototype.parseNotification = function (data) {
                 delete this.coordinator;
                 playerInfo.GroupCoordinator = "";
               }
-
               break;
             case "CurrentTrackMetaData":
               this.parseMetadata(val, this.updateTrackInfo.bind(this));
@@ -533,29 +525,35 @@ SonosComponent.prototype.parseNotification = function (data) {
               break;
             default:
               //console.log(key, status[key]);
+              break;
           }
         }
         var state = {};
         for (var key in playerInfo) {
           state["sonos." + this.name + "." + key] = playerInfo[key];
         }
-        //console.log(state);
-
         this.emit("StateEvent", state);
       }.bind(this));
     }.bind(this));
   } catch (e) {
     console.log("Sonos: parse error" + e, e.stack);
   } 
+};
+
+function xmlValue(element, key) {
+  try {
+    var value = element[key][0];
+    if (undefined == (value.substring)) value = undefined;
+    return value;
+  } catch (e) {
+    return undefined;
+  }
 }
 
-
-Sonos.prototype.metadataForInfo = function (info) {
-return '<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">'
-+ '<item>'
-+ '<dc:title>' + info.title+ '</dc:title>'
-+ '<upnp:class>object.item.audioItem.musicTrack</upnp:class>'
-+ '</item></DIDL-Lite>';
+function encodeHTML(string) {
+  return string.replace(/&/g, '&amp;')
+               .replace(/</g, '&lt;')
+               .replace(/>/g, '&gt;');
 }
 
 exports.Sonos = Sonos;

@@ -46,14 +46,14 @@ function sendEvent(name) {
   LIVINGROOM<br />
   <div id="living-room-player"></div>
   <div id="living-dining-light"></div>
+  <div id="living-pendant-light"></div>
   <br />  <br />
   KITCHEN<br />
   &nbsp;&nbsp;<a href="#" onclick="return sendEvent('KitchenOn');">ON</a>
   <a href="#" onclick="return sendEvent('KitchenOff');">OFF</a>
   <br />  <br />
   OFFICE<br />
-  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('OfficeLightsOn');">LIGHTS ON</a>
-  <a href="#" onclick="return sendEvent('OfficeLightsOff');">OFF</a>
+  <div id="office-main-light"></div>
   <br /> <br />
   MASTERBED<br />
   <div id="master-bed-player"></div>
@@ -64,5 +64,8 @@ var socket = io.connect('http://localhost:8000');
 
 new Sonos("LivingRoom", socket, $("living-room-player"));
 new Sonos("MasterBed", socket, $("master-bed-player"));
-new Switch("LivingDiningLight", socket, $('living-dining-light'));
+new Switch("LivingDiningLight", "Dining", socket, $('living-dining-light'));
+new Switch("LivingPendantLight", "Pedant", socket, $('living-pendant-light'));
+
+new Switch("OfficeMainLight", "Office", socket, $('office-main-light'));
 </script>

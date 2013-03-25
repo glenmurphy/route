@@ -1,5 +1,6 @@
-function Switch(name, socket, parentNode) {
+function Switch(name, desc, socket, parentNode) {
   this.name = name;
+  this.desc = desc;
   this.socket = socket;
 
   this.socket.emit("getState", name);
@@ -14,25 +15,45 @@ function Switch(name, socket, parentNode) {
   }
 
   this.node = createElement("div", "switch", parentNode);
-  this.nodeOn = createElement("div", "switch-on", this.node, "On");
-  this.nodeName = createElement("div", "switch-name", this.node, name);
-  this.nodeOff = createElement("div", "switch-off", this.node, "Off");
+  this.nodeOn = createElement("div", "switch-on", this.node, "");
+  this.nodeName = createElement("div", "switch-name", this.node, this.desc);
+  this.nodeOff = createElement("div", "switch-off", this.node, "");
 
-  this.nodeOn.addEventListener("click", this.handleOn.bind(this));
-  this.nodeOff.addEventListener("click", this.handleOff.bind(this));
+  this.node.addEventListener("click", this.handleClick.bind(this));
 }
 
 Switch.CSS = " \
 .switch { \
   position:relative; \
-  width:50px; \
-  height:100px; \
-  background-color:#555; \
+  width:240px; \
+  height:50px; \
+  margin:5px; \
+  background-color:#333; \
   font-family: helvetica, arial, sans-serif; \
   font-size:12px; \
+  border-radius:4px; \
+  cursor:pointer; \
 } \
 .switch.on { \
-  background-color:red; \
+  background-color:#f7a03c; \
+} \
+.switch-on { \
+  position:absolute; \
+  top:0px; \
+  left:0px; \
+  width:100px; \
+} \
+.switch-name { \
+  position:absolute; \
+  top:16px; \
+  left:0px; \
+  width:240px; \
+  font-size:14px; \
+  color:white; \
+  text-align:center; \
+} \
+.switch.on .switch-name { \
+  color:black; \
 } \
 ";
 Switch.CSS_APPENDED = false;
@@ -41,18 +62,14 @@ Switch.prototype.handleBrightness = function(details) {
   console.log(details);
   var brightness = parseInt(details.brightness);
   if (isNaN(brightness)) return;
+  this.brightness = brightness;
   if (brightness > 10)
     this.node.classList.add("on");
   else
     this.node.classList.remove("on");
 };
 
-Switch.prototype.handleOn = function() {
-  console.log("emitting");
-  this.socket.emit("DeviceEvent", this.name + ".On");
-};
-
-Switch.prototype.handleOff = function() {
-  console.log("emitting");
-  this.socket.emit("DeviceEvent", this.name + ".Off");
+Switch.prototype.handleClick = function() {
+  var state = (this.brightness > 10) ? "Off" : "On";
+  this.socket.emit("DeviceEvent", [this.name, state].join("."));
 };

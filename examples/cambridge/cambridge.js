@@ -78,15 +78,16 @@ route.addEventMap({
     "Denon.Switch.Sonos"
   ],
   "Web.LivingRoom.Pause" : ["Sonos.LivingRoom.Pause"],
+  "Sonos.LivingRoom.TrackInfo" : "Web.LivingRoom.TrackInfo?name=$Name&album=$Album&artist=$Artist&artwork=$Artwork",
+  "Sonos.LivingRoom.PlayingState" : "Web.LivingRoom.PlayingState?state=$state",
+
   "Web.LivingDiningLight.On" : ["Lutron.LivingDiningLight.1.100"],
   "Web.LivingDiningLight.Off" : ["Lutron.LivingDiningLight.1.0"],
+  "Lutron.LivingDiningLight.*" : "Web.LivingDiningLight?brightness=$brightness",
 
   "Web.LivingPendantLight.On" : "Lutron.LivingPendantLight.1.100",
   "Web.LivingPendantLight.Off" : "Lutron.LivingPendantLight.1.0",
-  "Lutron.LivingDiningLight.*" : "Web.LivingDiningLight?brightness=$brightness",
-
-  "Sonos.LivingRoom.TrackInfo" : "Web.LivingRoom.TrackInfo?name=$Name&album=$Album&artist=$Artist&artwork=$Artwork",
-  "Sonos.LivingRoom.PlayingState" : "Web.LivingRoom.PlayingState?state=$state",
+  "Lutron.LivingPendantLight.*" : "Web.LivingPendantLight?brightness=$brightness",
 
   // Kitchen
   "Web.KitchenOn" : [
@@ -103,10 +104,11 @@ route.addEventMap({
   // Master Bedroom
   "Web.MasterBedPlay" : ["Sonos.MasterBed.Play"],
   "Web.MasterBedPause" : ["Sonos.MasterBed.Pause"],
-  "Sonos.MasterBed.TrackInfo" : "Web.MasterBedPlay.TrackInfo?name=$name&album=$album&artist=$artist&artwork=$artwork",
-  "Sonos.MasterBed.PlayingState" : "Web.MasterBedPlay.PlayingState?state=$state",
+  "Sonos.MasterBed.TrackInfo" : "Web.MasterBed.TrackInfo?name=$Name&album=$Album&artist=$Artist&artwork=$Artwork",
+  "Sonos.MasterBed.PlayingState" : "Web.MasterBed.PlayingState?state=$state",
 
   // Office
-  "Web.OfficeLightsOn" : ["Lutron.OfficeMainLight.1.100"],
-  "Web.OfficeLightsOff" : ["Lutron.OfficeMainLight.1.0"],
+  "Web.OfficeMainLight.On" : "Lutron.OfficeMainLight.1.100",
+  "Web.OfficeMainLight.Off" : "Lutron.OfficeMainLight.1.0",
+  "Lutron.OfficeMainLight.*" : "Web.OfficeMainLight?brightness=$brightness",
 });

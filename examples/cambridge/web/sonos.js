@@ -73,7 +73,7 @@ Sonos.CSS = " \
   top: 6px; \
   left: 10px; \
   font-size:14px; \
-  width:160px; \
+  width:220px; \
   height:30px; \
   overflow:hidden; \
   text-overflow:ellipsis; \
@@ -83,6 +83,10 @@ Sonos.CSS = " \
   position: absolute; \
   top: 27px; \
   left: 10px; \
+  width:220px; \
+  overflow:hidden; \
+  text-overflow:ellipsis; \
+  white-space:nowrap; \
 } \
 .sonos-album { \
   position: absolute; \

@@ -105,7 +105,17 @@ LutronRadioRA2.prototype.reconnect = function() {
 
   this.reconnecting_ = true;
   setTimeout(this.connect.bind(this), 1000);
-}
+};
+
+LutronRadioRA2.prototype.handleConnected = function() {
+  console.log("Lutron RadioRA2 Connected");
+
+  // Get the status of all the devices we know about.
+  for (var name in this.devices) {
+    var id = this.devices[name];
+    this.send("?OUTPUT," + id);
+  }
+};
 
 LutronRadioRA2.prototype.handleData = function(data) {
   data += "";
@@ -115,6 +125,7 @@ LutronRadioRA2.prototype.handleData = function(data) {
       break;
     case "password:":
       this.send(this.password);
+      this.handleConnected();
       break;
     default:
       this.parseData(data.split("\r\n").shift());

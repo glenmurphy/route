@@ -1,0 +1,4 @@
+{ 
+  "name" : "Lutron RadioRA2",
+  "main" : "./lutron-radiora2.js"
+}

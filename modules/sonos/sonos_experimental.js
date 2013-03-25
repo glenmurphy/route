@@ -8,21 +8,25 @@ var os = require('os');
 // see http://IP:1400/status/upnp for status
 // subscription logs at http://IP:1400/status/opt/log/anacapa.trace
 
-function SonosComponent(data) {
-  this.name = data.name;
-  this.host = data.host;
-  this.volume = 0;
-  this.deviceid = 1;
-  this.system = data.system;
-  this.getUID();
-}
-util.inherits(SonosComponent, EventEmitter);
-
-
 /* SONOS ------------------------------------------------------------------- */
 function Sonos(data) {
-  this.server = http.createServer(this.handleReq.bind(this)).listen(9000);
-  this.debug = data.debug;
+  var ips = [];
+
+  var ifaces = os.networkInterfaces();
+  for (var dev in ifaces) {
+    var alias = 0;
+    for (var i in ifaces[dev]) {
+      if (ifaces[dev][i].family == 'IPv4' && 
+          ifaces[dev][i].address && 
+          ifaces[dev][i].address != "127.0.0.1")
+        ips.push(ifaces[dev][i].address);
+    }
+  }
+  this.listenIp = data.listenIp || ips[0];
+  this.listenPort = data.listenPort || 9000;
+
+  this.server = http.createServer(this.handleReq.bind(this)).listen(this.listenPort);
+  this.debug = true;//data.debug;
 
   this.components = data.components || { "Main" : this.host }; // Create a component list from a single host if needed
   this.defaultComponent = data.defaultComponent || "Main";
@@ -33,14 +37,6 @@ function Sonos(data) {
     newComponent.on("StateEvent", this.emit.bind(this, "StateEvent"));
   }
 
-  var ip = null;
-  if (os.networkInterfaces().en0) {
-    os.networkInterfaces().en0.forEach(function(details){
-      if (details.family=='IPv4') { ip = details.address}
-    });
-  }
-  this.listen_ip = data.listen_ip || ip;
-  this.listen_port = data.listen_port || 9000;
   for (var first in this.components) {
     this.components[first].getFavorites();
     break; // only run once
@@ -125,15 +121,23 @@ Sonos.prototype.exec = function(command, params) {
   }
 };
 
-
 Sonos.prototype.getComponentByID = function(id) {
   for (var c in this.components) {
     c = this.components[c];
     if (c.uid == id) return c;
   }
   return undefined;
-}
+};
 
+function SonosComponent(data) {
+  this.name = data.name;
+  this.host = data.host;
+  this.volume = 0;
+  this.deviceid = 1;
+  this.system = data.system;
+  this.getUID();
+}
+util.inherits(SonosComponent, EventEmitter);
 
 SonosComponent.prototype.getUID = function() {
   var req = http.get({hostname: this.host, port: Sonos.PORT, path: '/status/zp'}, function(res) {
@@ -148,8 +152,7 @@ SonosComponent.prototype.getUID = function() {
   req.on('error', function(e) {
     console.log('! Sonos', this.name, e.message);
   }.bind(this));
-}
-
+};
 
 SonosComponent.prototype.callAction = function(service, action, arguments, device, callback) {
   var xmlns = "urn:schemas-upnp-org:service:" + service + ':' + device;
@@ -162,7 +165,7 @@ SonosComponent.prototype.callAction = function(service, action, arguments, devic
 
   var endpoint = Sonos.ENDPOINTS[service];
   this.sendCommand(endpoint, xmlns + '#' + action, body, callback);
-}
+};
 
 SonosComponent.prototype.sendCommand = function(endpoint, action, body, callback) { 
   var data = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>' + body + '</s:Body></s:Envelope>';
@@ -377,7 +380,7 @@ Sonos.prototype.subscribeEvents = function() {
 Sonos.prototype.subscribeEvent = function(host, service, description) {
   //curl -X SUBSCRIBE -H "CALLBACK: <http://10.0.0.8:3000/callback>" -H "NT: upnp:event" -H "TIMEOUT: Second -3600" http://10.0.0.2:1400/MediaRenderer/AVTransport/Event -vvvvvvvv
 
-  if (this.debug) console.log("* Sonos: Subscribed " + this.listen_ip + " to " + host + " " + description);
+  if (this.debug) console.log("* Sonos: Subscribed " + this.listenIp + " to " + host + " " + description);
   var request = http.request({
     host: host,
     port: Sonos.PORT,
@@ -387,7 +390,7 @@ Sonos.prototype.subscribeEvent = function(host, service, description) {
       "Cache-Control":"no-cache",
       "Pragma"       :"no-cache",
       //"USER-AGENT"   :"Linux UPnP/1.0 Sonos/16.7-48310 (PCDCR)",
-      "CALLBACK"     :"<http://" + this.listen_ip + ":" + this.listen_port + ">",
+      "CALLBACK"     :"<http://" + this.listenIp + ":" + this.listenPort + ">",
       "NT"           :"upnp:event",
       "TIMEOUT"      :"Second-3600"
     }
@@ -408,15 +411,18 @@ Sonos.prototype.handleReq = function(req, res) {
 }
 
 SonosComponent.prototype.handleReq = function(req, res) {
-  var info = url.parse(req.url, true);
-  res.writeHead(200);
-  res.end();
-
   var data = '';
-  req.on('data', function(chunk) { data += chunk; });
+  req.on('data', function(chunk) {
+    data += chunk;
+  });
   req.on('end', function() {
     this.parseNotification(data);
-  }.bind(this));  
+    res.writeHead(200);
+    res.end();
+  }.bind(this));
+  req.on('readable', function(waa) {
+    req.read();
+  });
 };
 
 function xmlValue(element, key) {
@@ -441,7 +447,7 @@ SonosComponent.prototype.parseXMStreamContent = function (string) {
   return record;
 }
 
-SonosComponent.prototype.parseMetadata = function (metadata) {
+SonosComponent.prototype.parseMetadata = function (metadata, callback) {
   var metaInfo = {};
   var parser = new xml2js.Parser();
   parser.parseString(metadata, function (err, result) {
@@ -455,15 +461,33 @@ SonosComponent.prototype.parseMetadata = function (metadata) {
       metaInfo.Album = xmlValue(meta, "upnp:album");
       if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.Artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
       // TODO: send next-track info too
+      callback(metaInfo);
     }
   }.bind(this));
-  return metaInfo;
-}
+};
+
+SonosComponent.prototype.updatePlayingState = function(state) {
+  if (this.playingState != state) {
+    this.emit("DeviceEvent", this.name + (state == "PLAYING" ? ".Started" : ".Stopped"));
+    this.emit("StateEvent", this.name + ".PlayingState", { state : state });
+    this.playingState = state;
+  }
+};
+
+SonosComponent.prototype.updateTrackInfo = function(details) {
+  this.emit("StateEvent", this.name + ".TrackInfo", details);
+};
+
+SonosComponent.prototype.updateNextTrackInfo = function(details) {
+  this.emit("StateEvent", this.name + ".NextTrackInfo", details);
+};
 
 SonosComponent.prototype.parseNotification = function (data) {
   try {
     var parser = new xml2js.Parser();
     parser.parseString(data, function (err, result) {
+      if (!result) return;
+
       var eventInfo = result["e:propertyset"]["e:property"][0].LastChange[0];
       parser.parseString(eventInfo, function (err, result) {
         var playerInfo = {};
@@ -473,14 +497,10 @@ SonosComponent.prototype.parseNotification = function (data) {
           try {
             var val = status[key][0].$.val;
           } catch (e) {}
+
           switch (key) {
             case "TransportState":
-              var playState = this.player_state;
-              playerInfo["Player State"] = val;
-              if (undefined != playState && playState != val) {
-                this.emit("DeviceEvent", this.name + (val == "PLAYING" ? ".Started" : ".Stopped"));
-              }
-              this.player_state = val;
+              this.updatePlayingState(val);
               break;
             case "CurrentTrackURI":
               playerInfo.TrackURI = val;
@@ -495,15 +515,13 @@ SonosComponent.prototype.parseNotification = function (data) {
 
               break;
             case "CurrentTrackMetaData":
-              var metaInfo = this.parseMetadata(val);
-              playerInfo.TrackMetadata = metaInfo;
+              this.parseMetadata(val, this.updateTrackInfo.bind(this));
               break;
             case "r:NextTrackURI":
               playerInfo.NextTrackURI = val;
               break;
             case "r:NextTrackMetaData":
-              var metaInfo = this.parseMetadata(val);
-              playerInfo.NextTrackMetadata = metaInfo;
+              this.parseMetadata(val, this.updateNextTrackInfo.bind(this));
               break;
             case "Mute":
               var muteState = this.muteState;

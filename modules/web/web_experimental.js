@@ -58,20 +58,20 @@ Web.prototype.handleEvent = function(info) {
 }
 
 Web.prototype.handleSocketConnection = function(socket) {
-  console.log('i Web client connected');
   this.clients.push(socket);
   socket.emit('state', this.state.allValues());
   socket.on('message', this.handleSocketMessage.bind(this));
   socket.on('error', this.handleSocketError.bind(this));
   socket.on('disconnect', this.handleSocketClose.bind(this, socket));
 };
+
 Web.prototype.handleSocketError = function(socket) {
-console.log("! Web socket error", socket);
-}
+  console.log("! Web socket error", socket);
+};
 
 Web.prototype.handleSocketMessage = function(message) {
   this.handleEvent(url.parse(message, true));
-}
+};
 
 Web.prototype.handleSocketClose = function(socket) {
   console.log('i Web client disconnected');
@@ -80,7 +80,7 @@ Web.prototype.handleSocketClose = function(socket) {
       this.clients.splice(i, 1);
     }
   }
-}
+};
 
 //
 // State Changes
@@ -93,7 +93,7 @@ Web.prototype.setStateObject = function(object) {
 
 Web.prototype.stateChanged = function(newState) {
   for (var i=0; i < this.clients.length; i++) {
-      this.clients[i].emit('state', newState);
+    this.clients[i].emit('state', newState);
   }
 };
 

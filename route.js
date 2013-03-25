@@ -1,7 +1,9 @@
 var url = require('url');
+var EventEmitter = require('events').EventEmitter;
 
 function Route() {
   this.devices = {};
+  this.state = {};
   this.event_map = {};
 }
 
@@ -14,7 +16,33 @@ Route.prototype.addDevice = function(data) {
   var obj = new data.type(data.init);
   this.devices[data.name] = obj;
   obj.on("DeviceEvent", this.handleEvent.bind(this, data.name));
+  obj.on("StateEvent", this.handleStateEvent.bind(this, data.name));
   return obj;
+};
+
+Route.prototype.isStateUpdated = function(name, params) {
+  if (!(name in this.state))
+    return true;
+
+  if (typeof params == "string" || typeof params == "boolean") {
+    if (this.state[name] != params)
+      return true;
+  }
+  
+  for (var key in params) {
+    if (this.state[name][key] != params[key])
+      return true;
+  }
+  return false;
+};
+
+Route.prototype.handleStateEvent = function(device_name, event, params) {
+  var name = device_name + '.' + event;
+  
+  if (this.isStateUpdated(name, params)) {
+    this.state[name] = params;
+    this.handleEvent(device_name, event, params);
+  }
 };
 
 Route.prototype.handleEvent = function(device_name, event, params) {
@@ -26,7 +54,7 @@ Route.prototype.handleEvent = function(device_name, event, params) {
   function pad(str, char, len) {
     return str + new Array(Math.max(len - str.length, 0)).join(char);
   }
-  console.log("\n" + pad("-- Event: " + event_name + (JSON.stringify(params) || "") + ", " + date_string + " ", "-", "70"));
+  console.log("\n" + pad("-- Event: " + event_name + ":" + (JSON.stringify(params) || "") + ", " + date_string + " ", "-", "70"));
 
   var matchingEvents = this.allEventsMatchingName(event_name);
 
@@ -48,7 +76,7 @@ Route.prototype.allEventsMatchingName = function(name) {
     matches.push(event);
   }
   return matches;
-}
+};
 
 /**
  * Takes an array of commands, and executes them. Commands can be

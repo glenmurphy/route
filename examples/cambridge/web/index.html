@@ -1,0 +1,67 @@
+<meta name="viewport" content="width=640, height=device-height, initial-scale=0.5, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<!--<link rel="apple-touch-startup-image" href="title.png" />-->
+<title>Cambridge</title>
+<style>
+* {
+  -webkit-touch-callout: none;
+  -webkit-text-size-adjust: none;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  -webkit-user-select: none;
+}
+
+body {
+  background-color:#222222;
+  font-family:helvetica, arial, sans-serif;
+  font-size:32px;
+  color:#999;
+}
+p {
+  margin:0;
+}
+a {
+  color:#fff;
+  text-decoration:none;
+}
+a:hover {
+  background-color:#333;
+}
+a:active {
+  background-color:#f00;
+}
+</style>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+function sendEvent(name) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/event/" + name, true);
+  xhr.send(null);
+  return false;
+}
+</script>
+<script src="functions.js"></script>
+<script src="sonos.js"></script>
+<body>
+  LIVINGROOM<br />
+  <div id="living-room-player"></div>
+  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('DiningLightsOn');">DINING ON</a>
+  <a href="#" onclick="return sendEvent('DiningLightsOff');">OFF</a>
+  <br />  <br />
+  KITCHEN<br />
+  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('KitchenOn');">ON</a>
+  <a href="#" onclick="return sendEvent('KitchenOff');">OFF</a>
+  <br />  <br />
+  OFFICE<br />
+  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('OfficeLightsOn');">LIGHTS ON</a>
+  <a href="#" onclick="return sendEvent('OfficeLightsOff');">OFF</a>
+  <br /> <br />
+  MASTERBED<br />
+  <div id="master-bed-player"></div>
+  <br />  <br />
+</body>
+<script>
+var socket = io.connect('http://localhost:8000');
+
+new Sonos("LivingRoom", socket, $("living-room-player"));
+new Sonos("MasterBed", socket, $("master-bed-player"));
+</script>

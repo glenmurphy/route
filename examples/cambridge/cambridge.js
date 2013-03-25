@@ -78,8 +78,13 @@ route.addEventMap({
     "Denon.Switch.Sonos"
   ],
   "Web.LivingRoom.Pause" : ["Sonos.LivingRoom.Pause"],
-  "Web.DiningLightsOn" : ["Lutron.LivingDiningLight.1.100"],
-  "Web.DiningLightsOff" : ["Lutron.LivingDiningLight.1.0"],
+  "Web.LivingDiningLight.On" : ["Lutron.LivingDiningLight.1.100"],
+  "Web.LivingDiningLight.Off" : ["Lutron.LivingDiningLight.1.0"],
+
+  "Web.LivingPendantLight.On" : "Lutron.LivingPendantLight.1.100",
+  "Web.LivingPendantLight.Off" : "Lutron.LivingPendantLight.1.0",
+  "Lutron.LivingDiningLight.*" : "Web.LivingDiningLight?brightness=$brightness",
+
   "Sonos.LivingRoom.TrackInfo" : "Web.LivingRoom.TrackInfo?name=$Name&album=$Album&artist=$Artist&artwork=$Artwork",
   "Sonos.LivingRoom.PlayingState" : "Web.LivingRoom.PlayingState?state=$state",
 

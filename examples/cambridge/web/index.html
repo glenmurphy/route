@@ -41,11 +41,11 @@ function sendEvent(name) {
 </script>
 <script src="functions.js"></script>
 <script src="sonos.js"></script>
+<script src="switch.js"></script>
 <body>
   LIVINGROOM<br />
   <div id="living-room-player"></div>
-  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('DiningLightsOn');">DINING ON</a>
-  <a href="#" onclick="return sendEvent('DiningLightsOff');">OFF</a>
+  <div id="living-dining-light"></div>
   <br />  <br />
   KITCHEN<br />
   &nbsp;&nbsp;<a href="#" onclick="return sendEvent('KitchenOn');">ON</a>
@@ -64,4 +64,5 @@ var socket = io.connect('http://localhost:8000');
 
 new Sonos("LivingRoom", socket, $("living-room-player"));
 new Sonos("MasterBed", socket, $("master-bed-player"));
+new Switch("LivingDiningLight", socket, $('living-dining-light'));
 </script>

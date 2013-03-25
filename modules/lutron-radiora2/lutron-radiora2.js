@@ -70,7 +70,10 @@ LutronRadioRA2.prototype.parseData = function(data) {
 
   switch (command) {
     case "~OUTPUT":
-      this.emit("DeviceEvent", eventString);
+      var details = {};
+      if (componentId == "1" && fields[0])
+        details.brightness = fields[0];
+      this.emit("DeviceEvent", eventString, details);
       break;
     case "~DEVICE":
       this.emit("DeviceEvent", eventString);

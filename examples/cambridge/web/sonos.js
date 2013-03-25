@@ -1,6 +1,5 @@
 function Sonos(name, socket, parentNode) {
   this.name = name;
-  console.log("new Sonos: " + name);
   this.socket = socket;
   this.state = "PAUSED";
   // Get current state
@@ -19,7 +18,7 @@ function Sonos(name, socket, parentNode) {
     Sonos.CSS_APPENDED = true;
   }
 
-  this.node = createElement("div", "sonos");
+  this.node = createElement("div", "sonos", parentNode);
 
   this.nodeArt = createElement("div", "sonos-art", this.node, "");
   
@@ -30,8 +29,6 @@ function Sonos(name, socket, parentNode) {
   this.nodePlay = createElement("div", "sonos-play", this.nodeControls, "");
 
   this.node.addEventListener("click", this.handlePlay.bind(this));
-
-  parentNode.appendChild(this.node);
 };
 
 Sonos.CSS = " \

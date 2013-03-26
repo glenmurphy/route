@@ -2,5 +2,6 @@
   "indent" : 2,
   "es5" : true,
   "sub" : true,
-  "node": true
+  "node": true,
+  "laxbreak" : true
 }

@@ -15,10 +15,10 @@ function Insteon(data) {
   this.history = {};
 
   // Custom commands (name : insteon command)
-  this.commands = data.commands ? data.commands : {};
+  this.commands = data.commands || {};
 
   // Map of device names to ids.
-  this.devices = data.devices ? data.devices : {};
+  this.devices = data.devices || {};
 
   // Create reverse devices map.
   this.device_ids = {};
@@ -32,18 +32,18 @@ util.inherits(Insteon, EventEmitter);
 Insteon.SMARTLINC_PLM_PORT = 9761;
 
 Insteon.prototype.sendCommand = function(device_name, command_name, level) {
-console.log(device_name, command_name, level);
+  console.log(device_name, command_name, level);
   var device_id = this.devices[device_name] || device_id;
   var command_id = Insteon.COMMAND_IDS[command_name];
   if (!command_id || !device_id) return;
-  if (undefined == level) level = "FF";
+  if (undefined === level) level = "FF";
   var prefix = device_id.length == 2 ? "0261" : "0262";
   var string = prefix + device_id + "0F" + command_id + level;
   this.sendString(string);
-}
+};
 
 
-Insteon.prototype.exec = function(command, params) {
+Insteon.prototype.exec = function(command) {
   console.log("*  Insteon Executing: " + command);
 
   var string = this.commands[command];
@@ -62,7 +62,7 @@ Insteon.prototype.exec = function(command, params) {
 
 
 Insteon.prototype.sendString = function(string) {
-  var isFirstRequest = this.writeQueue.length == 0;
+  var isFirstRequest = this.writeQueue.length === 0;
   this.writeQueue.push(string);
   if (isFirstRequest) setTimeout(this.sendNextString.bind(this),10);
 };
@@ -77,9 +77,9 @@ Insteon.prototype.sendNextString = function() {
       setTimeout(this.sendNextString.bind(this),1000);  
     }.bind(this));    
   } catch (e) {
-    console.log("Insteon " + e)
+    console.log("Insteon " + e);
   }
-}
+};
 
 
 Insteon.prototype.connect = function() {
@@ -97,7 +97,7 @@ Insteon.prototype.reconnect = function() {
 
   this.reconnecting_ = true;
   setTimeout(this.connect.bind(this), 10000);
-}
+};
 
 Insteon.prototype.handleConnected = function() {
   this.emit("DeviceEvent", "Connected");
@@ -105,12 +105,12 @@ Insteon.prototype.handleConnected = function() {
 };
 
 Insteon.prototype.sendStatusRequests = function() {
- for (var device in this.devices) {
+  for (var device in this.devices) {
     if (device.indexOf("Motion") == -1) { // Skip motion detectors
       this.sendCommand(device,"Status", "FF");
     }
   }
-}
+};
 
 Insteon.MESSAGE_FLAGS = {
   "100" : "Broadcast Message",
@@ -131,7 +131,7 @@ function invertObject (obj) {
     }
   }
   return new_obj;
-};
+}
 
 Insteon.COMMAND_NAMES = {
   "00" : "RESP",
@@ -159,11 +159,7 @@ Insteon.prototype.nameForDevice = function (device) {
   if (device == "000001") return "GROUP2";
   if (device == this.hostid) return "CONTROL";
   return this.device_ids[device] || device; 
-}
-
-function bit_test(num,bit){
-    return ((num>>bit) % 2 != 0)
-}
+};
 
 // TODO: this returns undefined for 0250 21D57C 110101 0 6 00
 Insteon.prototype.parseCommand = function(data) {
@@ -179,17 +175,17 @@ Insteon.prototype.parseCommand = function(data) {
 
   var field_1 = parsed[6];
   var field_2 = parsed[7];
-  info.isAck = (info.flags & (1 << 1)) != 0;
-  info.isGroup = (info.flags & (1 << 2)) != 0;
-  info.isBroadcast = (info.flags & (1 << 3)) != 0;
+  info.isAck = (info.flags & (1 << 1)) !== 0;
+  info.isGroup = (info.flags & (1 << 2)) !== 0;
+  info.isBroadcast = (info.flags & (1 << 3)) !== 0;
   info.isNak = info.isAck && info.isBroadcast;
 
   info.device_name = this.nameForDevice(info.device);
   info.target_name = this.nameForDevice(info.target);
 
-  info.level = parseInt(field_2);
+  info.level = parseInt(field_2, 10);
   if (info.isAck) {
-    info.db_delta = parseInt(field_1);
+    info.db_delta = parseInt(field_1,10);
   } else {
     info.command = field_1;
     info.command_name = (Insteon.COMMAND_NAMES[field_1] || field_1);
@@ -208,17 +204,18 @@ Insteon.prototype.parseCommand = function(data) {
   //   }
   // }
   return info;
-}
+};
+
 Insteon.prototype.printCommand = function(info) {
   if (!info) return;
-  if (info.isNak) console.log("\tFAILED")
-  console.log("\t" + info.device_name + " -> "
-               + info.target_name + " \t"
+  if (info.isNak) console.log("\tFAILED");
+  console.log("\t" + info.device_name + " -> " +
+    info.target_name + " \t"
                + (info.command_name || "?")
                + (info.level ? "(" + info.level + ")" : "")
                + " \t(" + info.flags + ", "
                + info.num_hops + "/" + info.max_hops + " hops) \t[" + info.cmd + "]");
-}
+};
 
 
 Insteon.prototype.handleData = function(data) {
@@ -228,19 +225,19 @@ Insteon.prototype.handleData = function(data) {
     var cmd = data.substr(0, 4);
     var info = this.parseCommand(data);
     switch (cmd) {
-      case '0250':
-        if (info.isAck) {
-        } else if (info && info.target == this.hostid) {
-          this.emitDeviceStatus(info);
-        }
-        break;
-      default:
-        break;
+    case '0250':
+      if (info.isAck) {
+      } else if (info && info.target == this.hostid) {
+        this.emitDeviceStatus(info);
+      }
+      break;
+    default:
+      break;
     }
     if (this.debug)
       this.printCommand(info);
   } catch (e) {
-    console.log("Insteon data error:", data, e)
+    console.log("Insteon data error:", data, e);
   }
 };
 
@@ -276,7 +273,7 @@ Insteon.prototype.emitDeviceStatus = function(info) {
   state["insteon." + info.device_name] = info.command_name;
   this.emit("DeviceEvent", out.join("."));
   this.emit("StateEvent", state);
-}
+};
 
 Insteon.prototype.handleError = function(e) {
   this.emit("ErrorEvent", "Insteon", e);

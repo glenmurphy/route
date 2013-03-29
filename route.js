@@ -1,10 +1,13 @@
 var url = require('url');
 var EventEmitter = require('events').EventEmitter;
 
-function Route() {
+function Route(data) {
   this.devices = {};
   this.state = {};
   this.event_map = {};
+  if (data) {
+    this.ignoreStateEvents = data.ignoreStateEvents;    
+  }
 }
 
 Route.prototype.addDevice = function(data) {
@@ -16,7 +19,9 @@ Route.prototype.addDevice = function(data) {
   var obj = new data.type(data.init);
   this.devices[data.name] = obj;
   obj.on("DeviceEvent", this.handleEvent.bind(this, data.name));
-  obj.on("StateEvent", this.handleStateEvent.bind(this, data.name));
+  if (!this.ignoreStateEvents) {
+    obj.on("StateEvent", this.handleStateEvent.bind(this, data.name));
+  }
   return obj;
 };
 
@@ -116,8 +121,6 @@ Route.prototype.execCommands = function(commands, params, event_name) {
     var command_info = url.parse(command, true);
     var newparams = command_info.query;
     command = command_info.pathname;
-
-
 
     // Insert passed in parameters for $values in command string.
     for (var key in newparams) {

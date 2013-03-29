@@ -28,6 +28,9 @@ function Sonos(data) {
   this.server = http.createServer(this.handleReq.bind(this)).listen(this.listenPort);
   this.debug = true;//data.debug;
 
+  this.spotifyAccountId = data.spotifyAccountId;
+  this.spotifySid = data.spotifySid;
+
   this.components = data.components || { "Main" : this.host }; // Create a component list from a single host if needed
   this.defaultComponent = data.defaultComponent || "Main";
   for (var component in this.components) { // Instantiate components
@@ -52,7 +55,7 @@ Sonos.ENDPOINTS = {
   AVTransport : '/MediaRenderer/AVTransport/Control',
   RenderingControl : '/MediaRenderer/RenderingControl/Control',
   ContentDirectory : '/MediaServer/ContentDirectory/Control'
-}
+};
 
 Sonos.SERVICES = [
   { "Service":"/MediaRenderer/RenderingControl/Event", "Description":"Render Control" },
@@ -73,15 +76,13 @@ Sonos.SERVICES = [
 ];
 
 Sonos.prototype.exec = function(command, params) {
-  if (!component) {
-    var commandComponents = command.split(".");
-    var component = commandComponents.shift();
-    component = this.components[component];
-    if (component) {
-        command = commandComponents.join(".")
-    } else {
-      component = this.components[this.defaultComponent];
-    }
+  var commandComponents = command.split(".");
+  var component = commandComponents.shift();
+  component = this.components[component];
+  if (component) {
+    command = commandComponents.join(".");
+  } else {
+    component = this.components[this.defaultComponent];
   }
 
   console.log("*  Sonos Executing: " + command, component.name, params);
@@ -135,7 +136,7 @@ Sonos.prototype.subscribeEvents = function() {
     for (var service in Sonos.SERVICES) {
       this.subscribeEvent(this.components[component].host, Sonos.SERVICES[service].Service, Sonos.SERVICES[service].Description);
     }
-  };
+  }
 };
 
 Sonos.prototype.subscribeEvent = function(host, service, description) {
@@ -161,7 +162,7 @@ Sonos.prototype.subscribeEvent = function(host, service, description) {
 };
 
 Sonos.prototype.componentForIP = function(ip) {
-  var match =  Object.keys(this.components).filter(function(key) {return this.components[key].host === ip}.bind(this)).shift();
+  var match =  Object.keys(this.components).filter(function(key) {return this.components[key].host === ip;}.bind(this)).shift();
   return this.components[match];
 };
 
@@ -172,17 +173,25 @@ Sonos.prototype.handleReq = function(req, res) {
 };
 
 Sonos.prototype.metadataForInfo = function (info) {
-  return '<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">'
-  + '<item>'
-  + '<dc:title>' + info.title+ '</dc:title>'
-  + '<upnp:class>object.item.audioItem.musicTrack</upnp:class>'
-  + '</item></DIDL-Lite>';
+  // This only currently works for spotify uris
+  var metadata = '<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">';
+  metadata += '<item id="00030000' + encodeURIComponent(info.uri) + '" parentID="-1" restricted="true">';
+  metadata += '<dc:title>' + info.title + '</dc:title>';
+  metadata += '<upnp:class>object.item.audioItem.musicTrack</upnp:class>';
+  metadata += '<desc id="cdudn" nameSpace="urn:schemas-rinconnetworks-com:metadata-1-0/">' + this.spotifyAccountId + '</desc>';
+  metadata += '</item></DIDL-Lite>';
+  return metadata;
+};
+
+Sonos.prototype.sonosURIForSpotifyURI = function (uri) {
+  return "x-sonos-spotify:" + encodeURIComponent(uri) + "?sid=" + this.spotifySid + "&amp;flags=0";
 };
 
 
 /**
- * 
+ *  Sonos Component
  */
+
 function SonosComponent(data) {
   this.name = data.name;
   this.host = data.host;
@@ -197,7 +206,7 @@ SonosComponent.prototype.getUID = function() {
   var req = http.get({hostname: this.host, port: Sonos.PORT, path: '/status/zp'}, function(res) {
     res.on('data', function(data) {
       var parser = new xml2js.Parser();
-        parser.parseString(data, function (err, result) {
+      parser.parseString(data, function (err, result) {
         this.realName = result.ZPSupportInfo.ZPInfo[0].ZoneName[0];
         this.uid = result.ZPSupportInfo.ZPInfo[0].LocalUID[0];
       }.bind(this));
@@ -208,12 +217,12 @@ SonosComponent.prototype.getUID = function() {
   }.bind(this));
 };
 
-SonosComponent.prototype.callAction = function(service, action, arguments, device, callback) {
+SonosComponent.prototype.callAction = function(service, action, args, device, callback) {
   var xmlns = "urn:schemas-upnp-org:service:" + service + ':' + device;
 
   var body = "<u:" + action + " xmlns:u=\"" + xmlns + "\">" ;
-  for (var key in arguments) {
-    body += "<" + key + ">" + arguments[key] + "</" + key + ">";
+  for (var key in args) {
+    body += "<" + key + ">" + args[key] + "</" + key + ">";
   }
   body += "</u:" + action + ">";
 
@@ -250,18 +259,16 @@ SonosComponent.prototype.sendCommand = function(endpoint, action, body, callback
   request.end(data);
 };
 
-SonosComponent.prototype.playSpotifyTrack = function (url, metadata) {
-  var uri = "x-sonos-spotify:" + encodeURIComponent(url) + "?sid=12&amp;flags=0"
-  console.log(uri);
-  this.playURI(uri, metadata);
-};
-
 SonosComponent.prototype.isPlaying = function() {
-  return this.player_state === "PLAYING";
+  return this.playerState === "PLAYING";
 };
 
 SonosComponent.prototype.playPause = function() {
-  this.isPlaying() ? this.pause() : this.play();
+  if (this.isPlaying()) {
+    this.pause();
+  } else {
+    this.play();
+  }
 };
 
 SonosComponent.prototype.play = function() {
@@ -282,7 +289,12 @@ SonosComponent.prototype.nextTrack = function() {
 };
 
 SonosComponent.prototype.removeAllTracksFromQueue = function(callback) {
-   this.callAction("AVTransport", "RemoveAllTracksFromQueue", {InstanceID : 0}, this.deviceid, callback);
+  this.callAction("AVTransport", "RemoveAllTracksFromQueue", {InstanceID : 0}, this.deviceid, callback);
+};
+
+SonosComponent.prototype.playSpotifyTrack = function (uri, metadata) {
+  uri = this.system.sonosURIForSpotifyURI(uri);
+  this.playURI(uri, metadata);
 };
 
 SonosComponent.prototype.addURIToQueue = function(uri, metadata, callback) {
@@ -295,7 +307,7 @@ SonosComponent.prototype.addURIToQueue = function(uri, metadata, callback) {
     }, this.deviceid, callback);
 };
 
-SonosComponent.prototype.playQueue = function(uri, callback) {
+SonosComponent.prototype.playQueue = function(callback) {
   var uri = "x-rincon-queue:" + this.uid + "#0";
   this.playURI(uri, null, callback);
 };
@@ -334,12 +346,12 @@ SonosComponent.prototype.setCurrentURI = function(uri, metadata, callback) {
 };
 
 SonosComponent.prototype.playURI = function(uri, metadata, callback) {
-  if (uri.indexOf("x-rincon-cpcontainer:") == 0) {
+  if (uri.indexOf("x-rincon-cpcontainer:") === 0) {
     this.queueContainerURI(uri, metadata, callback);
   } else {
     this.setCurrentURI(uri, metadata, function(resp) {
       var parser = new xml2js.Parser();
-        parser.parseString(resp, function (err, result) {
+      parser.parseString(resp, function (err, result) {
         console.log("RESPONSE: " + resp);
         this.play();
       }.bind(this));
@@ -352,6 +364,77 @@ SonosComponent.prototype.queueContainerURI = function(uri, metadata, callback) {
     this.addURIToQueue(uri, metadata, function() {
       this.playQueue();
     }.bind(this));
+  }.bind(this));
+};
+
+SonosComponent.prototype.playMultipleTracksWithInfo = function(infos, callback) {
+  var uris = [], metadatas = [];
+  for (var i = 0; i < infos.length; i++) {
+    var info = infos[i];
+    var uri = info.uri;
+    var metadata = this.system.metadataForInfo(info);
+    if (uri && metadata) {
+      uris.push(uri);
+      metadatas.push(metadata);
+      if (i==20) break;
+    }
+  }
+  this.playMultipleURIs(uris, metadatas, callback);
+};
+
+SonosComponent.prototype.playMultipleURIs = function(uris, metadatas, callback) {
+  this.removeAllTracksFromQueue(function() {
+    this.addMultipleURIsToQueueIndividually(uris, metadatas, function (response) {
+      this.playQueue();
+    }.bind(this));   
+  }.bind(this));
+};
+
+SonosComponent.prototype.addMultipleURIsToQueue = function(uris, metadatas, callback) {
+  uris = uris.map(function(uri) {
+    if (uri.indexOf("spotify:") === 0) uri = this.system.sonosURIForSpotifyURI(uri);
+    return uri;
+  }.bind(this));
+
+  this.addURIToQueue();
+  console.log(uris, metadatas);
+  this.callAction("AVTransport", "AddMultipleURIsToQueue",
+    { InstanceID : 0,
+      UpdateID : 0,
+      NumberOfURIs : uris.length,
+      EnqueuedURIs : uris.join(" "),
+      EnqueuedURIsMetaData : encodeHTML(metadatas.join(" ")),
+      ContainerURI : "",
+      ContainerMetaData : "",
+      DesiredFirstTrackNumberEnqueued : 0,
+      EnqueueAsNext : 0
+    }, this.deviceid, callback);
+};
+
+SonosComponent.prototype.addMultipleURIsToQueueIndividually = function(uris, metadatas, firstCallback, lastCallback) {
+  uris = uris.map(function(uri) {
+    if (uri.indexOf("spotify:") === 0) uri = this.system.sonosURIForSpotifyURI(uri);
+    return uri;
+  }.bind(this));
+
+  this.urisToQueue = uris;
+  this.metadatasToQueue = metadatas;
+  this.queueFirstCallback = firstCallback;
+  this.queueLastCallback = lastCallback;
+  this.queueNextTrack(true);
+};
+
+SonosComponent.prototype.queueNextTrack = function(first) {
+  var uri = this.urisToQueue.shift();
+  var metadata = this.metadatasToQueue.shift();
+  this.addURIToQueue(uri, metadata, function(response){
+    console.log("response: ", this.urisToQueue.length, response);
+    if (first && this.queueFirstCallback) this.queueFirstCallback();
+    if (this.urisToQueue.length) {
+      this.queueNextTrack();
+    } else {
+      if (this.queueLastCallback) this.queueLastCallback();
+    }
   }.bind(this));
 };
 
@@ -391,7 +474,7 @@ SonosComponent.prototype.getFavorites = function(callback) {
           var trackInfo = result["s:Envelope"]["s:Body"][0]["u:BrowseResponse"][0];
           parser.parseString(trackInfo.Result[0], function (err, result) {
             var results = result["DIDL-Lite"].item;
-            var favorites = []
+            var favorites = [];
             for (var i = 0; i < results.length; i++) {
               var meta = results[i];
               var favoriteInfo = {
@@ -438,7 +521,7 @@ SonosComponent.prototype.parseXMStreamContent = function (string) {
     record[fields[i].substring(0,namesplit).toLowerCase()] = fields[i].substring(namesplit);
   }
   return record;
-}
+};
 
 SonosComponent.prototype.parseMetadata = function (metadata, callback) {
   var parser = new xml2js.Parser();
@@ -459,20 +542,21 @@ SonosComponent.prototype.parseMetadata = function (metadata, callback) {
   }.bind(this));
 };
 
-SonosComponent.prototype.updatePlayingState = function(state) {
-  if (this.playingState == state) return;
+SonosComponent.prototype.updatePlayerState = function(state) {
+  var wasNull = undefined == this.playerState;
+  if (this.playerState == state) return;
 
-  this.emit("DeviceEvent", this.name + (state == "PLAYING" ? ".Started" : ".Stopped"));
-  this.emit("StateEvent", this.name + ".PlayingState", { state : state });
-  this.playingState = state;
+  if (!wasNull) this.emit("DeviceEvent", this.name + (state == "PLAYING" ? ".Started" : ".Stopped"));
+  this.emit("StateEvent", "Sonos." + this.name + ".PlayerState", { state : state });
+  this.playerState = state;
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {
-  this.emit("StateEvent", this.name + ".TrackInfo", details);
+  this.emit("StateEvent", "Sonos." + this.name + ".TrackInfo", details);
 };
 
 SonosComponent.prototype.updateNextTrackInfo = function(details) {
-  this.emit("StateEvent", this.name + ".NextTrackInfo", details);
+  this.emit("StateEvent", "Sonos." + this.name + ".NextTrackInfo", details);
 };
 
 SonosComponent.prototype.parseNotification = function (data) {
@@ -486,18 +570,18 @@ SonosComponent.prototype.parseNotification = function (data) {
         var playerInfo = {};
         var status = result.Event.InstanceID[0];
         for (var key in status) {
-          if (key == "$") continue
+          if (key == "$") continue;
           try {
             var val = status[key][0].$.val;
           } catch (e) {}
 
           switch (key) {
             case "TransportState":
-              this.updatePlayingState(val);
+              this.updatePlayerState(val);
               break;
             case "CurrentTrackURI":
               playerInfo.TrackURI = val;
-              if (val.indexOf("x-rincon:") == 0) {
+              if (val.indexOf("x-rincon:") === 0) {
                 var id = val.split("x-rincon:").pop();
                 this.coordinator = this.system.getComponentByID(id);
                 if (this.coordinator) playerInfo.GroupCoordinator = this.coordinator.name;
@@ -553,6 +637,7 @@ function xmlValue(element, key) {
 function encodeHTML(string) {
   return string.replace(/&/g, '&amp;')
                .replace(/</g, '&lt;')
+               .replace(/"/g, '&quot;')
                .replace(/>/g, '&gt;');
 }
 

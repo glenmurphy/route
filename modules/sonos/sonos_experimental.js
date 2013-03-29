@@ -542,21 +542,27 @@ SonosComponent.prototype.parseMetadata = function (metadata, callback) {
   }.bind(this));
 };
 
-SonosComponent.prototype.updatePlayerState = function(state) {
+SonosComponent.prototype.updatePlayerState = function(playerState) {
   var wasNull = undefined == this.playerState;
-  if (this.playerState == state) return;
+  if (this.playerState == playerState) return;
 
-  if (!wasNull) this.emit("DeviceEvent", this.name + (state == "PLAYING" ? ".Started" : ".Stopped"));
-  this.emit("StateEvent", "Sonos." + this.name + ".PlayerState", { state : state });
+  if (!wasNull) this.emit("DeviceEvent", this.name + (playerState == "PLAYING" ? ".Started" : ".Stopped"));
+  var state = {};
+  state["Sonos." + this.name + ".playerState"] = playerState;
+  this.emit("StateEvent", state);
   this.playerState = state;
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {
-  this.emit("StateEvent", "Sonos." + this.name + ".TrackInfo", details);
+  var state = {};
+  state["Sonos." + this.name + ".trackInfo"] = details;
+  this.emit("StateEvent", state);
 };
 
 SonosComponent.prototype.updateNextTrackInfo = function(details) {
-  this.emit("StateEvent", "Sonos." + this.name + ".NextTrackInfo", details);
+  var state = {};
+  state["Sonos." + this.name + ".nextTrackInfo"] = details;
+  this.emit("StateEvent", state);
 };
 
 SonosComponent.prototype.parseNotification = function (data) {

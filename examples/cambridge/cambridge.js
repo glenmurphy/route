@@ -73,6 +73,11 @@ var web = route.addDevice({
 // Simple map of events to commands.
 route.addEventMap({
   // Livingroom
+  "Web.Switch.Sonos" : "Denon.Switch.Sonos",
+  "Web.Switch.MacMini" : [
+    "Denon.Switch.MacMini",
+    "Sonos.LivingRoom.Pause"
+  ],
   "Web.LivingRoom.Play" : [
     "Sonos.LivingRoom.Play",
     "Denon.Switch.Sonos"

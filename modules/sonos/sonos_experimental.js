@@ -271,30 +271,30 @@ SonosComponent.prototype.playPause = function() {
   }
 };
 
-SonosComponent.prototype.play = function() {
+SonosComponent.prototype.play = function(callback) {
   if (this.muteState) this.setMute(false);
-  this.callAction("AVTransport", "Play", {InstanceID : 0, Speed : 1}, this.deviceid);
+  this.callAction("AVTransport", "Play", {InstanceID : 0, Speed : 1}, this.deviceid, callback);
 };
 
-SonosComponent.prototype.pause = function() {
-  this.callAction("AVTransport", "Pause", {InstanceID : 0}, this.deviceid);
+SonosComponent.prototype.pause = function(callback) {
+  this.callAction("AVTransport", "Pause", {InstanceID : 0}, this.deviceid, callback);
 };
 
-SonosComponent.prototype.prevTrack = function() {
-  this.callAction("AVTransport", "Previous", {InstanceID : 0}, this.deviceid);
+SonosComponent.prototype.prevTrack = function(callback) {
+  this.callAction("AVTransport", "Previous", {InstanceID : 0}, this.deviceid, callback);
 };
 
-SonosComponent.prototype.nextTrack = function() {
-  this.callAction("AVTransport", "Next", {InstanceID : 0}, this.deviceid);
+SonosComponent.prototype.nextTrack = function(callback) {
+  this.callAction("AVTransport", "Next", {InstanceID : 0}, this.deviceid, callback);
 };
 
 SonosComponent.prototype.removeAllTracksFromQueue = function(callback) {
   this.callAction("AVTransport", "RemoveAllTracksFromQueue", {InstanceID : 0}, this.deviceid, callback);
 };
 
-SonosComponent.prototype.playSpotifyTrack = function (uri, metadata) {
+SonosComponent.prototype.playSpotifyTrack = function (uri, metadata, callback) {
   uri = this.system.sonosURIForSpotifyURI(uri);
-  this.playURI(uri, metadata);
+  this.playURI(uri, metadata, callback);
 };
 
 SonosComponent.prototype.addURIToQueue = function(uri, metadata, callback) {
@@ -316,24 +316,24 @@ SonosComponent.prototype.setPlayMode = function(mode, callback) { // NORMAL, REP
   this.callAction("AVTransport", "SetPlayMode", {InstanceID : 0, NewPlayMode : mode}, this.deviceid, callback);
 };
 
-SonosComponent.prototype.becomeStandalone = function () {
-  this.callAction("AVTransport", "BecomeCoordinatorOfStandaloneGroup", {InstanceID : 0}, this.deviceid);
+SonosComponent.prototype.becomeStandalone = function (callback) {
+  this.callAction("AVTransport", "BecomeCoordinatorOfStandaloneGroup", {InstanceID : 0}, this.deviceid, callback);
 };
 
-SonosComponent.prototype.addGroupMember = function (newComponent) {
-  newComponent.setCurrentURI("x-rincon:" + this.uid);
+SonosComponent.prototype.addGroupMember = function (newComponent, callback) {
+  newComponent.setCurrentURI("x-rincon:" + this.uid, undefined, callback);
 };
 
-SonosComponent.prototype.removeGroupMember = function (newComponent) {
-  newComponent.becomeStandalone();
+SonosComponent.prototype.removeGroupMember = function (newComponent, callback) {
+  newComponent.becomeStandalone(callback);
 };
 
-SonosComponent.prototype.playFavorite = function(name) {
+SonosComponent.prototype.playFavorite = function(name, callback) {
   for (var f in this.system.favorites) {
     f = this.system.favorites[f];
     if (f.name == name || f.url == name) {
       console.log("matched ", f);
-      this.playURI(f.url, f.urlMetadata);
+      this.playURI(f.url, f.urlMetadata, callback);
       return;
     }
   }
@@ -550,7 +550,7 @@ SonosComponent.prototype.updatePlayerState = function(playerState) {
   var state = {};
   state["Sonos." + this.name + ".playerState"] = playerState;
   this.emit("StateEvent", state);
-  this.playerState = state;
+  this.playerState = playerState;
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {

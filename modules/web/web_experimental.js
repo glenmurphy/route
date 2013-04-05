@@ -59,7 +59,11 @@ Web.prototype.handleEvent = function(info) {
 
 Web.prototype.handleSocketConnection = function(socket) {
   this.clients.push(socket);
-  socket.emit('state', this.state.allValues());
+  try {
+    socket.emit('state', this.state.allValues());    
+  } catch (e) {
+    console.log("! Web emit error:", e, this.state.allValues());
+  }
   socket.on('message', this.handleSocketMessage.bind(this));
   socket.on('error', this.handleSocketError.bind(this));
   socket.on('disconnect', this.handleSocketClose.bind(this, socket));

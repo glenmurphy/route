@@ -1,0 +1,4 @@
+{ 
+  "name" : "Telnet",
+  "main" : "./telnet.js"
+}

@@ -28,10 +28,14 @@ function setValueForKeyPath(object, value, keypath) {
   }
 }
 
+State.prototype.setValueForKeyPath = function(value, keypath) {
+    setValueForKeyPath(this.values, value, keypath);
+}
+
 State.prototype.addValues = function(values) {
   for (var keypath in values) {
     var value = values[keypath];
-    setValueForKeyPath(this.values, value, keypath);
+    this.setValueForKeyPath(value, keypath);
     //this.values[keypath] = value;
   }
   this.emit("StateEvent", values);

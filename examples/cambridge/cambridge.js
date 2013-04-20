@@ -5,9 +5,10 @@
 var PATH_TO_ROUTE = "../../";
 var PATH_TO_MODULES = "../../modules/";
 var Lutron = require(PATH_TO_MODULES + 'lutron-radiora2').LutronRadioRA2;
-var Sonos = require(PATH_TO_MODULES + 'sonos/sonos_experimental.js').Sonos;
+var Sonos = require(PATH_TO_MODULES + 'sonos/sonos.js').Sonos;
 var Denon = require(PATH_TO_MODULES + 'denon').Denon;
 var Web = require(PATH_TO_MODULES + 'web').Web;
+var Telnet = require(PATH_TO_MODULES + 'telnet').Telnet;
 var Route = require(PATH_TO_ROUTE).Route;
 
 // Map of commands to routers that service that command.
@@ -24,13 +25,33 @@ var sonos = route.addDevice({
   }
 });
 
+var IR = route.addDevice({
+  type : Telnet,
+  name : "IR",
+  init : {
+    host : "10.0.1.56", // iTach IP2IR
+    port: "4998",
+    commands : {
+      "A-MacMini" : "sendir,1:1,1,38109,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,64,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,21,22,64,21,64,22,63,22,64,21,64,22,1518,342,85,22,3810",
+      "A-AppleTV" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,4892",
+      "A-Roku" : "sendir,1:1,1,38226,1,1,342,171,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,21,22,21,21,21,22,64,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,21,22,63,22,64,21,64,22,63,22,1523,341,85,22,3822",
+      "A4" : "sendir,1:1,1,38226,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,64,21,21,22,21,22,21,21,21,22,21,22,21,21,64,22,21,21,64,22,63,22,64,21,64,22,1522,342,85,22,3822",
+      "B-MacMini" : "sendir,1:1,1,38109,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,64,21,21,22,64,21,21,22,21,22,21,21,64,22,63,22,21,22,63,22,21,22,63,22,64,21,64,22,1517,342,85,22,3810",
+      "B-AppleTV" : "sendir,1:1,1,38226,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,64,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,21,22,63,22,64,21,64,22,1522,342,85,22,3822",
+      "B-Roku" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,21,22,21,21,64,22,63,22,21,22,21,21,21,22,64,21,64,22,63,22,21,22,21,21,64,22,63,22,64,21,1523,342,85,21,3822",
+      "B4" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,21,22,63,22,64,21,21,22,21,22,21,21,21,22,21,22,63,22,21,22,21,21,64,22,63,22,64,21,1523,342,85,21,3822",
+      "POWER" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,1523,342,85,21,3822",
+    }
+  }
+});
+
 var Denon = route.addDevice({
   type : Denon,
   name : "Denon",
   init : {
     host : "10.0.1.20",
     sources : {
-      "MacMini" : "GAME",
+      "HDMI" : "GAME",
       "Sonos" : "DVR"
     }
   }
@@ -41,22 +62,30 @@ var lutron = route.addDevice({
   name : "Lutron",
   init : {
     host : "10.0.1.21",
+    username : "route",
+    password: "route",
     devices : {
-      "OfficeMainKeypad" : "22",
-      "OfficeMainLight" : "21",
-      
-      "PathLights" : "23",
-      
-      "LivingKeypad" : "18",
-      "LivingPendantLight" : "24",
-      "LivingDiningLight" : "19",
+      "KitchenBarLights" : { id : 23, type : Lutron.TYPE_LIGHT },
+      "KitchenCabinetLights" : { id : 26, type : Lutron.TYPE_LIGHT },
+      "KitchenCeilingLights" : { id : 25, type : Lutron.TYPE_LIGHT },
+      "KitchenDiningLights" : { id : 27, type : Lutron.TYPE_LIGHT },
+      "KitchenKeypad" : { id : 24, type : Lutron.TYPE_KEYPAD},
 
-      "KitchenKeypad" : "14",
-      "KitchenCounterLight" : "2",
-      "KitchenOverheadLight" : "16",
-      "KitchenCabinetLight" : "15",
+      "LivingroomEntryLight" : { id : 30, type : Lutron.TYPE_LIGHT },
+      "LivingroomLoungeLamp" : { id : 18, type : Lutron.TYPE_LIGHT },
+      "LivingroomPathLights" : { id : 31, type : Lutron.TYPE_LIGHT },
+      "LivingroomKeypad" : { id : 14, type : Lutron.TYPE_KEYPAD },
 
-      "KitchenHall" : "17",
+      "OfficePendantLight" : { id : 15, type : Lutron.TYPE_LIGHT },
+      "OfficeKeypad" : { id : 16, type : Lutron.TYPE_LIGHT },
+      "OfficeMotion" : { id : 32, type : Lutron.TYPE_MOTION },
+
+      "MasterbedRemote" : { id : 29, type : Lutron.TYPE_REMOTE },
+      "MasterbedWallLights" : { id : 28, type : Lutron.TYPE_LIGHT },
+      "Masterbed.Keypad" : { id : 4, type : Lutron.TYPE_KEYPAD },
+
+      "HallwayPendantLights" : { id : 20, type : Lutron.TYPE_LIGHT },
+      "HallwayKeypad" : { id : 21, type : Lutron.TYPE_KEYPAD },
     }
   }
 });
@@ -72,48 +101,25 @@ var web = route.addDevice({
 
 // Simple map of events to commands.
 route.addEventMap({
-  // Livingroom
-  "Web.Switch.Sonos" : "Denon.Switch.Sonos",
-  "Web.Switch.MacMini" : [
-    "Denon.Switch.MacMini",
-    "Sonos.LivingRoom.Pause"
+  "Lutron.MasterbedRemote.2.3" : "Sonos.LivingRoom.PlayPause",
+
+  //  Hard-coded web switches for media (TV/Speakers)
+  "Web.Livingroom.Sonos" : "Denon.Switch.Sonos",
+  "Web.Livingroom.MacMini" : [
+    "IR.A-MacMini",
+    "Denon.Switch.HDMI",
+    "Sonos.LivingRoom.Pause",
   ],
-  "Web.LivingRoom.Play" : [
-    "Sonos.LivingRoom.Play",
-    "Denon.Switch.Sonos"
+  "Web.Livingroom.Roku" : [
+    "IR.A-Roku",
+    "Denon.Switch.HDMI",
+    "Sonos.LivingRoom.Pause",
   ],
-  "Web.LivingRoom.Pause" : ["Sonos.LivingRoom.Pause"],
-  "Sonos.LivingRoom.TrackInfo" : "Web.LivingRoom.TrackInfo?name=$Name&album=$Album&artist=$Artist&artwork=$Artwork",
-  "Sonos.LivingRoom.PlayingState" : "Web.LivingRoom.PlayingState?state=$state",
+  "Web.MasterBed.MacMini" : "IR.B-MacMini",
+  "Web.MasterBed.AppleTV" : "IR.B-AppleTV",
+  "Web.MasterBed.Roku" : "IR.B-Roku",
+});
 
-  "Web.LivingDiningLight.On" : ["Lutron.LivingDiningLight.1.100"],
-  "Web.LivingDiningLight.Off" : ["Lutron.LivingDiningLight.1.0"],
-  "Lutron.LivingDiningLight.*" : "Web.LivingDiningLight?brightness=$brightness",
-
-  "Web.LivingPendantLight.On" : "Lutron.LivingPendantLight.1.100",
-  "Web.LivingPendantLight.Off" : "Lutron.LivingPendantLight.1.0",
-  "Lutron.LivingPendantLight.*" : "Web.LivingPendantLight?brightness=$brightness",
-
-  // Kitchen
-  "Web.KitchenOn" : [
-    "Lutron.KitchenOverheadLight.1.100",
-    "Lutron.KitchenCounterLight.1.100",
-    "Lutron.KitchenCabinetLight.1.100"
-  ],
-  "Web.KitchenOff" : [
-    "Lutron.KitchenCounterLight.1.0",
-    "Lutron.KitchenOverheadLight.1.0",
-    "Lutron.KitchenCabinetLight.1.0"
-  ],
-
-  // Master Bedroom
-  "Web.MasterBedPlay" : ["Sonos.MasterBed.Play"],
-  "Web.MasterBedPause" : ["Sonos.MasterBed.Pause"],
-  "Sonos.MasterBed.TrackInfo" : "Web.MasterBed.TrackInfo?name=$Name&album=$Album&artist=$Artist&artwork=$Artwork",
-  "Sonos.MasterBed.PlayingState" : "Web.MasterBed.PlayingState?state=$state",
-
-  // Office
-  "Web.OfficeMainLight.On" : "Lutron.OfficeMainLight.1.100",
-  "Web.OfficeMainLight.Off" : "Lutron.OfficeMainLight.1.0",
-  "Lutron.OfficeMainLight.*" : "Web.OfficeMainLight?brightness=$brightness",
+route.map("Web.Lutron.*", function(eventname, data) {
+  lutron.exec(eventname.substring(11)); // chop off "Web.Lutron."
 });

@@ -3,8 +3,8 @@ function Switch(name, desc, socket, parentNode) {
   this.desc = desc;
   this.socket = socket;
 
-  this.socket.emit("getState", name);
   this.socket.on(name, this.handleBrightness.bind(this));
+  this.socket.emit("getState", name);
 
   if (Switch.CSS_APPENDED == false) {
     var css = document.createElement("style");

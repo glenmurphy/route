@@ -1,13 +1,35 @@
 var url = require('url');
+var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
 function Route(data) {
   this.devices = {};
   this.state = {};
-  this.event_map = {};
-  if (data) {
-    this.ignoreStateEvents = data.ignoreStateEvents;    
+  this.eventMap = {};
+  this.stateWatchers = {};
+}
+util.inherits(Route, EventEmitter);
+
+Route.ObjectsEqual = function(x, y) {
+  if ( x === y ) return true;
+  if ( ! ( x instanceof Object ) || ! ( y instanceof Object ) ) return false;
+  if ( x.constructor !== y.constructor ) return false;
+  for ( var p in x ) {
+    if ( ! x.hasOwnProperty( p ) ) continue;
+    if ( ! y.hasOwnProperty( p ) ) return false;
+    if ( x[ p ] === y[ p ] ) continue;
+    if ( typeof( x[ p ] ) !== "object" ) return false;
+    // if ( ! Object.equals( x[ p ],  y[ p ] ) ) return false;
   }
+
+  for ( p in y ) {
+    if ( y.hasOwnProperty( p ) && ! x.hasOwnProperty( p ) ) return false;
+  }
+  return true;
+}
+
+Route.Pad = function(str, char, len) {
+  return str + new Array(Math.max(len - str.length, 0)).join(char);
 }
 
 Route.prototype.addDevice = function(data) {
@@ -19,61 +41,41 @@ Route.prototype.addDevice = function(data) {
   var obj = new data.type(data.init);
   this.devices[data.name] = obj;
   obj.on("DeviceEvent", this.handleEvent.bind(this, data.name));
-  if (!this.ignoreStateEvents) {
-    obj.on("StateEvent", this.handleStateEvent.bind(this, data.name));
+  
+  if (data.type.STATEOBSERVER) {
+    obj.initStateObserver(this, this.state); // remember, this is a reference
   }
+
   return obj;
 };
 
-Route.prototype.isStateUpdated = function(name, params) {
-  if (!(name in this.state))
-    return true;
-
-  if (typeof params == "string" || typeof params == "boolean") {
-    if (this.state[name] != params)
-      return true;
-  }
-  
-  for (var key in params) {
-    if (this.state[name][key] != params[key])
-      return true;
-  }
-  return false;
-};
-
-Route.prototype.handleStateEvent = function(device_name, event, params) {
-  var name = device_name + '.' + event;
-  
-  if (this.isStateUpdated(name, params)) {
-    this.state[name] = params;
-    this.handleEvent(device_name, event, params);
-  }
-};
-
-Route.prototype.handleEvent = function(device_name, event, params) {
-  var event_name = device_name + '.' + event;
+Route.prototype.handleEvent = function(deviceName, event, data) {
+  var eventName = deviceName + '.' + event;
 
   // Log the event
   var date = new Date();
   var date_string = date.toLocaleTimeString();
-  function pad(str, char, len) {
-    return str + new Array(Math.max(len - str.length, 0)).join(char);
-  }
-  console.log("\n" + pad("-- Event: " + event_name + ":" + (JSON.stringify(params) || "") + ", " + date_string + " ", "-", "70"));
+  console.log("\n" + Route.Pad("-- Event: " + eventName + ":" + (JSON.stringify(data) || "") + ", " + date_string + " ", "-", "70"));
 
-  var matchingEvents = this.allEventsMatchingName(event_name);
-
-  // Spew off commands attached to this event
+  // Spew off commands attached to this event.
+  var matchingEvents = this.allEventsMatchingName(eventName);
   for (var i = 0; i < matchingEvents.length; i++) {
-    var commands = this.event_map[matchingEvents[i]];
-    this.execCommands(commands, params, event_name);
+    var commands = this.eventMap[matchingEvents[i]];
+    this.execCommands(commands, data, eventName);
   };
+
+  // Let any state observers know if anything changed.
+  if (!(eventName in this.state) || !Route.ObjectsEqual(this.state[eventName], data)) {
+    console.log("State Changed: " + eventName);
+    this.state[eventName] = data;
+    this.emit("StateChanged", eventName, data);
+  }
 };
 
 Route.prototype.allEventsMatchingName = function(name) {
   var matches = [];
-  if (name in this.event_map) matches.push(name);
-  for (var event in this.event_map) {
+  if (name in this.eventMap) matches.push(name);
+  for (var event in this.eventMap) {
     if (event.indexOf("*") == -1) continue; // Skip plain strings
     var components = event.split("*");
     if (name.indexOf(components[0]) !== 0) continue;
@@ -90,7 +92,7 @@ Route.prototype.allEventsMatchingName = function(name) {
  * of the subsequent commands in that array, which is useful for IR 
  * macros.
  */
-Route.prototype.execCommands = function(commands, params, event_name) {
+Route.prototype.execCommands = function(commands, params, eventName) {
   if (!commands) return;
 
   var command;
@@ -113,7 +115,7 @@ Route.prototype.execCommands = function(commands, params, event_name) {
   // fire off an execCommands chain.
   if (typeof command == "function") {
     try {
-      command(params, event_name);
+      command(eventName, params);
     } catch(e) {
       console.log("!! Error executing custom function: ", e, e.stack);
     }
@@ -132,33 +134,33 @@ Route.prototype.execCommands = function(commands, params, event_name) {
     var dot_index = command.indexOf(".");
     if (dot_index == -1 || dot_index == command.length - 1) return;
     var components = command.split(".");
-    var device_name = components[0];
+    var deviceName = components[0];
     var command = components.splice(1).join(".");
 
     // Special-case commands.
-    if (device_name == "Wait") {
+    if (deviceName == "Wait") {
       console.log("*  Waiting: " + command);
       delay = command;
-    } else if ((device_name in this.devices)) {
-      this.devices[device_name].exec(command, newparams);
+    } else if ((deviceName in this.devices)) {
+      this.devices[deviceName].exec(command, newparams);
     } else {
-      console.log("!! Error: "+device_name+" doesn't exist ("+command+")");
+      console.log("!! Error: "+deviceName+" doesn't exist ("+command+")");
     }
   } else if (command.length) {
     console.log(">  Recursing:");
-    this.execCommands(command, params, event_name);
+    this.execCommands(command, params, eventName);
   }
 
   if (remaining.length)
-    setTimeout(this.execCommands.bind(this, remaining, params, event_name), delay);
+    setTimeout(this.execCommands.bind(this, remaining, params, eventName), delay);
 };
 
 /**
  * Batch load a bunch of event > commands mappings.
  */
 Route.prototype.addEventMap = function(map) {
-  for (var event_name in map) {
-    this.on(event_name, map[event_name]);
+  for (var eventName in map) {
+    this.map(eventName, map[eventName]);
   }
 };
 
@@ -166,17 +168,17 @@ Route.prototype.addEventMap = function(map) {
  * Map an event to a command array - will append to existing command
  * arrays if they exist.
  */
-Route.prototype.on = function(event_name, command) {
+Route.prototype.map = function(eventName, command) {
   if (!command || undefined == command) return;
-  if (event_name in this.event_map) {
-    if (typeof this.event_map[event_name] == 'string' ||
-        typeof this.event_map[event_name] == 'function') {
-      this.event_map[event_name] = [this.event_map[event_name], command];
+  if (eventName in this.eventMap) {
+    if (typeof this.eventMap[eventName] == 'string' ||
+        typeof this.eventMap[eventName] == 'function') {
+      this.eventMap[eventName] = [this.eventMap[eventName], command];
     } else {
-      this.event_map[event_name].push(command);
+      this.eventMap[eventName].push(command);
     }
   } else {
-    this.event_map[event_name] = command;
+    this.eventMap[eventName] = command;
   }
 }
 

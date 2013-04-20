@@ -45,13 +45,11 @@ function sendEvent(name) {
 <body>
   LIVINGROOM<br />
   <div id="living-room-player"></div>
-  <div id="living-dining-light"></div>
+  <div id="living-lounge-light"></div>
   <div id="living-pendant-light"></div>
-  <a href="#" onclick="return sendEvent('Switch.Sonos');">Sonos</a> &nbsp; <a href="#" onclick="return sendEvent('Switch.MacMini');">Mac</a>
-  <br />  <br />
-  KITCHEN<br />
-  &nbsp;&nbsp;<a href="#" onclick="return sendEvent('KitchenOn');">ON</a>
-  <a href="#" onclick="return sendEvent('KitchenOff');">OFF</a>
+  <a href="#" onclick="return sendEvent('Livingroom.Sonos');">Sonos</a>
+  <a href="#" onclick="return sendEvent('Livingroom.MacMini');">Mac</a>
+  <a href="#" onclick="return sendEvent('Livingroom.Roku');">Roku</a>
   <br />  <br />
   OFFICE<br />
   <div id="office-main-light"></div>
@@ -63,10 +61,10 @@ function sendEvent(name) {
 <script>
 var socket = io.connect('http://localhost:8000');
 
-new Sonos("LivingRoom", socket, $("living-room-player"));
-new Sonos("MasterBed", socket, $("master-bed-player"));
-new Switch("LivingDiningLight", "Dining", socket, $('living-dining-light'));
-new Switch("LivingPendantLight", "Pedant", socket, $('living-pendant-light'));
+new Sonos("Sonos.LivingRoom", socket, $("living-room-player"));
+new Sonos("Sonos.MasterBed", socket, $("master-bed-player"));
+new Switch("Lutron.LivingroomLoungeLamp", "Lamp", socket, $('living-lounge-light'));
+new Switch("Lutron.HallwayPendantLights", "Pedant", socket, $('living-pendant-light'));
 
-new Switch("OfficeMainLight", "Office", socket, $('office-main-light'));
+new Switch("Lutron.OfficePendantLight", "Office", socket, $('office-main-light'));
 </script>

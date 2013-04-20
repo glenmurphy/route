@@ -450,10 +450,10 @@ SonosComponent.prototype.parseMetadata = function (metadata, callback) {
     if (this.debug) console.log("metadata", meta);
     var streamcontent = xmlValue(meta, "r:streamContent");
     streamcontent = this.parseXMStreamContent(streamcontent);
-    metaInfo.Name =  streamcontent.title || xmlValue(meta, "dc:title");
-    metaInfo.Artist = streamcontent.artist || xmlValue(meta, "dc:creator");
-    metaInfo.Album = xmlValue(meta, "upnp:album");
-    if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.Artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
+    metaInfo.name =  streamcontent.title || xmlValue(meta, "dc:title");
+    metaInfo.artist = streamcontent.artist || xmlValue(meta, "dc:creator");
+    metaInfo.album = xmlValue(meta, "upnp:album");
+    if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
     
     callback(metaInfo);
   }.bind(this));
@@ -463,16 +463,16 @@ SonosComponent.prototype.updatePlayingState = function(state) {
   if (this.playingState == state) return;
 
   this.emit("DeviceEvent", this.name + (state == "PLAYING" ? ".Started" : ".Stopped"));
-  this.emit("StateEvent", this.name + ".PlayingState", { state : state });
+  this.emit("DeviceEvent", this.name + ".PlayingState", { state : state });
   this.playingState = state;
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {
-  this.emit("StateEvent", this.name + ".TrackInfo", details);
+  this.emit("DeviceEvent", this.name + ".TrackInfo", details);
 };
 
 SonosComponent.prototype.updateNextTrackInfo = function(details) {
-  this.emit("StateEvent", this.name + ".NextTrackInfo", details);
+  this.emit("DeviceEvent", this.name + ".NextTrackInfo", details);
 };
 
 SonosComponent.prototype.parseNotification = function (data) {

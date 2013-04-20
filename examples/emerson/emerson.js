@@ -128,7 +128,7 @@ route.addEventMap({
 });
 
 // Programmatically added listeners
-route.on("Insteon.FrontDoorRemote.On.2", function() {
+route.map("Insteon.FrontDoorRemote.On.2", function() {
   sonos.exec("Play");
   redeye.exec("InputSonos");
 });
@@ -145,11 +145,11 @@ var state = {
   }
 }
 
-route.on("Web.GlenHome", function() {
+route.map("Web.GlenHome", function() {
   state.GlenHome = new Date();
 })
 
-route.on("Insteon.025014DEDD000001C71101", function() {
+route.map("Insteon.025014DEDD000001C71101", function() {
   var date = new Date();
   // If it's the afternoon and the livingroom hasn't seen motion in over four hours
   if (date.getHours > 16 && date.getHours < 20 && (date - motion.LivingRoom.ended > 1000 * 60 * 60 * 5)) {
@@ -159,7 +159,7 @@ route.on("Insteon.025014DEDD000001C71101", function() {
   motion.LivingRoom.started = new Date();
 });
 
-route.on("Insteon.025014DEDD000001C71301", function() {
+route.map("Insteon.025014DEDD000001C71301", function() {
   motion.LivingRoom.ended = new Date();
 });
 */

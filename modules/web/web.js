@@ -15,12 +15,13 @@ function Web(data) {
   this.socket.on('error', this.handleSocketError.bind(this));
   this.clients = [];
 
-  this.stateCache = {};
+  this.state = {};
 
   console.log("Web Connected");
 };
 
 util.inherits(Web, EventEmitter);
+Web.STATEOBSERVER = true;
 Web.MIMETYPES = {
   "html": "text/html",
   "jpeg": "image/jpeg",
@@ -31,10 +32,17 @@ Web.MIMETYPES = {
 };
 
 Web.prototype.exec = function(command, details) {
-  console.log(" Web: storing " + command);
-  this.stateCache[command] = details;
+  
+};
+
+Web.prototype.initStateObserver = function(route, state) {
+  this.state = state;
+  route.on("StateChanged", this.handleStateChanged.bind(this));
+};
+
+Web.prototype.handleStateChanged = function(state, data) {
   for (var i = 0; i < this.clients.length; i++) {
-    this.clients[i].emit(command, details);
+    this.clients[i].emit(state, data);
   }
 };
 
@@ -76,13 +84,12 @@ Web.prototype.handleEvent = function(command, details) {
 };
 
 Web.prototype.handleSocketError = function(socket) {
+
 };
 
-Web.prototype.handleSocketGetState = function(socket, state) {
-  if (state in this.stateCache)
-    socket.emit(state, this.stateCache[state]);
-  else
-    console.log(" Web: " + state + " state not available");
+Web.prototype.handleSocketGetState = function(socket, stateName) {
+  if (stateName in this.state)
+    socket.emit(stateName, this.state[stateName]);
 };
 
 Web.prototype.handleSocketClose = function(socket) {

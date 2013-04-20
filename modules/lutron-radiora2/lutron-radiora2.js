@@ -14,7 +14,7 @@ function LutronRadioRA2(data) {
   // Create reverse devices map.
   this.deviceIds = {};
   for (var name in this.devices) {
-    var id = this.devices[name];
+    var id = this.devices[name].id;
     this.deviceIds[id] = name;
   }
 
@@ -24,7 +24,12 @@ function LutronRadioRA2(data) {
 };
 util.inherits(LutronRadioRA2, EventEmitter);
 
+LutronRadioRA2.TYPE_LIGHT = 1;
+LutronRadioRA2.TYPE_KEYPAD = 2;
+LutronRadioRA2.TYPE_MOTION = 4;
+
 LutronRadioRA2.prototype.send = function(string) {
+  console.log(string);
   var isFirstRequest = (this.commandQueue.length == 0);
   this.commandQueue.push(string);
   if (isFirstRequest)
@@ -45,11 +50,17 @@ LutronRadioRA2.prototype.exec = function(command) {
   var segments = command.split(".");
 
   var deviceName = segments.shift();
-  deviceId = (deviceName in this.devices) ? this.devices[deviceName] : deviceName;
-  var componentId = segments.shift();
-  var fields = segments;
+  var deviceType = this.devices[deviceName].type;
+  deviceId = (deviceName in this.devices) ? this.devices[deviceName].id : deviceName;
 
-  this.send("#OUTPUT," + [deviceId, componentId, fields.join(",")].join(","));
+  if (deviceType == LutronRadioRA2.TYPE_LIGHT) {
+    var action = segments.shift().toLowerCase();
+    var level = (action == "on") ? 100 : (action == "off") ? 0 : level;
+    if (!isNaN(level))
+      this.send("#OUTPUT," + [deviceId, 1, level].join(","));
+  }
+  //var componentId = segments.shift();
+  //var fields = segments;
 };
 
 LutronRadioRA2.prototype.parseData = function(data) {
@@ -64,6 +75,9 @@ LutronRadioRA2.prototype.parseData = function(data) {
   var command = data[0];
   data = data.slice(1);
   var deviceName = (data[0] in this.deviceIds) ? this.deviceIds[data[0]] : data[0];
+  if (!deviceName) return;
+  if (!this.devices[deviceName]) return;
+  var deviceType = this.devices[deviceName].type;
   var componentId = data[1];
   var fields = data.slice(2);
   var eventString = [deviceName, componentId, fields.join(".")].join(".");
@@ -71,12 +85,15 @@ LutronRadioRA2.prototype.parseData = function(data) {
   switch (command) {
     case "~OUTPUT":
       var details = {};
-      if (componentId == "1" && fields[0])
+      if (deviceType == LutronRadioRA2.TYPE_LIGHT && componentId == "1" && fields[0])
         details.brightness = fields[0];
-      this.emit("DeviceEvent", eventString, details);
+      this.emit("DeviceEvent", deviceName, details);
       break;
     case "~DEVICE":
-      this.emit("DeviceEvent", eventString);
+      if (deviceType == LutronRadioRA2.TYPE_MOTION && fields[0])
+        this.emit("DeviceEvent", deviceName + "." + ((fields[0] == 3) ? "On" : "Off"));  
+      else 
+        this.emit("DeviceEvent", eventString);
       break;
     case "#OUTPUT":
       break;
@@ -112,7 +129,7 @@ LutronRadioRA2.prototype.handleConnected = function() {
 
   // Get the status of all the devices we know about.
   for (var name in this.devices) {
-    var id = this.devices[name];
+    var id = this.devices[name].id;
     this.send("?OUTPUT," + id);
   }
 };

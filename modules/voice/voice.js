@@ -82,8 +82,9 @@ Voice.prototype.handleVoiceInput = function(params) {
   // go through each possible voice string (usually only one)
   // and break after the first succeeds
 
+  var matched = false;
   for (var i = 0; i < strings.length; i++) {
-    var string = strings[i];
+    var string = strings[i].toLowerCase();
     var result = this.normalizeString(string);
     var resultParams = result.params;
 
@@ -105,9 +106,14 @@ Voice.prototype.handleVoiceInput = function(params) {
       } else {
         console.log('ignoring duplicate event', string);
       }
-
+      matched = true;
       break;
     }
+  }
+
+  if (!matched) {
+    resultParams.recognizedString = strings.shift();
+    this.emit("DeviceEvent", "NoMatch", resultParams);
   }
 
   // Any input triggers stoppedListening

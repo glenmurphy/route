@@ -320,7 +320,7 @@ SonosComponent.prototype.playFavorite = function(name) {
   for (var f in this.system.favorites) {
     f = this.system.favorites[f];
     if (f.name == name || f.url == name) {
-      console.log("matched ", f);
+      if (this.debug) console.log("matched ", f);
       this.playURI(f.url, f.urlMetadata);
       return;
     }

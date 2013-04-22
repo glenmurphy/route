@@ -19,20 +19,35 @@ function Switch(name, desc, socket, parentNode) {
   this.nodeName = createElement("div", "switch-name", this.node, this.desc);
   this.nodeOff = createElement("div", "switch-off", this.node, "");
 
-  this.node.addEventListener("click", this.handleClick.bind(this));
+  this.node.addEventListener("click", this.handleClick.bind(this), false);
 }
 
 Switch.CSS = " \
 .switch { \
   position:relative; \
-  width:240px; \
-  height:50px; \
-  margin:5px; \
-  background-color:#333; \
+  z-index:1; \
+  display:inline-block; \
+  width: 96px; \
+  margin-right:6px; \
+  height: 48px; \
+  border-radius: 5px; \
+  margin-bottom: 3px; \
+  background-clip: padding-box; \
+  background-color: #1f579a; \
+  box-sizing:border-box; \
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.35); \
+  background-image: \
+    -webkit-linear-gradient(bottom, rgba(0,0,0,.1) 0%, rgba(255,255,255,.16) 100%), \
+    url(noise1.png); \
   font-family: helvetica, arial, sans-serif; \
-  font-size:12px; \
-  border-radius:4px; \
+  font-size:14px; \
   cursor:pointer; \
+  transition:all 0.1s; \
+} \
+.switch:last-child { \
+  margin-right:0px; \
+} \
+.switch:hover { \
 } \
 .switch.on { \
   background-color:#f7a03c; \
@@ -45,15 +60,16 @@ Switch.CSS = " \
 } \
 .switch-name { \
   position:absolute; \
-  top:16px; \
+  top:14px; \
   left:0px; \
-  width:240px; \
+  font-weight:bold; \
+  width:100%; \
   font-size:14px; \
   color:white; \
+  text-shadow:0px 1px 3px rgba(0, 0, 0, 0.3); \
   text-align:center; \
 } \
 .switch.on .switch-name { \
-  color:black; \
 } \
 ";
 Switch.CSS_APPENDED = false;

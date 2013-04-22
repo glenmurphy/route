@@ -1,4 +1,4 @@
-<meta name="viewport" content="width=640, height=device-height, initial-scale=0.5, user-scalable=no" />
+<meta name="viewport" content="width=640, height=device-height, initial-scale=1, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <!--<link rel="apple-touch-startup-image" href="title.png" />-->
 <title>Cambridge</title>
@@ -11,10 +11,12 @@
 }
 
 body {
-  background-color:#222222;
+  background-color:#1b2229;
   font-family:helvetica, arial, sans-serif;
-  font-size:32px;
+  font-size:24px;
   color:#999;
+  margin:0px;
+  padding:0px;
 }
 p {
   margin:0;
@@ -29,6 +31,30 @@ a:hover {
 a:active {
   background-color:#f00;
 }
+.room {
+  display:block;
+  position:absolute;
+  top:0px;
+  padding:9px;
+  margin:1px;
+  width:300px;
+  background-color:#212b35;
+}
+.room .room-name {
+  width:300px;
+  text-align:center;
+  font-size:16px;
+  font-weight:bold;
+  text-shadow:0px 1px 1px rgba(0, 0, 0, 0.5);
+  color:#686f76;
+  padding-bottom:9px;
+}
+.room .group {
+  margin-bottom:16px;
+}
+.room .group:last-child {
+  margin-bottom:0px;
+}
 </style>
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -42,29 +68,88 @@ function sendEvent(name) {
 <script src="functions.js"></script>
 <script src="sonos.js"></script>
 <script src="switch.js"></script>
+<script src="stereo.js"></script>
+<script src="volume.js"></script>
 <body>
-  LIVINGROOM<br />
-  <div id="living-room-player"></div>
-  <div id="living-lounge-light"></div>
-  <div id="living-pendant-light"></div>
-  <a href="#" onclick="return sendEvent('Livingroom.Sonos');">Sonos</a>
-  <a href="#" onclick="return sendEvent('Livingroom.MacMini');">Mac</a>
-  <a href="#" onclick="return sendEvent('Livingroom.Roku');">Roku</a>
-  <br />  <br />
-  OFFICE<br />
-  <div id="office-main-light"></div>
-  <br /> <br />
-  MASTERBED<br />
-  <div id="master-bed-player"></div>
-  <br />  <br />
+  <div class="room" style="left:0px;">
+    <div class="room-name">LIVING ROOM</div>
+    <div class="group" id="stereo"></div>
+    <div class="group" id="living-lights"></div>
+  </div>
+  
+  <div class="room" style="left:320px;">
+    <div class="room-name">OFFICE</div>
+    <div id="office-main-light"></div>
+  </div>
+
+  <div class="room" style="left:640px;">
+    <div class="room-name">MASTER BED</div>
+    <div class="group">
+      <div id="master-bed-stereo"></div>
+    </div>
+    <div class="group">
+      <div id="master-bed-wall"></div>
+    </div>
+  </div>
 </body>
 <script>
-var socket = io.connect('http://localhost:8000');
+var socket = io.connect();
 
-new Sonos("Sonos.LivingRoom", socket, $("living-room-player"));
-new Sonos("Sonos.MasterBed", socket, $("master-bed-player"));
-new Switch("Lutron.LivingroomLoungeLamp", "Lamp", socket, $('living-lounge-light'));
-new Switch("Lutron.HallwayPendantLights", "Pedant", socket, $('living-pendant-light'));
+new Stereo([
+  {
+    name : "Sonos",
+    action : "Livingroom.Sonos",
+    image : "stereo-sonos.png",
+    on : "Denon.Switch.Sonos"
+  },
+  {
+    name : "MacMini",
+    action : "Livingroom.PC",
+    image : "stereo-pc.png",
+    on : "IR.A-PC"
+  },
+  {
+    name : "AppleTV",
+    action : "Livingroom.AppleTV",
+    image : "stereo-apple.png",
+    on : "IR.A-AppleTV"
+  },
+  {
+    name : "Roku",
+    action : "Livingroom.Roku",
+    image : "stereo-roku.png",
+    on : "IR.A-Roku"
+  },
+], socket, $('stereo'));
+new Volume("Denon.Volume", socket, $("stereo"));
+new Sonos("Sonos.Livingroom", socket, $("stereo"));
+
+new Switch("Lutron.LivingroomLoungeLamp", "Lamp", socket, $('living-lights'));
+new Switch("Lutron.HallwayPendantLights", "Pendant", socket, $('living-lights'));
+new Switch("Lutron.KitchenDiningLights", "Dining", socket, $('living-lights'));
 
 new Switch("Lutron.OfficePendantLight", "Office", socket, $('office-main-light'));
+
+new Stereo([
+  {
+    name : "MacMini",
+    action : "Masterbed.PC",
+    image : "stereo-pc.png",
+    on : "IR.B-PC"
+  },
+  {
+    name : "AppleTV",
+    action : "Masterbed.AppleTV",
+    image : "stereo-apple.png",
+    on : "IR.B-AppleTV"
+  },
+  {
+    name : "Roku",
+    action : "Masterbed.Roku",
+    image : "stereo-roku.png",
+    on : "IR.B-Roku"
+  },
+], socket, $('master-bed-stereo'));
+new Sonos("Sonos.Masterbed", socket, $("master-bed-stereo"));
+new Switch("Lutron.MasterbedWallLights", "Wall lights", socket, $('master-bed-wall'));
 </script>

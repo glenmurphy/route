@@ -19,8 +19,8 @@ var sonos = route.addDevice({
   name : "Sonos",
   init : {
     components : {
-      "LivingRoom" : "10.0.1.4",
-      "MasterBed" : "10.0.1.12"
+      "Livingroom" : "10.0.1.4",
+      "Masterbed" : "10.0.1.12"
     }
   }
 });
@@ -32,11 +32,11 @@ var IR = route.addDevice({
     host : "10.0.1.56", // iTach IP2IR
     port: "4998",
     commands : {
-      "A-MacMini" : "sendir,1:1,1,38109,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,64,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,21,22,64,21,64,22,63,22,64,21,64,22,1518,342,85,22,3810",
+      "A-PC" : "sendir,1:1,1,38109,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,64,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,21,22,64,21,64,22,63,22,64,21,64,22,1518,342,85,22,3810",
       "A-AppleTV" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,4892",
       "A-Roku" : "sendir,1:1,1,38226,1,1,342,171,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,21,22,21,21,21,22,64,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,21,22,63,22,64,21,64,22,63,22,1523,341,85,22,3822",
       "A4" : "sendir,1:1,1,38226,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,64,21,21,22,21,22,21,21,21,22,21,22,21,21,64,22,21,21,64,22,63,22,64,21,64,22,1522,342,85,22,3822",
-      "B-MacMini" : "sendir,1:1,1,38109,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,64,21,21,22,64,21,21,22,21,22,21,21,64,22,63,22,21,22,63,22,21,22,63,22,64,21,64,22,1517,342,85,22,3810",
+      "B-PC" : "sendir,1:1,1,38109,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,64,21,21,22,64,21,21,22,21,22,21,21,64,22,63,22,21,22,63,22,21,22,63,22,64,21,64,22,1517,342,85,22,3810",
       "B-AppleTV" : "sendir,1:1,1,38226,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,64,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,21,22,63,22,64,21,64,22,1522,342,85,22,3822",
       "B-Roku" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,21,22,21,21,64,22,63,22,21,22,21,21,21,22,64,21,64,22,63,22,21,22,21,21,64,22,63,22,64,21,1523,342,85,21,3822",
       "B4" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,21,22,63,22,64,21,21,22,21,22,21,21,21,22,21,22,63,22,21,22,21,21,64,22,63,22,64,21,1523,342,85,21,3822",
@@ -45,7 +45,7 @@ var IR = route.addDevice({
   }
 });
 
-var Denon = route.addDevice({
+var denon = route.addDevice({
   type : Denon,
   name : "Denon",
   init : {
@@ -74,11 +74,21 @@ var lutron = route.addDevice({
       "LivingroomEntryLight" : { id : 30, type : Lutron.TYPE_LIGHT },
       "LivingroomLoungeLamp" : { id : 18, type : Lutron.TYPE_LIGHT },
       "LivingroomPathLights" : { id : 31, type : Lutron.TYPE_LIGHT },
-      "LivingroomKeypad" : { id : 14, type : Lutron.TYPE_KEYPAD },
+      "FrontDoorMotion" : { id : 32, type : Lutron.TYPE_MOTION },
+      "LivingroomKeypad" : {
+        id : 14, type : Lutron.TYPE_KEYPAD,
+        buttons : {
+          1 : "AllOn",
+          2 : "Pedant",
+          3 : "UpperShades",
+          4 : "LowerShades",
+          5 : "Lamp",
+          6 : "Goodnight"
+        }
+      },
 
       "OfficePendantLight" : { id : 15, type : Lutron.TYPE_LIGHT },
       "OfficeKeypad" : { id : 16, type : Lutron.TYPE_LIGHT },
-      "OfficeMotion" : { id : 32, type : Lutron.TYPE_MOTION },
 
       "MasterbedRemote" : { id : 29, type : Lutron.TYPE_REMOTE },
       "MasterbedWallLights" : { id : 28, type : Lutron.TYPE_LIGHT },
@@ -101,25 +111,46 @@ var web = route.addDevice({
 
 // Simple map of events to commands.
 route.addEventMap({
-  "Lutron.MasterbedRemote.2.3" : "Sonos.LivingRoom.PlayPause",
+  //
+  "Sonos.Livingroom.Started" : "Denon.Switch.Sonos",
 
   //  Hard-coded web switches for media (TV/Speakers)
   "Web.Livingroom.Sonos" : "Denon.Switch.Sonos",
-  "Web.Livingroom.MacMini" : [
-    "IR.A-MacMini",
+  "Web.Livingroom.PC" : [
+    "IR.A-PC",
     "Denon.Switch.HDMI",
-    "Sonos.LivingRoom.Pause",
+    "Sonos.Livingroom.Pause",
+  ],
+  "Web.Livingroom.AppleTV" : [
+    "IR.A-AppleTV",
+    "Denon.Switch.HDMI",
+    "Sonos.Livingroom.Pause",
   ],
   "Web.Livingroom.Roku" : [
     "IR.A-Roku",
     "Denon.Switch.HDMI",
-    "Sonos.LivingRoom.Pause",
+    "Sonos.Livingroom.Pause",
   ],
-  "Web.MasterBed.MacMini" : "IR.B-MacMini",
-  "Web.MasterBed.AppleTV" : "IR.B-AppleTV",
-  "Web.MasterBed.Roku" : "IR.B-Roku",
+
+  "Web.Masterbed.PC" : "IR.B-PC",
+  "Web.Masterbed.AppleTV" : "IR.B-AppleTV",
+  "Web.Masterbed.Roku" : "IR.B-Roku",
+
+  "Lutron.LivingroomKeypad.Goodnight.On" : [
+    "Sonos.Livingroom.Pause",
+    "Sonos.Masterbed.Pause",
+    "Denon.Switch.Sonos",
+  ]
 });
 
 route.map("Web.Lutron.*", function(eventname, data) {
   lutron.exec(eventname.substring(11)); // chop off "Web.Lutron."
+});
+
+route.map("Web.Sonos.*", function(eventname, data) {
+  sonos.exec(eventname.substring(10)); // chop off "Web.Sonos."
+});
+
+route.map("Web.Denon.*", function(eventname, data) {
+  denon.exec(eventname.substring(10)); // chop off "Web.Sonos."
 });

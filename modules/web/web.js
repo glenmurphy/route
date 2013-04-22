@@ -23,12 +23,12 @@ function Web(data) {
 util.inherits(Web, EventEmitter);
 Web.STATEOBSERVER = true;
 Web.MIMETYPES = {
-  "html": "text/html",
-  "jpeg": "image/jpeg",
-  "jpg": "image/jpeg",
-  "png": "image/png",
-  "js": "text/javascript",
-  "css": "text/css"
+  "html" : "text/html",
+  "jpeg" : "image/jpeg",
+  "jpg" : "image/jpeg",
+  "png" : "image/png",
+  "js" : "text/javascript",
+  "css" : "text/css"
 };
 
 Web.prototype.exec = function(command, details) {
@@ -61,10 +61,14 @@ Web.prototype.handleReq = function(req, res) {
       case "/":
         filename = path.join(this.dir, "index.html");
       default:
-        var ext = path.extname(filename);
-        res.writeHead(200, {'Content-Type': (Web.MIMETYPES[ext] || "text/html")});
-        var fileStream = fs.createReadStream(filename);
-        fileStream.pipe(res);
+        var ext = path.extname(filename).substring(1);
+        if (fs.existsSync(filename)) {
+          res.writeHead(200, {'Content-Type': (Web.MIMETYPES[ext] || "text/html")});
+          var fileStream = fs.createReadStream(filename);
+          fileStream.pipe(res);
+        } else {
+          res.end();
+        }
         break;
     }
   }

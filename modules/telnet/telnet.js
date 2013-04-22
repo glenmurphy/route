@@ -59,6 +59,7 @@ Telnet.prototype.exec = function(command) {
   var action = segments.shift();
   if (this.commands[action]) {
     this.send(this.commands[action]);
+    this.emit("DeviceEvent", command);
   }
 };
 

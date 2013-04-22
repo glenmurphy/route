@@ -28,8 +28,18 @@ LutronRadioRA2.TYPE_LIGHT = 1;
 LutronRadioRA2.TYPE_KEYPAD = 2;
 LutronRadioRA2.TYPE_MOTION = 4;
 
+LutronRadioRA2.StateText = function(state) {
+  switch (state) {
+    case "3":
+      return "On"
+    case "4":
+      return "Off"
+    default:
+      return state
+  }
+}
+
 LutronRadioRA2.prototype.send = function(string) {
-  console.log(string);
   var isFirstRequest = (this.commandQueue.length == 0);
   this.commandQueue.push(string);
   if (isFirstRequest)
@@ -77,7 +87,8 @@ LutronRadioRA2.prototype.parseData = function(data) {
   var deviceName = (data[0] in this.deviceIds) ? this.deviceIds[data[0]] : data[0];
   if (!deviceName) return;
   if (!this.devices[deviceName]) return;
-  var deviceType = this.devices[deviceName].type;
+  var device = this.devices[deviceName];
+  var deviceType = device.type;
   var componentId = data[1];
   var fields = data.slice(2);
   var eventString = [deviceName, componentId, fields.join(".")].join(".");
@@ -90,10 +101,15 @@ LutronRadioRA2.prototype.parseData = function(data) {
       this.emit("DeviceEvent", deviceName, details);
       break;
     case "~DEVICE":
-      if (deviceType == LutronRadioRA2.TYPE_MOTION && fields[0])
-        this.emit("DeviceEvent", deviceName + "." + ((fields[0] == 3) ? "On" : "Off"));  
-      else 
+      if (deviceType == LutronRadioRA2.TYPE_MOTION && fields[0]) {
+        this.emit("DeviceEvent", deviceName + "." + LutronRadioRA2.StateText(fields[0]));  
+      } else if (deviceType == LutronRadioRA2.TYPE_KEYPAD && device.buttons) {
+        var buttonText = (componentId in device.buttons) ? device.buttons[componentId] : componentId;
+        var state = LutronRadioRA2.StateText(fields[0]);
+        this.emit("DeviceEvent", [deviceName, buttonText, state].join("."));
+      } else {
         this.emit("DeviceEvent", eventString);
+      }
       break;
     case "#OUTPUT":
       break;

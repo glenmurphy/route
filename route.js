@@ -66,11 +66,19 @@ Route.prototype.handleEvent = function(deviceName, event, data) {
 
   // Let any state observers know if anything changed.
   if (!(eventName in this.state) || !Route.ObjectsEqual(this.state[eventName], data)) {
-    console.log("State Changed: " + eventName);
-    this.state[eventName] = data;
-    this.emit("StateChanged", eventName, data);
+    this.updateState(eventName, data);
   }
 };
+
+Route.prototype.updateState = function(name, data) {
+  if (!data) 
+    var data = {};
+
+  console.log("State Changed: " + name);
+  data.stateUpdatedTime = new Date().getTime();
+  this.state[name] = data;
+  this.emit("StateChanged", name, data);
+}
 
 Route.prototype.allEventsMatchingName = function(name) {
   var matches = [];

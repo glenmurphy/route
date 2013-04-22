@@ -29,7 +29,8 @@ Roku.prototype.exec = function(command, params) {
 Roku.prototype.log = function(data) {
   console.log("Roku LOG:" + data);
   this.emit("DeviceEvent", "Logged");
-}
+};
+
 Roku.prototype.searchRoku = function (query) {
   this.sendEvent("HOME");
   setTimeout(function(){
@@ -39,7 +40,8 @@ Roku.prototype.searchRoku = function (query) {
     this.sendText(query);
     this.sendEvent("Play");
   }.bind(this), 3300);
-}
+};
+
 Roku.prototype.launchChannel = function (channelID) {
   var request = http.request({
     port : Roku.PORT,
@@ -57,14 +59,14 @@ Roku.prototype.launchChannel = function (channelID) {
   request.on('error', function(e) {console.log("Error:" + e.message)});
   request.end();
  // 'POST /launch/11?contentID=14 HTTP/1.1\r\n\r\n' | ncat 192.168.1.114 8060 
-}
+};
 
 Roku.prototype.sendText = function(text) {
   var characters = text.split('');
   for (var i = 0; i < characters.length; i++) {
     this.sendEvent(characters[i]);
   }
-}
+};
 
 Roku.prototype.sendEvent = function(key) {
   if (key.length == 1) key = "Lit_" + escape(key);
@@ -73,8 +75,7 @@ Roku.prototype.sendEvent = function(key) {
   if (isFirstRequest) {
     setTimeout(this.sendNextEvent.bind(this),200);
   }
-}
-
+};
 
 Roku.prototype.sendNextEvent = function() {
   if (!this.eventQueue.length) return;
@@ -95,7 +96,7 @@ Roku.prototype.sendNextEvent = function() {
   console.log("URL: " + request.path);
   request.on('error', function(e) {console.log("Error:" + e.message)});
   request.end();
-}
+};
 
 Roku.prototype.getChannels = function() {
   var request = http.request({
@@ -123,7 +124,7 @@ Roku.prototype.getChannels = function() {
   }.bind(this));
   request.on('error', function(e) {console.error("! " + this.name + "\t" + e)}.bind(this));
   request.end();
-}
+};
 
 var dgram = require('dgram'); // dgram is UDP
 

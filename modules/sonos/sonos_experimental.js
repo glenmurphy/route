@@ -620,7 +620,7 @@ SonosComponent.prototype.parseNotification = function (data) {
         }
         var state = {};
         for (var key in playerInfo) {
-          state["sonos." + this.name + "." + key] = playerInfo[key];
+          state["Sonos." + this.name + "." + key] = playerInfo[key];
         }
         this.emit("StateEvent", state);
       }.bind(this));

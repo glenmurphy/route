@@ -120,7 +120,7 @@ Weather.prototype.normalizeStrings = function(obj) {
 Weather.prototype.processSunEvent = function (type) {
   this.emit("DeviceEvent", type);
   this.emit("StateEvent", {SunEvent:type});
-  if (debug) {
+  if (this.debug) {
     console.log(type);
     console.log(new Date());
   }

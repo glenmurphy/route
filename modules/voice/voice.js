@@ -85,6 +85,7 @@ Voice.prototype.handleVoiceInput = function(params) {
   var matched = false;
   for (var i = 0; i < strings.length; i++) {
     var string = strings[i].toLowerCase();
+    var originalString = string;
     var result = this.normalizeString(string);
     var resultParams = result.params;
 
@@ -101,6 +102,7 @@ Voice.prototype.handleVoiceInput = function(params) {
       if (this.lastEvent != string) { // Ignore repeated events within one second (handle multiple listeners)
         this.emit("DeviceEvent", string, resultParams);
         this.lastEvent = string;
+        resultParams.recognizedString = originalString;
         if (this.lastEventTimeout) clearTimeout(this.lastEventTimeout);
         this.lastEventTimeout = setTimeout(function (){ this.lastEvent = null }.bind(this), 1000);
       } else {
@@ -111,10 +113,14 @@ Voice.prototype.handleVoiceInput = function(params) {
     }
   }
 
+
+
   if (!matched) {
     resultParams.recognizedString = strings.shift();
     this.emit("DeviceEvent", "NoMatch", resultParams);
   }
+
+    this.emit("StateEvent", {lastVoiceString: resultParams.recognizedString});
 
   // Any input triggers stoppedListening
   this.stoppedListening(params);

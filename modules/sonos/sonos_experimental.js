@@ -347,6 +347,7 @@ SonosComponent.prototype.setCurrentURI = function(uri, metadata, callback) {
 
 SonosComponent.prototype.playURI = function(uri, metadata, callback) {
   if (uri.indexOf("x-rincon-cpcontainer:") === 0) {
+    this.setPlayMode("SHUFFLE");
     this.queueContainerURI(uri, metadata, callback);
   } else {
     this.setCurrentURI(uri, metadata, function(resp) {
@@ -455,7 +456,7 @@ SonosComponent.prototype.setVolume = function(volume) {
   this.callAction("RenderingControl", "SetVolume", {DesiredVolume : volume, InstanceID : 0, Channel : "Master"}, this.deviceid);
 };
 
-SonosComponent.prototype.setMute = function(flag) { // NORMAL, REPEAT_ALL, SHUFFLE, SHUFFLE_NOREPEAT
+SonosComponent.prototype.setMute = function(flag) {
   this.callAction("RenderingControl", "SetMute", {DesiredMute : flag, InstanceID : 0, Channel : "Master"}, this.deviceid);
 };
 

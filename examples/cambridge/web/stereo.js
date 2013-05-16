@@ -22,7 +22,6 @@ function Stereo(components, socket, parentNode) {
     this.node.appendChild(c.node);
     component.component = c;
   }
-
 }
 
 Stereo.CSS = " \

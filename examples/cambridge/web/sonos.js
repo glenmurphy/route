@@ -46,14 +46,16 @@ Sonos.CSS = " \
   box-sizing:border-box; \
   background-color: #2b3e52; \
   border-top: 1px solid rgba(255, 255, 255, 0.3); \
-  box-shadow: inset 0 -4px 0 rgba(0,0,0,.6), 0px 1px 7px 3px rgba(0, 0, 0, 0.2); \
-  background-image: url(noise1.png); \
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.25), 0px 1px 7px 3px rgba(0, 0, 0, 0.2); \
+  background-image: \
+    -webkit-linear-gradient(bottom, rgba(0,0,0,.05) 0%, rgba(255,255,255,.1) 100%), \
+    url(noise1.png); \
   background-clip: padding-box; \
   overflow:hidden; \
   transition: all 0.2s; \
 } \
 .sonos:hover { \
-  background-color:#333; \
+  background-color:#30465e; \
 } \
 .sonos-background { \
   position:absolute; \

@@ -31,17 +31,22 @@ Roku.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 Roku.prototype.searchRoku = function (query) {
+// New logic for 5.0
   this.sendEvent("HOME");
-
-   
   setTimeout(function(){
-    this.launchChannel(18681);
-  }.bind(this), 3000);
-  setTimeout(function(){
+    // Navigate to search
+    this.sendEvent("Down");
+    this.sendEvent("Down");
+    this.sendEvent("Right");
+    // Send query
     this.sendText(query);
-    this.sendEvent("Play");
+    setTimeout(function(){
+      this.sendEvent("Fwd");
+      this.sendEvent("Right");
+    }.bind(this), 2000);
   }.bind(this), 5000);
 }
+
 Roku.prototype.launchChannel = function (channelID) {
   var request = http.request({
     port : Roku.PORT,
@@ -158,8 +163,5 @@ function search() {
   client.send(message, 0, message.length, 1900, "239.255.255.250");
   client.close();
 }
-
-search();
-
 
 exports.Roku = Roku;

@@ -114,20 +114,26 @@ Voice.prototype.handleVoiceInput = function(params) {
   }
 
 
-
+console.log("1");
   if (!matched) {
-    resultParams.recognizedString = strings.shift();
-    this.emit("DeviceEvent", "NoMatch", resultParams);
+    string = resultParams.recognizedString = strings.shift();
+    if (this.lastEvent != string) { // Ignore repeated events within one second (handle multiple listeners)
+      this.emit("DeviceEvent", "NoMatch", resultParams);
+      this.lastEvent = string;
+      if (this.lastEventTimeout) clearTimeout(this.lastEventTimeout);
+      this.lastEventTimeout = setTimeout(function (){ this.lastEvent = null }.bind(this), 1000);
+    }
   }
 
-    this.emit("StateEvent", {lastVoiceString: resultParams.recognizedString});
+  this.emit("StateEvent", {lastVoiceString: resultParams.recognizedString});
+console.log("2");
 
   // Any input triggers stoppedListening
   this.stoppedListening(params);
 }
 
 Voice.prototype.normalizeString = function(string) {
-  var splitWords = ["to", "of", "for"];
+  var splitWords = ["to", "for"];
   var params = {};
   for (var i = 0; i < splitWords.length; i++) {
     var splitString = " " + splitWords[i] + " ";

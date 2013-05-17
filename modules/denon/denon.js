@@ -26,7 +26,7 @@ function Denon(data) {
     this.sourceIds[id] = name;
   }
 
-  this.debug = false;
+  this.debug = data.debug;
   this.commandQueue = [];
   this.connect();
 };
@@ -64,8 +64,52 @@ Denon.prototype.exec = function(command) {
   }
 };
 
+Denon.prototype.getVolume = function(percent) {
+  this.send("MV?");
+}
+
+Denon.prototype.setVolume = function(percent) {
+  percent = Math.round(percent * 2) / 2;
+  var half = Math.mod(percent, 1.0) == 0.5;
+  percent = String(Math.floor(percent));
+  if (percent.length == 1) percent = "0" + percent;
+  if (half) percent = percent + "5";
+  this.send("MV" + percent);
+}
+
+Denon.prototype.volumeUp = function(data) {
+  this.send("MV" + "UP");
+}
+Denon.prototype.volumeDown = function(data) {
+  this.send("MV" + "DOWN");
+}
+
 Denon.prototype.parseData = function(data) {
-  if (this.debug) console.log("Denon", data);
+  var event = data.substring(0,2);
+  var parameter = data.substring(2);
+  switch (event) {
+    case "MV":
+      var volume = parseFloat(parameter);
+      if (volume) {
+        if (parameter.length > 2) volume /= 10; 
+        this.volume = volume;
+        console.log("volume set to", volume);
+        this.emit("StateEvent", {"Denon.Volume" : volume});
+      }
+      break;
+    case "MU":
+      var muted = parameter == "ON";
+      this.emit("DeviceEvent", muted ? "Muted" : "Unmuted");
+      break;
+    case "SI":
+      var source = parameter;
+      this.emit("DeviceEvent", "Source." + source);
+      this.emit("StateEvent", {"Denon.Source" : volume});
+      break;
+    default:
+      if (this.debug) console.log("Denon", event, parameter);
+  }
+  
 }
 
 // Connection
@@ -74,7 +118,10 @@ Denon.prototype.connect = function() {
   this.client = net.connect({
     host : this.host,
     port : this.port
-  });
+  }, function() { //'connect' listener
+    this.emit("DeviceEvent", "Connected");
+    this.getVolume();    
+  }.bind(this));
 
   this.client.on('data', this.handleData.bind(this));
   this.client.on('error', this.handleError.bind(this));
@@ -89,9 +136,7 @@ Denon.prototype.reconnect = function() {
 };
 
 Denon.prototype.handleData = function(data) {
-  data = (data + "").trim();
-  console.log(data);
-  
+  data = (data + "").trim();  
   this.parseData(data.split("\r\n").shift());
 };
 
@@ -101,13 +146,13 @@ Denon.prototype.handleError = function(e) {
 };
 
 Denon.prototype.handleEnd = function() {
-  this.emit("sourceEvent", "Denon.Disconnected");
+  this.emit("DeviceEvent", "Disconnected");
   this.reconnect();
 };
 
 Denon.prototype.log = function(data) {
   console.log("Denon LOG:" + data);
-  this.emit("sourceEvent", "Logged");
+  this.emit("DeviceEvent", "Logged");
 }
 
 exports.Denon = Denon;

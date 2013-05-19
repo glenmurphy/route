@@ -110,9 +110,6 @@ var proximity = route.addDevice({
   }
 });
 
-// http://10.0.1.41:8083/ZWaveAPI/Run/devices[2].instances[0].commandClasses[0x62].Set(0)
-// http://10.0.1.41:8083/ZWaveAPI/Run/devices[2].instances[0].commandClasses[0x62].Set(255)
-
 var web = route.addDevice({
   type : Web,
   name : "Web",

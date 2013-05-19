@@ -1,7 +1,6 @@
 /**
  * This is what Glen uses to run his house
  */
-
 var PATH_TO_ROUTE = "../../";
 var PATH_TO_MODULES = "../../modules/";
 var Lutron = require(PATH_TO_MODULES + 'lutron-radiora2').LutronRadioRA2;
@@ -9,6 +8,8 @@ var Sonos = require(PATH_TO_MODULES + 'sonos/sonos.js').Sonos;
 var Denon = require(PATH_TO_MODULES + 'denon').Denon;
 var Web = require(PATH_TO_MODULES + 'web').Web;
 var Telnet = require(PATH_TO_MODULES + 'telnet').Telnet;
+var BTProximity = require(PATH_TO_MODULES + 'bt-proximity').BTProximity;
+var http = require('http');
 var Route = require(PATH_TO_ROUTE).Route;
 
 // Map of commands to routers that service that command.
@@ -100,6 +101,18 @@ var lutron = route.addDevice({
   }
 });
 
+var proximity = route.addDevice({
+  type : BTProximity,
+  name : "Proximity",
+  init : {
+    mac : "00:18:30:EB:68:BC",
+    name : "Glen"
+  }
+});
+
+// http://10.0.1.41:8083/ZWaveAPI/Run/devices[2].instances[0].commandClasses[0x62].Set(0)
+// http://10.0.1.41:8083/ZWaveAPI/Run/devices[2].instances[0].commandClasses[0x62].Set(255)
+
 var web = route.addDevice({
   type : Web,
   name : "Web",
@@ -141,6 +154,19 @@ route.addEventMap({
     "Sonos.Masterbed.Pause",
     "Denon.Switch.Sonos",
   ]
+});
+
+route.map("Proximity.Present", function() {
+  var options = {
+    host: '10.0.1.41',
+    port: 8083,
+    path: '/ZWaveAPI/Run/devices[2].instances[0].commandClasses[0x62].Set(0)'
+  };
+  http.get(options, function(res) {
+    console.log("Unlocked front door");
+  }).on('error', function(e) {
+    console.log("Unable to unlock front door");
+  });
 });
 
 route.map("Web.Lutron.*", function(eventname, data) {

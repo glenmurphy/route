@@ -15,25 +15,25 @@ function BTProximity(data) {
 
   this.present = new Date().getTime(); // Pretend we're here.
   this.linebuf = "";
-  this.reset();
-  process.on('SIGINT', this.shutdown.bind(this));
-
+  this.scan();
+  setInterval(this.scan.bind(this), BTProximity.RESCANTIME);
   setInterval(this.checkAway.bind(this), BTProximity.AWAYCHECKTIME);
+  process.on('SIGINT', this.shutdown.bind(this));
 }
 util.inherits(BTProximity, EventEmitter);
 
 BTProximity.prototype.exec = function(command, data) {
 };
 
-BTProximity.AWAYAFTERTIME = 120000; // how long we can go without seeing a device before we consider you away
-BTProximity.RESETAFTER = 50000; // Reset the adapter if we haven't heard anything in this time.
-BTProximity.AWAYCHECKTIME = 10000; // how often we check for AWAYAFTERTIME
+BTProximity.AWAYAFTERTIME = 130000; // how long we can go without seeing a device before we consider you away
+BTProximity.AWAYCHECKTIME = 5000; // how often we check for AWAYAFTERTIME
 BTProximity.RESCANTIME = 30000; // how often we force-rescan the network
 
-BTProximity.prototype.reset = function() {
+BTProximity.prototype.scan = function() {
   if (this.term) {
     this.term.kill();
     this.term.end();
+    this.term = null;
   }
 
   this.term = pty.spawn('bash', [], {
@@ -43,12 +43,11 @@ BTProximity.prototype.reset = function() {
     cwd: process.env.HOME,
     env: process.env
   });
+  this.term.on('data', this.handleData.bind(this));
 
   this.term.write('sudo hciconfig hci0 down\r');
   this.term.write('sudo hciconfig hci0 up\r');
   this.term.write('sudo hcitool lescan\r');
-
-  this.term.on('data', this.handleData.bind(this));
 };
 
 BTProximity.prototype.setAway = function() {
@@ -69,8 +68,6 @@ BTProximity.prototype.checkAway = function() {
   var time = new Date().getTime();
   if (this.present + BTProximity.AWAYAFTERTIME < time) {
     this.setAway();
-  } else if (this.present + BTProximity.RESETAFTER < time) {
-  	this.reset();
   }
 };
 
@@ -84,7 +81,6 @@ BTProximity.prototype.shutdown = function() {
 BTProximity.prototype.handleLine = function(line) {
   if (line.substr(0, this.mac.length) == this.mac) {
     this.setPresent();
-    setTimeout(this.reset.bind(this), BTProximity.RESCANTIME);
   }
   //console.log(line);
 };
@@ -104,3 +100,5 @@ BTProximity.prototype.handleData = function(data) {
 };
 
 exports.BTProximity = BTProximity;
+
+// new require("./bt-proximity").BTProximity)({mac : "00:18:30:EB:68:BC"});

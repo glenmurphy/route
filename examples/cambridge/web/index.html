@@ -119,6 +119,12 @@ new Stereo([
     image : "stereo-roku.png",
     on : "IR.A-Roku"
   },
+  {
+    name : "PS3",
+    action : "Livingroom.PS3",
+    image : "stereo-ps3.png",
+    on : "IR.A-PS3"
+  },
 ], socket, $('stereo'));
 new Volume("Denon.Volume", socket, $("stereo"));
 new Sonos("Sonos.Livingroom", socket, $("stereo"));
@@ -147,6 +153,12 @@ new Stereo([
     action : "Masterbed.Roku",
     image : "stereo-roku.png",
     on : "IR.B-Roku"
+  },
+  {
+    name : "PS3",
+    action : "Masterbed.PS3",
+    image : "stereo-ps3.png",
+    on : "IR.B-PS3"
   },
 ], socket, $('master-bed-stereo'));
 new Sonos("Sonos.Masterbed", socket, $("master-bed-stereo"));

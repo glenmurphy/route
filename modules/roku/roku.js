@@ -9,7 +9,7 @@ function Roku(data) {
   this.getChannels();
   this.eventQueue = [];
   this.name = data.name || "Roku";
-};
+}
 util.inherits(Roku, EventEmitter);
 
 Roku.prototype.exec = function(command, params) {
@@ -54,15 +54,14 @@ Roku.prototype.launchChannel = function (channelID) {
     host : this.host,
     path : "/launch/" + channelID,
     method: 'POST'
-    }, function(res){
+  }, function(res){
       console.log(res.statusCode);
       res.on('data', function (chunk) {
       }.bind(this));
       res.on('end', function () {
       }.bind(this));
-  }.bind(this));
-  console.log(request.path)
-  request.on('error', function(e) {console.log("Error:" + e.message)});
+    }.bind(this));
+  request.on('error', function(e) {console.log("Error:" + e.message);});
   request.end();
 };
 
@@ -75,7 +74,7 @@ Roku.prototype.sendText = function(text) {
 
 Roku.prototype.sendEvent = function(key) {
   if (key.length == 1) key = "Lit_" + escape(key);
-  var isFirstRequest = this.eventQueue.length == 0;
+  var isFirstRequest = this.eventQueue.length === 0;
   this.eventQueue.push(key);
   if (isFirstRequest) {
     setTimeout(this.sendNextEvent.bind(this),150);
@@ -99,7 +98,7 @@ Roku.prototype.sendNextEvent = function() {
       }.bind(this));
   }.bind(this));
   console.log("URL: " + request.path);
-  request.on('error', function(e) {console.log("Error:" + e.message)});
+  request.on('error', function(e) {console.log("Error:" + e.message);});
   request.end();
 };
 
@@ -114,12 +113,12 @@ Roku.prototype.getChannels = function() {
       var parser = new xml2js.Parser();
       parser.parseString(chunk, function (err, result) {
         var channels = [];
-        result = result.apps.app
+        result = result.apps.app;
         for (var i = 0; i < result.length; i++) {
           var channel = result[i].$;
-          channel.name = result[i]._
+          channel.name = result[i]._;
           channels.push(channel);
-        };
+        }
         var state = {};
         state["roku." + this.name + ".channels"] = channels;
         state["roku." + this.name + ".ip"] = this.host;
@@ -127,7 +126,7 @@ Roku.prototype.getChannels = function() {
       }.bind(this));
     }.bind(this));
   }.bind(this));
-  request.on('error', function(e) {console.error("! " + this.name + "\t" + e)}.bind(this));
+  request.on('error', function(e) {console.error("! " + this.name + "\t" + e);}.bind(this));
   request.end();
 };
 
@@ -146,21 +145,21 @@ function listen(port) {
   setTimeout(function(){
     server.close();
   },2000);
-};
+}
 
-function search() {
-  var message = new Buffer(
-    "M-SEARCH * HTTP/1.1\n" +
-    "HOST:239.255.255.250:1900\n" +
-    "MAN:\"ssdp:discover\"\n" +
-    "ST:roku:ecp\n" + // Essential, used by the client to specify what they want to discover, eg 'ST:ge:fridge'
-    "\n"
-  );
-  var client = dgram.createSocket("udp4");
-  client.bind(); // So that we get a port so we can listen before sending
-  listen(client.address().port);
-  client.send(message, 0, message.length, 1900, "239.255.255.250");
-  client.close();
-};
+// function search() {
+//   var message = new Buffer(
+//     "M-SEARCH * HTTP/1.1\n" +
+//     "HOST:239.255.255.250:1900\n" +
+//     "MAN:\"ssdp:discover\"\n" +
+//     "ST:roku:ecp\n" + // Essential, used by the client to specify what they want to discover, eg 'ST:ge:fridge'
+//     "\n"
+//   );
+//   var client = dgram.createSocket("udp4");
+//   client.bind(); // So that we get a port so we can listen before sending
+//   listen(client.address().port);
+//   client.send(message, 0, message.length, 1900, "239.255.255.250");
+//   client.close();
+// }
 
 exports.Roku = Roku;

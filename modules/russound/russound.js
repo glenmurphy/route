@@ -100,10 +100,15 @@ Russound.prototype.parseResponse = function(data) {
   data = JSON.parse("{" + data + "}");
   return data;
 }
-var notificationkeys = ["System.status"];
+var notificationKeys = ["System.status"];
 Russound.prototype.handleNotification = function(data) {
   var changes = {};
   for (var key in data) {
+    if (key == "System.status") {
+      var on = data[key] == "ON";
+      this.emit("DeviceEvent", on ? "On" : "Off");
+    }
+
     changes["russound." + key] = data[key]; 
     this.status[key] = data[key];
     if (this.debug) console.log("Russound", key, data[key])

@@ -58,6 +58,7 @@ Lutron.prototype.allOff = function () {
 }
 
 Lutron.prototype.selectScene = function(units, scene) {
+  this.unlockScenes(); // Do this every time to avoid scene lock, which happens randomly
   this.sendCommand("A" + scene + units.join(""));
 }
 
@@ -67,6 +68,10 @@ Lutron.prototype.zoneRaise = function(unit, zones) {
 
 Lutron.prototype.zoneLower = function(unit, zones) {
   this.sendCommand("D" + unit + zones.join(""));
+}
+
+Lutron.prototype.unlockScenes = function() {
+  this.sendCommand("SL");
 }
 
 

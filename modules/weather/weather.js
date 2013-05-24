@@ -8,6 +8,7 @@ function Weather(data) {
   this.longitude = data.longitude;
   this.location = data.location;
   this.darkskyKey = data.darkskyKey
+  this.debug = data.debug;
   setTimeout(this.calculateSunEvents.bind(this), 1000);
   this.fetchRainForecast();
 };
@@ -16,8 +17,8 @@ util.inherits(Weather, EventEmitter);
 Weather.TIMEARRAY = ["NightEnd", "NauticalDawn", "Dawn", "Sunrise", "SunriseEnd", "GoldenHourEnd", "SolarNoon", "GoldenHour", "SunsetStart", "Sunset", "Dusk", "NauticalDusk", "Night"];
 
 function setDateTimeout(fn, d){
-    var t = d.getTime() - (new Date()).getTime();
-    if (t > 0) return setTimeout(fn, t);
+  var t = d.getTime() - (new Date()).getTime();
+  if (t > 0) return setTimeout(fn, t);
 }
 
 Weather.prototype.fetchRainForecast = function() {
@@ -57,11 +58,12 @@ Weather.prototype.parseRainForecast = function(data) {
 Weather.prototype.calculateSunEvents = function() {
   var times = SunCalc.getTimes(new Date(), this.latitude, this.longitude);
   times = this.normalizeStrings(times);
-  var position = SunCalc.getPosition(new Date(), this.latitude, this.longitude);
-  this.emit("StateEvent", {SunEvents:times});
-  this.emit("StateEvent", {SunPosition:position});
 
+  var position = SunCalc.getPosition(new Date(), this.latitude, this.longitude);
+  
+  this.emit("StateEvent", {SunEvents:times});
   this.emit("StateEvent", {SunEvent:this.getSunEvent(new Date(), times)});
+  this.emit("StateEvent", {SunPosition:position});
 
   function pad(str, char, len) {
     return str + new Array(Math.max(len - str.length, 0)).join(char);
@@ -72,6 +74,13 @@ Weather.prototype.calculateSunEvents = function() {
     var attrname = Weather.TIMEARRAY[i];
     logstring += times[attrname].getHours() + ":" + times[attrname].getMinutes() + " " + attrname + ", ";
     setDateTimeout(this.processSunEvent.bind(this, attrname), times[attrname]);
+
+    if (this.debug) {
+      console.log("SunEvent: " + attrname);
+      console.log("Time: " + times[attrname]);
+      console.log("Time now: " + new Date());
+      console.log("Time left: " + (times[attrname].getTime() - (new Date()).getTime()).toString());
+    }
   }
 
   if (this.debug) console.log("* Weather: Sun events: " + logstring)
@@ -79,7 +88,7 @@ Weather.prototype.calculateSunEvents = function() {
   // recalculate tomorrow at midnight;
   var tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0);
+  tomorrow.setHours(3);
   tomorrow.setMinutes(0);
   tomorrow.setSeconds(0);
   setDateTimeout(this.calculateSunEvents.bind(this), tomorrow);
@@ -111,6 +120,10 @@ Weather.prototype.normalizeStrings = function(obj) {
 Weather.prototype.processSunEvent = function (type) {
   this.emit("DeviceEvent", type);
   this.emit("StateEvent", {SunEvent:type});
+  if (this.debug) {
+    console.log(type);
+    console.log(new Date());
+  }
 }
 
 Weather.prototype.exec = function(command, data) {

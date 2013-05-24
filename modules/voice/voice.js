@@ -82,8 +82,10 @@ Voice.prototype.handleVoiceInput = function(params) {
   // go through each possible voice string (usually only one)
   // and break after the first succeeds
 
+  var matched = false;
   for (var i = 0; i < strings.length; i++) {
-    var string = strings[i];
+    var string = strings[i].toLowerCase();
+    var originalString = string;
     var result = this.normalizeString(string);
     var resultParams = result.params;
 
@@ -100,22 +102,38 @@ Voice.prototype.handleVoiceInput = function(params) {
       if (this.lastEvent != string) { // Ignore repeated events within one second (handle multiple listeners)
         this.emit("DeviceEvent", string, resultParams);
         this.lastEvent = string;
+        resultParams.recognizedString = originalString;
         if (this.lastEventTimeout) clearTimeout(this.lastEventTimeout);
         this.lastEventTimeout = setTimeout(function (){ this.lastEvent = null }.bind(this), 1000);
       } else {
         console.log('ignoring duplicate event', string);
       }
-
+      matched = true;
       break;
     }
   }
+
+
+console.log("1");
+  if (!matched) {
+    string = resultParams.recognizedString = strings.shift();
+    if (this.lastEvent != string) { // Ignore repeated events within one second (handle multiple listeners)
+      this.emit("DeviceEvent", "NoMatch", resultParams);
+      this.lastEvent = string;
+      if (this.lastEventTimeout) clearTimeout(this.lastEventTimeout);
+      this.lastEventTimeout = setTimeout(function (){ this.lastEvent = null }.bind(this), 1000);
+    }
+  }
+
+  this.emit("StateEvent", {lastVoiceString: resultParams.recognizedString});
+console.log("2");
 
   // Any input triggers stoppedListening
   this.stoppedListening(params);
 }
 
 Voice.prototype.normalizeString = function(string) {
-  var splitWords = ["to", "of", "for"];
+  var splitWords = ["to", "for"];
   var params = {};
   for (var i = 0; i < splitWords.length; i++) {
     var splitString = " " + splitWords[i] + " ";

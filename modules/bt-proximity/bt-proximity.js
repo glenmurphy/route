@@ -1,7 +1,6 @@
-var pty = require('pty.js'),
-	util = require('util'),
-    EventEmitter = require('events').EventEmitter,
-    http = require('http');
+var spawn = require('child_process').spawn,
+	  util = require('util'),
+    EventEmitter = require('events').EventEmitter;
 
 /**
  * This is a pile of hacks; it uses the BlueZ command line tools to 
@@ -12,51 +11,46 @@ var pty = require('pty.js'),
 function BTProximity(data) {
   this.mac = data.mac;
   this.name = data.name;
+  this.init();
 
   this.present = new Date().getTime(); // Pretend we're here.
-  this.linebuf = "";
-  this.scan();
-  setInterval(this.scan.bind(this), BTProximity.RESCANTIME);
   setInterval(this.checkAway.bind(this), BTProximity.AWAYCHECKTIME);
-  process.on('SIGINT', this.shutdown.bind(this));
+  setInterval(this.connect.bind(this), BTProximity.RESCANTIME);
 }
 util.inherits(BTProximity, EventEmitter);
 
 BTProximity.prototype.exec = function(command, data) {
 };
 
-BTProximity.AWAYAFTERTIME = 130000; // how long we can go without seeing a device before we consider you away
+BTProximity.prototype.init = function() {
+  this.tool = spawn('gatttool', ['-b', this.mac, '-I']);
+  this.tool.stdout.on("data", this.handleData.bind(this));
+  this.tool.on("close", this.handleClose.bind(this));
+};
+
+BTProximity.prototype.handleClose = function() {
+  console.log("BTPROX: GATTTOOL CLOSED");
+  this.tool = null;
+  setTimeout(this.init.bind(this), 10000);
+};
+
+BTProximity.AWAYAFTERTIME = 120000; // how long we can go without seeing a device before we consider you away
 BTProximity.AWAYCHECKTIME = 5000; // how often we check for AWAYAFTERTIME
 BTProximity.RESCANTIME = 30000; // how often we force-rescan the network
 
-BTProximity.prototype.scan = function() {
-  if (this.term) {
-    this.term.kill();
-    this.term.end();
-    this.term = null;
-  }
-
-  this.term = pty.spawn('bash', [], {
-    name: 'xterm-color',
-    cols: 80,
-    rows: 30,
-    cwd: process.env.HOME,
-    env: process.env
-  });
-  this.term.on('data', this.handleData.bind(this));
-
-  this.term.write('sudo hciconfig hci0 down\r');
-  this.term.write('sudo hciconfig hci0 up\r');
-  this.term.write('sudo hcitool lescan\r');
+BTProximity.prototype.connect = function () {
+  this.tool.stdin.write('connect\n');
 };
 
 BTProximity.prototype.setAway = function() {
+  console.log("Away");
   this.emit("DeviceEvent", "Away");
   this.present = 0;
 };
 
 BTProximity.prototype.setPresent = function() {
   if (!this.present) {
+    console.log("Present");
     this.emit("DeviceEvent", "Present");
   }
   this.present = new Date().getTime();
@@ -71,34 +65,19 @@ BTProximity.prototype.checkAway = function() {
   }
 };
 
-BTProximity.prototype.shutdown = function() {
-  console.log("\nGracefully shutting down from SIGINT");
-  this.term.kill();
-  this.term.end();
-  process.exit();
-};
-
-BTProximity.prototype.handleLine = function(line) {
-  if (line.substr(0, this.mac.length) == this.mac) {
-    this.setPresent();
-  }
-  //console.log(line);
-};
-
-BTProximity.prototype.processLineBuf = function() {
-  var index = this.linebuf.indexOf("\n");
-  if (index != -1) {
-    this.handleLine(this.linebuf.substr(0, index));
-    this.linebuf = this.linebuf.substr(index + 1);
-    this.processLineBuf();
-  }
-};
-
 BTProximity.prototype.handleData = function(data) {
-  this.linebuf += data;
-  this.processLineBuf();
+  var lines = data.toString().split("\n");
+  for (var i = 0; i < lines.length; i++) {
+    line = lines[i];
+    console.log(line);
+    if (line.indexOf("Connection successful") != -1) {
+      this.setPresent();
+    } else if (line.indexOf("Error") != -1) {
+      this.connect();
+    }
+  }
 };
 
 exports.BTProximity = BTProximity;
 
-// new require("./bt-proximity").BTProximity)({mac : "00:18:30:EB:68:BC"});
+// var b = new (require("./bt-proximity")).BTProximity({mac : "00:18:30:EB:68:BC"});

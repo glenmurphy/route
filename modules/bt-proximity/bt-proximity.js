@@ -16,6 +16,7 @@ function BTProximity(data) {
   this.present = new Date().getTime(); // Pretend we're here.
   setInterval(this.checkAway.bind(this), BTProximity.AWAYCHECKTIME);
   setInterval(this.connect.bind(this), BTProximity.RESCANTIME);
+  process.on('SIGINT', this.shutdown.bind(this));
 }
 util.inherits(BTProximity, EventEmitter);
 
@@ -23,9 +24,16 @@ BTProximity.prototype.exec = function(command, data) {
 };
 
 BTProximity.prototype.init = function() {
-  this.tool = spawn('gatttool', ['-b', this.mac, '-I']);
+  this.tool = spawn('gatttool', ['-b', this.mac, '-I'], {detached: true});
   this.tool.stdout.on("data", this.handleData.bind(this));
   this.tool.on("close", this.handleClose.bind(this));
+};
+
+BTProximity.prototype.shutdown = function() {
+  console.log("Shutting down gatttool...");
+  if (this.tool)
+    this.tool.kill();
+  process.exit();
 };
 
 BTProximity.prototype.handleClose = function() {

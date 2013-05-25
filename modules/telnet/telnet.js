@@ -18,7 +18,8 @@ var n = new (require("./telnet.js")).Telnet({
 function Telnet(data) {
   this.host = data.host;
   this.port = data.port || 23;
-
+  this.debug = data.debug;
+  
   // Map of source names to ids.
   this.commands = data.commands ? data.commands : {};
   
@@ -40,12 +41,15 @@ Telnet.prototype.send = function(string) {
   var isFirstRequest = (this.commandQueue.length == 0);
   this.commandQueue.push(string);
   if (isFirstRequest)
-    process.nextTick(this.sendNextCommand.bind(this));
+    setTimeout(this.sendNextCommand.bind(this), 10); // nextTick is not behaving correctly
 };
 
 Telnet.prototype.sendNextCommand = function() {
   if (!this.commandQueue.length) return;
   var string = this.commandQueue.shift();
+  if (this.debug) console.log("> ", string);
+
+  // TODO: This should likely allow waiting for a response to trigger the next command
   this.client.write(string + "\r", "UTF8", function () {
     setTimeout(this.sendNextCommand.bind(this), 300);  
   }.bind(this));
@@ -90,7 +94,7 @@ Telnet.prototype.reconnect = function() {
 
 Telnet.prototype.handleData = function(data) {
   data = (data + "").trim();
-  console.log(data);
+  if (this.debug) console.log("< ", data);
   
   this.parseData(data.split("\r\n").shift());
 };

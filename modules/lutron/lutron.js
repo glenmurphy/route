@@ -118,7 +118,7 @@ Lutron.prototype.parseData = function(data) {
         var name = this.keypads[key];
         this.emit("DeviceEvent", name + "." + button + "." + (pressed ? "Press" : "Release"));
       } else {
-        console.log("! Lutron unknown command:", command);
+        console.log("!  Lutron unknown command:", command);
       }
       break;
   }
@@ -161,7 +161,7 @@ Lutron.prototype.handleData = function(data) {
 }
 
 Lutron.prototype.handleError = function(e) {
-  console.log("! Lutron\t" + e);
+  console.log("!  Lutron\t" + e);
   this.reconnect();
 };
 

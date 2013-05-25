@@ -113,8 +113,6 @@ Voice.prototype.handleVoiceInput = function(params) {
     }
   }
 
-
-console.log("1");
   if (!matched) {
     string = resultParams.recognizedString = strings.shift();
     if (this.lastEvent != string) { // Ignore repeated events within one second (handle multiple listeners)
@@ -126,7 +124,6 @@ console.log("1");
   }
 
   this.emit("StateEvent", {lastVoiceString: resultParams.recognizedString});
-console.log("2");
 
   // Any input triggers stoppedListening
   this.stoppedListening(params);

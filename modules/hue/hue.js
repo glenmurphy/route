@@ -44,15 +44,15 @@ Hue.prototype.updateRegistrationState = function() {
       res.on('end', function () {
         var response = JSON.parse(body)[0];
         if (response.success) {
-          console.log("* Connected to Hue: authorized username (" + response.success.username + ")");
+          console.log("*  Connected to Hue: authorized username (" + response.success.username + ")");
           this.updateLightsList();
         } else if (response.error.type == 101) {
-          console.log("! Could not connect to HUE: Unauthorized. Press button and run again.");
+          console.log("!  Could not connect to HUE: Unauthorized. Press button and run again.");
         }
       }.bind(this));   
     }.bind(this));
   request.write(JSON.stringify({username:this.uuid, devicetype: "Automaton"}));
-  request.on('error', function(e) {console.log("! Could not connect to HUE (" + e + ")")});
+  request.on('error', function(e) {console.log("!  Could not connect to HUE (" + e + ")")});
   request.end();
 }
 
@@ -225,7 +225,7 @@ Hue.prototype.updateLightsList = function() {
             var isArray = Object.prototype.toString.apply(lights) === '[object Array]'
 
             if (isArray && lights[0].error) {
-              console.log("* Trying to connect to HUE");
+              console.log("*  Trying to connect to HUE");
               this.updateRegistrationState();
             } else {
               this.lightNames = {};
@@ -239,13 +239,13 @@ Hue.prototype.updateLightsList = function() {
             }
            
           } catch (e) {
-            console.log("! Hue parse error: " + e);
+            console.log("!  Hue parse error: " + e);
           }
         }.bind(this));
     }
   }.bind(this));
 
-  request.on('error', function(e) {console.log("! Hue:\t\t" + e)});
+  request.on('error', function(e) {console.log("!  Hue:\t\t" + e)});
   request.end();
 }
 

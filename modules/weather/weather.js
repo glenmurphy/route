@@ -83,7 +83,7 @@ Weather.prototype.calculateSunEvents = function() {
     }
   }
 
-  if (this.debug) console.log("* Weather: Sun events: " + logstring)
+  if (this.debug) console.log("*  Weather: Sun events: " + logstring)
 
   // recalculate tomorrow at midnight;
   var tomorrow = new Date();

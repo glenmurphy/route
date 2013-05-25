@@ -27,7 +27,7 @@ function APN(data) {
 
 util.inherits(APN, EventEmitter);
 APN.prototype.connectionError = function(err, notification) {
-  console.log("! ERROR sending APN", err, notification);
+  console.log("!  ERROR sending APN", err, notification);
 }
 
 APN.prototype.exec = function(command, params) {

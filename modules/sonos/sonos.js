@@ -141,7 +141,7 @@ Sonos.prototype.subscribeEvents = function() {
 Sonos.prototype.subscribeEvent = function(host, service, description) {
   //curl -X SUBSCRIBE -H "CALLBACK: <http://10.0.0.8:3000/callback>" -H "NT: upnp:event" -H "TIMEOUT: Second -3600" http://10.0.0.2:1400/MediaRenderer/AVTransport/Event -vvvvvvvv
 
-  if (this.debug) console.log("* Sonos: Subscribed " + this.listenIp + " to " + host + " " + description);
+  if (this.debug) console.log("*  Sonos: Subscribed " + this.listenIp + " to " + host + " " + description);
   var request = http.request({
     host: host,
     port: Sonos.PORT,
@@ -325,7 +325,7 @@ SonosComponent.prototype.playFavorite = function(name) {
       return;
     }
   }
-  console.log("! Sonos: Favorite not found", name);
+  console.log("!  Sonos: Favorite not found", name);
 };
 
 SonosComponent.prototype.setCurrentURI = function(uri, metadata, callback) {
@@ -409,7 +409,7 @@ SonosComponent.prototype.getFavorites = function(callback) {
           }.bind(this));
         }.bind(this));
       } catch (e) {
-        if (this.debug) console.log("! Sonos favorites", e, data)
+        if (this.debug) console.log("!  Sonos favorites", e, data)
       }
     }.bind(this));
 };

@@ -36,7 +36,7 @@ Spotify.prototype.searchByType = function(type, query, callback) {
           var array = result[type + "s"][type];                        
           callback.bind(this)(array);          
         } else {
-          console.log("! no spotify results");
+          console.log("!  no spotify results");
         }
       }.bind(this));
     }.bind(this));

@@ -156,7 +156,7 @@ Denon.prototype.handleData = function(data) {
 };
 
 Denon.prototype.handleError = function(e) {
-  console.log("! Denon\t" + e);
+  console.log("!  Denon\t" + e);
   this.reconnect();
 };
 

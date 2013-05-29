@@ -10,6 +10,7 @@ function Russound(data) {
   this.callbackStack = [];
   this.status = {};
   this.debug = data.debug;
+  this.fadeTimeouts = {};
 };
 util.inherits(Russound, EventEmitter);
 
@@ -24,12 +25,32 @@ Russound.prototype.exec = function(command, params) {
 };
 
 Russound.prototype.getVolume = function(controller, zone) {
-  return this.status["C["+ (controller || 1) +"].Z["+zone+"].volume"];
+  return parseInt(this.status["C["+ (controller || 1) +"].Z["+zone+"].volume"]);
 }
 
 Russound.prototype.setVolume = function(controller, zone, value) {
   this.sendEvent(controller, zone, "KeyPress", "Volume", value);
 }
+
+Russound.prototype.fadeVolume = function(controller, zone, value, duration, startValue, startTime) {
+  var now = new Date();
+  if (!startTime) {
+    startTime = now;
+    startValue = this.getVolume(controller,zone);
+    if (this.fadeTimeouts[zone]) clearTimeout(this.fadeTimeouts[zone])
+  }
+
+  var percent = (now - startTime) / duration;
+  if (percent > 1.0) percent = 1.0;
+  var newValue = startValue + Math.round((value - startValue) * percent);
+  this.setVolume(controller, zone, newValue);
+
+  if (percent < 1.0) this.fadeTimeouts[zone] = setTimeout(this.fadeVolume.bind(this), 100, controller, zone, value, duration, startValue, startTime);
+}
+
+
+
+
 
 Russound.prototype.log = function(data) {
   console.log("Russound LOG:" + data);
@@ -87,8 +108,8 @@ Russound.prototype.setPageTarget = function(zone) {
 
 Russound.prototype.sendEvent = function(controller, zone, event, data1, data2) {
   var command = "EVENT C[" + (controller || 1) + "].Z[" + zone + "]!" + event;
-  if (data1) command += " " + data1;
-  if (data2) command += " " + data2;
+  if (data1 != undefined) command += " " + data1;
+  if (data2 != undefined) command += " " + data2;
   this.sendCommand(command);
 }
 
@@ -108,7 +129,7 @@ Russound.prototype.handleNotification = function(data) {
       var on = data[key] == "ON";
       this.emit("DeviceEvent", on ? "On" : "Off");
     }
-
+    this.emit("DeviceEvent", key, data[key]);
     changes["russound." + key] = data[key]; 
     this.status[key] = data[key];
     if (this.debug) console.log("Russound", key, data[key])

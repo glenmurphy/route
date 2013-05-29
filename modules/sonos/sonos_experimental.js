@@ -112,6 +112,12 @@ Sonos.prototype.exec = function(command, params) {
     case "TrackInfo":
       component.getTrackInfo();
       break;
+    case "Mute":
+      component.setMute(true);
+      break;
+    case "Unmute":
+      component.setMute(false);
+      break;
     case "Spotify.ListenTo":
       component.playSpotifyTrack(params.string);
       break;
@@ -443,7 +449,7 @@ SonosComponent.prototype.getVolume = function(callback) {
   this.callAction("RenderingControl", "GetVolume", {InstanceID : 0, Channel : "Master"}, this.deviceid,
     function (data) {
       var tmp = data.substring(data.indexOf('<CurrentVolume>') + '<CurrentVolume>'.length);
-      var volume = tmp.substring(0, tmp.indexOf('<'));
+      var volume = parseInt(tmp.substring(0, tmp.indexOf('<')));
       this.volume = volume;
       if (callback) {
         callback(volume);

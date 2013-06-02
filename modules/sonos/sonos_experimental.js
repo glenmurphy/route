@@ -138,9 +138,12 @@ Sonos.prototype.getComponentByID = function(id) {
 
 // Notifications
 Sonos.prototype.subscribeEvents = function() {
-  for (var component in this.components) {
+  for (var componentName in this.components) {
+    var component = this.components[componentName];
+    component.initializing = 0;
     for (var service in Sonos.SERVICES) {
-      this.subscribeEvent(this.components[component].host, Sonos.SERVICES[service].Service, Sonos.SERVICES[service].Description);
+      component.initializing++;
+      this.subscribeEvent(component.host, Sonos.SERVICES[service].Service, Sonos.SERVICES[service].Description);
     }
   }
 };
@@ -158,7 +161,7 @@ Sonos.prototype.subscribeEvent = function(host, service, description) {
       "Cache-Control":"no-cache",
       "Pragma"       :"no-cache",
       //"USER-AGENT"   :"Linux UPnP/1.0 Sonos/16.7-48310 (PCDCR)",
-      "CALLBACK"     :"<http://" + this.listenIp + ":" + this.listenPort + ">",
+      "CALLBACK"     :"<http://" + this.listenIp + ":" + this.listenPort + service + ">",
       "NT"           :"upnp:event",
       "TIMEOUT"      :"Second-3600"
     }
@@ -510,7 +513,7 @@ SonosComponent.prototype.handleReq = function(req, res) {
     data += chunk;
   });
   req.on('end', function() {
-    this.parseNotification(data);
+    this.parseNotification(data, req.url);
     res.writeHead(200);
     res.end();
   }.bind(this));
@@ -556,7 +559,7 @@ SonosComponent.prototype.updatePlayerState = function(playerState) {
   if (!wasNull) {
     this.emit("DeviceEvent", this.name + (playerState == "PLAYING" ? ".Started" : ".Stopped"));
   }
-  this.emit("DeviceEvent", this.name + ".PlayerState", { state : playerState });
+  this.emit("DeviceEvent", this.name + ".PlayerState", { state : playerState }, {initializing:this.initializing});
   
   var state = {};
   state["Sonos." + this.name + ".playerState"] = playerState;
@@ -566,7 +569,7 @@ SonosComponent.prototype.updatePlayerState = function(playerState) {
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {
-  this.emit("DeviceEvent", this.name + ".TrackInfo", details);
+  this.emit("DeviceEvent", this.name + ".TrackInfo", details, {initializing:this.initializing});
 
   var state = {};
   state["Sonos." + this.name + ".trackInfo"] = details;
@@ -574,14 +577,14 @@ SonosComponent.prototype.updateTrackInfo = function(details) {
 };
 
 SonosComponent.prototype.updateNextTrackInfo = function(details) {
-  this.emit("DeviceEvent", this.name + ".NextTrackInfo", details);
+  this.emit("DeviceEvent", this.name + ".NextTrackInfo", details, {initializing:this.initializing});
 
   var state = {};
   state["Sonos." + this.name + ".nextTrackInfo"] = details;
   this.emit("StateEvent", state);
 };
 
-SonosComponent.prototype.parseNotification = function (data) {
+SonosComponent.prototype.parseNotification = function (data, path) {  
   try {
     var parser = new xml2js.Parser();
     parser.parseString(data, function (err, result) {
@@ -644,6 +647,9 @@ SonosComponent.prototype.parseNotification = function (data) {
   } catch (e) {
     console.log("Sonos: parse error" + e, e.stack);
   } 
+
+  // We expect one notification from each source that is an initialization.
+  if (this.initializing) this.initializing--;
 };
 
 function xmlValue(element, key) {

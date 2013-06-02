@@ -123,18 +123,29 @@ Russound.prototype.parseResponse = function(data) {
 }
 var notificationKeys = ["System.status"];
 Russound.prototype.handleNotification = function(data) {
+  var now = new Date();
+
+  if (this.initializing && this.lastEvent && (now - this.lastEvent > 1000)) {
+    this.initializing = false;
+    if (this.debug) console.log("Russound init complete");
+  }
+  this.lastEvent = now;
+
   var changes = {};
   for (var key in data) {
     if (key == "System.status") {
       var on = data[key] == "ON";
-      this.emit("DeviceEvent", on ? "On" : "Off");
+      this.emit("DeviceEvent", on ? "On" : "Off", null,  {initializing: this.initializing});
     }
-    this.emit("DeviceEvent", key, data[key]);
+    this.emit("DeviceEvent", key, data[key], {initializing: this.initializing});
     changes["russound." + key] = data[key]; 
     this.status[key] = data[key];
     if (this.debug) console.log("Russound", key, data[key])
   }
   this.emit("StateEvent", changes);
+  if (this.initializing) {
+
+  }
 }
 
 Russound.prototype.handleData = function(data) {
@@ -184,6 +195,7 @@ Russound.prototype.updateSources = function() {
 
 Russound.prototype.connect = function() {
   this.reconnecting_ = false;
+  this.initializing = true;
   this.client = net.connect({
     host : this.host,
     port : this.port || 9621,

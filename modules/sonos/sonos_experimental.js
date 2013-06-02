@@ -142,7 +142,7 @@ Sonos.prototype.subscribeEvents = function() {
 Sonos.prototype.subscribeEvent = function(host, service, description) {
   //curl -X SUBSCRIBE -H "CALLBACK: <http://10.0.0.8:3000/callback>" -H "NT: upnp:event" -H "TIMEOUT: Second -3600" http://10.0.0.2:1400/MediaRenderer/AVTransport/Event -vvvvvvvv
 
-  if (this.debug) console.log("* Sonos: Subscribed " + this.listenIp + " to " + host + " " + description);
+  if (this.debug) console.log("*  Sonos: Subscribed " + this.listenIp + " to " + host + " " + description);
   var request = http.request({
     host: host,
     port: Sonos.PORT,
@@ -337,7 +337,7 @@ SonosComponent.prototype.playFavorite = function(name, callback) {
       return;
     }
   }
-  console.log("! Sonos: Favorite not found", name);
+  console.log("!  Sonos: Favorite not found", name);
 };
 
 SonosComponent.prototype.setCurrentURI = function(uri, metadata, callback) {
@@ -493,7 +493,7 @@ SonosComponent.prototype.getFavorites = function(callback) {
           }.bind(this));
         }.bind(this));
       } catch (e) {
-        if (this.debug) console.log("! Sonos favorites", e, data)
+        if (this.debug) console.log("!  Sonos favorites", e, data)
       }
     }.bind(this));
 };
@@ -534,33 +534,42 @@ SonosComponent.prototype.parseMetadata = function (metadata, callback) {
     if (this.debug) console.log("metadata", meta);
     var streamcontent = xmlValue(meta, "r:streamContent");
     streamcontent = this.parseXMStreamContent(streamcontent);
-    metaInfo.Name =  streamcontent.title || xmlValue(meta, "dc:title");
-    metaInfo.Artist = streamcontent.artist || xmlValue(meta, "dc:creator");
-    metaInfo.Album = xmlValue(meta, "upnp:album");
-    if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.Artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
+    metaInfo.name =  streamcontent.title || xmlValue(meta, "dc:title");
+    metaInfo.artist = streamcontent.artist || xmlValue(meta, "dc:creator");
+    metaInfo.album = xmlValue(meta, "upnp:album");
+    if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
     
     callback(metaInfo);
   }.bind(this));
 };
 
 SonosComponent.prototype.updatePlayerState = function(playerState) {
-  var wasNull = undefined == this.playerState;
   if (this.playerState == playerState) return;
 
-  if (!wasNull) this.emit("DeviceEvent", this.name + (playerState == "PLAYING" ? ".Started" : ".Stopped"));
+  var wasNull = undefined == this.playerState;
+  if (!wasNull) {
+    this.emit("DeviceEvent", this.name + (playerState == "PLAYING" ? ".Started" : ".Stopped"));
+  }
+  this.emit("DeviceEvent", this.name + ".PlayerState", { state : playerState });
+  
   var state = {};
   state["Sonos." + this.name + ".playerState"] = playerState;
   this.emit("StateEvent", state);
+  
   this.playerState = playerState;
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {
+  this.emit("DeviceEvent", this.name + ".TrackInfo", details);
+
   var state = {};
   state["Sonos." + this.name + ".trackInfo"] = details;
   this.emit("StateEvent", state);
 };
 
 SonosComponent.prototype.updateNextTrackInfo = function(details) {
+  this.emit("DeviceEvent", this.name + ".NextTrackInfo", details);
+
   var state = {};
   state["Sonos." + this.name + ".nextTrackInfo"] = details;
   this.emit("StateEvent", state);

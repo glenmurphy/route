@@ -277,7 +277,7 @@ Insteon.prototype.emitDeviceStatus = function(info) {
 
 Insteon.prototype.handleError = function(e) {
   this.emit("ErrorEvent", "Insteon", e);
-  console.error("! Insteon\t" + e);
+  console.error("!  Insteon\t" + e);
   this.reconnect();
 };
 

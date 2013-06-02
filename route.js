@@ -3,10 +3,12 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
 function Route(data) {
+  if (!data) data = {};
   this.devices = {};
   this.state = {};
   this.eventMap = {};
   this.stateWatchers = {};
+  this.debug = data.debug;
 }
 util.inherits(Route, EventEmitter);
 
@@ -74,7 +76,7 @@ Route.prototype.updateState = function(name, data) {
   if (!data) 
     var data = {};
 
-  console.log("State Changed: " + name);
+  if (this.debug) console.log("State Changed:", name, data);
   data.stateUpdatedTime = new Date().getTime();
   this.state[name] = data;
   this.emit("StateChanged", name, data);

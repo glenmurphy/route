@@ -209,7 +209,7 @@ Russound.prototype.handleEnd = function() {
 };
 
 Russound.prototype.handleError = function(e) {
-  console.log("! Russound\t" + e + "");
+  console.log("!  Russound\t" + e + "");
   this.reconnect();
 };
 

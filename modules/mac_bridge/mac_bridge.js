@@ -83,7 +83,7 @@ Bridge.prototype.handleEnd = function() {
 };
 
 Bridge.prototype.handleError = function(e) {
-  console.log("! Mac Bridge\t" + e);
+  console.log("!  Mac Bridge\t" + e);
   this.reconnect();
 };
 

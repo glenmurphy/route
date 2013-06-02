@@ -166,7 +166,7 @@ LutronRadioRA2.prototype.handleData = function(data) {
 }
 
 LutronRadioRA2.prototype.handleError = function(e) {
-  console.log("! LutronRadioRA2\t" + e);
+  console.log("!  LutronRadioRA2\t" + e);
   this.reconnect();
 };
 

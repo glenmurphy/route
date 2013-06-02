@@ -96,7 +96,7 @@ Telnet.prototype.handleData = function(data) {
 };
 
 Telnet.prototype.handleError = function(e) {
-  console.log("! Telnet\t" + e);
+  console.log("!  Telnet\t" + e);
   this.reconnect();
 };
 

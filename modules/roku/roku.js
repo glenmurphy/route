@@ -126,7 +126,7 @@ Roku.prototype.getChannels = function() {
       }.bind(this));
     }.bind(this));
   }.bind(this));
-  request.on('error', function(e) {console.error("! " + this.name + "\t" + e);}.bind(this));
+  request.on('error', function(e) {console.error("!  " + this.name + "\t" + e);}.bind(this));
   request.end();
 };
 
@@ -146,20 +146,5 @@ function listen(port) {
     server.close();
   },2000);
 }
-
-// function search() {
-//   var message = new Buffer(
-//     "M-SEARCH * HTTP/1.1\n" +
-//     "HOST:239.255.255.250:1900\n" +
-//     "MAN:\"ssdp:discover\"\n" +
-//     "ST:roku:ecp\n" + // Essential, used by the client to specify what they want to discover, eg 'ST:ge:fridge'
-//     "\n"
-//   );
-//   var client = dgram.createSocket("udp4");
-//   client.bind(); // So that we get a port so we can listen before sending
-//   listen(client.address().port);
-//   client.send(message, 0, message.length, 1900, "239.255.255.250");
-//   client.close();
-// }
 
 exports.Roku = Roku;

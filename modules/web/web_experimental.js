@@ -1,22 +1,20 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
-var path = require('path');
 var url = require('url');
-var fs = require('fs');
-var util = require('util');
 var static = require('node-static');
+var util = require('util');
 var io = require('socket.io');
+var path = require('path');
 
 function Web(data) {
-  this.server = http.createServer(this.handleReq.bind(this));
-  this.server.listen(data.port ? data.port : 8080);
-  this.staticServer = new static.Server(data.dir);
   this.basedir = data.basedir;
+  this.server = http.createServer(this.handleReq.bind(this)).listen(data.port ? data.port : 8080);
+  this.staticServer = new static.Server(data.dir);
 
-  this.clients = [];
   this.socket = io.listen(this.server, { log: false });
   this.socket.on('connection', this.handleSocketConnection.bind(this));
   this.socket.on('error', this.handleSocketError.bind(this));
+  this.clients = [];
 
   this.textResponse = null;
 };
@@ -43,9 +41,7 @@ Web.prototype.handleReq = function(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.write(JSON.stringify(json));
     res.end();
-  }
-  else if (info.pathname == "/" && this.basedir) {
-    //console.log("[" + info.pathname + "]" + this.basedir);
+  } else if (info.pathname == "/" && this.basedir) {
     res.writeHead(302, {'Location': this.basedir});
     res.end();
   } else {
@@ -58,11 +54,12 @@ Web.prototype.handleEvent = function(info) {
 }
 
 Web.prototype.handleSocketConnection = function(socket) {
+  this.emit("DeviceEvent", "ClientConnected");
   this.clients.push(socket);
   try {
     socket.emit('state', this.state.allValues());    
   } catch (e) {
-    console.log("! Web emit error:", e, this.state.allValues());
+    console.log("!  Web emit error:", e, this.state.allValues());
   }
   socket.on('message', this.handleSocketMessage.bind(this));
   socket.on('error', this.handleSocketError.bind(this));
@@ -70,7 +67,7 @@ Web.prototype.handleSocketConnection = function(socket) {
 };
 
 Web.prototype.handleSocketError = function(socket) {
-  console.log("! Web socket error", socket);
+  console.log("!  Web socket error", socket);
 };
 
 Web.prototype.handleSocketMessage = function(message) {
@@ -78,7 +75,7 @@ Web.prototype.handleSocketMessage = function(message) {
 };
 
 Web.prototype.handleSocketClose = function(socket) {
-  console.log('i Web client disconnected');
+  this.emit("DeviceEvent", "ClientDisconnected");
   for (var i=0; i < this.clients.length; i++) {
     if (this.clients[i] == socket) {
       this.clients.splice(i, 1);

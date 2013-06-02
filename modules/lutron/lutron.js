@@ -13,6 +13,7 @@ function Lutron(data) {
   this.keypads = data.keypads;
   this.commandQueue = [];
   this.connect();
+  this.debug = data.debug;
 };
 util.inherits(Lutron, EventEmitter);
 
@@ -81,6 +82,7 @@ Lutron.prototype.parseData = function(data) {
   var data = parsed[2];
 
   if (this.debug) console.log("Lutron", command, data);
+
   switch (command) {
 
     case ("zi"):
@@ -117,6 +119,7 @@ Lutron.prototype.parseData = function(data) {
         var button = command.substring(1);
         var name = this.keypads[key];
         this.emit("DeviceEvent", name + "." + button + "." + (pressed ? "Press" : "Release"));
+      } else if (data == "OK") {
       } else {
         console.log("!  Lutron unknown command:", command);
       }

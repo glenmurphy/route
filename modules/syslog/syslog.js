@@ -7,7 +7,6 @@ function Syslog(data) {
   this.port = data.port || 514;
   this.matches = data.matches;
   this.debug = data.debug;
-  console.log(this.handleLog);
   this.syslogServer = syslogReceiver.getServer(this.port, null, this.handleLog.bind(this));
 }; 
 util.inherits(Syslog, EventEmitter);

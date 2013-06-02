@@ -21,7 +21,7 @@ var sonos = route.addDevice({
   init : {
     components : {
       "Livingroom" : "10.0.1.4",
-      "Masterbed" : "10.0.1.12"
+      "Masterbed" : "10.0.1.17"
     }
   }
 });

@@ -15,7 +15,6 @@ util.inherits(Room, EventEmitter);
 
 Room.prototype.exec = function(command, params) {
   var value = this.commands[command];
-  console.log("executing room event", command, value)
   if (value) this.route.execCommands(value, params, command);    
 };
 

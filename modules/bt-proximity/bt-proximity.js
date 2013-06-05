@@ -41,16 +41,16 @@ BTProximity.prototype.init = function() {
 };
 
 BTProximity.prototype.shutdown = function() {
-  console.log("Shutting down gatttool...");
+  console.log("BTProximity: Shutting down gatttool...");
   if (this.tool)
     this.tool.kill();
   process.exit();
 };
 
 BTProximity.prototype.handleClose = function() {
-  console.log("BTPROX: GATTTOOL CLOSED");
+  console.log("BTProximity: gatttool closed");
   this.tool = null;
-  setTimeout(this.init.bind(this), 10000);
+  setTimeout(this.init.bind(this), 5000);
 };
 
 BTProximity.prototype.checkAway = function() {
@@ -68,6 +68,7 @@ BTProximity.prototype.setScanRate = function(rate) {
 
 BTProximity.prototype.scan = function () {
   if (!this.tool) return;
+  console.log("BTProximity: Scanning: " + (new Date()).toLocaleTimeString());
   this.tool.stdin.write('connect\n');
 };
 
@@ -75,7 +76,7 @@ BTProximity.prototype.setAway = function() {
   if (!this.present) return;
 
   this.present = false;
-  console.log("Away");
+  console.log("BTProximity: User is away " + (new Date()).toLocaleTimeString());
   this.emit("DeviceEvent", "Away");
   this.setScanRate(BTProximity.SCANAWAY);
 };
@@ -85,7 +86,7 @@ BTProximity.prototype.setPresent = function() {
   if (this.present) return;
 
   this.present = true;
-  console.log("Present");
+  console.log("BTProximity: User found " + (new Date()).toLocaleTimeString());
   this.emit("DeviceEvent", "Present");
   this.setScanRate(BTProximity.SCANPRESENT);
 };
@@ -94,7 +95,6 @@ BTProximity.prototype.handleData = function(data) {
   var lines = data.toString().split("\n");
   for (var i = 0; i < lines.length; i++) {
     line = lines[i].toLowerCase();
-    console.log(line);
     if (line.indexOf("connection successful") != -1) {
       this.setPresent();
     } else if (line.indexOf("too many open files") != -1) {

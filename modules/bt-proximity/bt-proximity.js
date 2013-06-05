@@ -13,20 +13,31 @@ function BTProximity(data) {
   this.name = data.name;
   this.init();
 
-  this.present = new Date().getTime(); // Pretend we're here.
-  setInterval(this.checkAway.bind(this), BTProximity.AWAYCHECKTIME);
-  setInterval(this.connect.bind(this), BTProximity.RESCANTIME);
+  setInterval(this.checkAway.bind(this), 5000);
   process.on('SIGINT', this.shutdown.bind(this));
 }
 util.inherits(BTProximity, EventEmitter);
+
+BTProximity.SCANPRESENT = 40000; // how often we SCAN when present.
+BTProximity.SCANAWAY = 5000; // how often we SCAN when away.
+BTProximity.AWAYAFTERTIME = 90000; // how long we can go without seeing a device before we consider you away
 
 BTProximity.prototype.exec = function(command, data) {
 };
 
 BTProximity.prototype.init = function() {
+  if (this.tool)
+    this.tool.kill();
+
   this.tool = spawn('gatttool', ['-b', this.mac, '-I'], {detached: true});
   this.tool.stdout.on("data", this.handleData.bind(this));
   this.tool.on("close", this.handleClose.bind(this));
+
+  this.setScanRate(BTProximity.SCANPRESENT);
+  if (!this.lastSeen) {
+    this.lastSeen = new Date().getTime(); // Pretend we're here.
+    this.present = true;
+  }
 };
 
 BTProximity.prototype.shutdown = function() {
@@ -42,50 +53,54 @@ BTProximity.prototype.handleClose = function() {
   setTimeout(this.init.bind(this), 10000);
 };
 
-BTProximity.AWAYAFTERTIME = 120000; // how long we can go without seeing a device before we consider you away
-BTProximity.AWAYCHECKTIME = 5000; // how often we check for AWAYAFTERTIME
-BTProximity.RESCANTIME = 30000; // how often we force-rescan the network
+BTProximity.prototype.checkAway = function() {
+  var time = new Date().getTime();
+  if (this.lastSeen + BTProximity.AWAYAFTERTIME < time) {
+    this.setAway();
+  }
+};
 
-BTProximity.prototype.connect = function () {
+BTProximity.prototype.setScanRate = function(rate) {
+  if (this.scanInterval)
+    clearInterval(this.scanInterval);
+  this.scanInterval = setInterval(this.scan.bind(this), rate);
+};
+
+BTProximity.prototype.scan = function () {
+  if (!this.tool) return;
   this.tool.stdin.write('connect\n');
 };
 
 BTProximity.prototype.setAway = function() {
+  if (!this.present) return;
+
+  this.present = false;
   console.log("Away");
   this.emit("DeviceEvent", "Away");
-  this.present = 0;
+  this.setScanRate(BTProximity.SCANAWAY);
 };
 
 BTProximity.prototype.setPresent = function() {
-  if (!this.present) {
-    console.log("Present");
-    this.emit("DeviceEvent", "Present");
-  }
-  this.present = new Date().getTime();
-};
+  this.lastSeen = new Date().getTime();
+  if (this.present) return;
 
-BTProximity.prototype.checkAway = function() {
-  if (!this.present) return;
-
-  var time = new Date().getTime();
-  if (this.present + BTProximity.AWAYAFTERTIME < time) {
-    this.setAway();
-  }
+  this.present = true;
+  console.log("Present");
+  this.emit("DeviceEvent", "Present");
+  this.setScanRate(BTProximity.SCANPRESENT);
 };
 
 BTProximity.prototype.handleData = function(data) {
   var lines = data.toString().split("\n");
   for (var i = 0; i < lines.length; i++) {
-    line = lines[i];
+    line = lines[i].toLowerCase();
     console.log(line);
-    if (line.indexOf("Connection successful") != -1) {
+    if (line.indexOf("connection successful") != -1) {
       this.setPresent();
-    } else if (line.indexOf("Error") != -1) {
-      this.connect();
+    } else if (line.indexOf("too many open files") != -1) {
+      this.init();
     }
   }
 };
 
 exports.BTProximity = BTProximity;
-
-// var b = new (require("./bt-proximity")).BTProximity({mac : "00:18:30:EB:68:BC"});

@@ -1,0 +1,4 @@
+{ 
+  "name" : "Pebble",
+  "main" : "./pebble.js"
+}

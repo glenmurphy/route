@@ -1,0 +1,4 @@
+{ 
+  "name" : "Sun",
+  "main" : "./sun.js"
+}

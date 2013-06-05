@@ -106,7 +106,6 @@ Denon.prototype.parseData = function(data) {
       if (volume) {
         if (parameter.length > 2) volume /= 10; 
         this.volume = volume;
-        console.log("volume set to", volume);
         this.emit("StateEvent", {"Denon.Volume" : volume});
       }
       break;

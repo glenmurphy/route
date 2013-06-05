@@ -1,21 +1,34 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
+var https = require('https');
 var url = require('url');
 var static = require('node-static');
 var util = require('util');
 var io = require('socket.io');
 var path = require('path');
+var fs = require('fs');
 
 function Web(data) {
   this.basedir = data.basedir;
-  this.server = http.createServer(this.handleReq.bind(this)).listen(data.port ? data.port : 8080);
-  this.staticServer = new static.Server(data.dir);
 
+  if (data.securePort) {
+    var options = {
+        key: fs.readFileSync(data.key),
+        cert: fs.readFileSync(data.cert)
+    }
+    this.secureServer = https.createServer(options, this.handleReq.bind(this)).listen(data.securePort || 8081);    
+    this.secureSocket = io.listen(this.secureServer, { log: false });
+    this.secureSocket.on('connection', this.handleSocketConnection.bind(this));
+    this.secureSocket.on('error', this.handleSocketError.bind(this));
+  }
+
+  this.server = http.createServer(this.handleReq.bind(this)).listen(data.port || 8080);
   this.socket = io.listen(this.server, { log: false });
   this.socket.on('connection', this.handleSocketConnection.bind(this));
   this.socket.on('error', this.handleSocketError.bind(this));
-  this.clients = [];
 
+  this.staticServer = new static.Server(data.dir);
+  this.clients = [];
   this.textResponse = null;
 };
 util.inherits(Web, EventEmitter);

@@ -26,7 +26,7 @@ function Sonos(data) {
   this.listenPort = data.listenPort || 9000;
 
   this.server = http.createServer(this.handleReq.bind(this)).listen(this.listenPort);
-  this.debug = true;//data.debug;
+  this.debug = data.debug;
 
   this.spotifyAccountId = data.spotifyAccountId;
   this.spotifySid = data.spotifySid;
@@ -34,7 +34,7 @@ function Sonos(data) {
   this.components = data.components || { "Main" : this.host }; // Create a component list from a single host if needed
   this.defaultComponent = data.defaultComponent || "Main";
   for (var component in this.components) { // Instantiate components
-    var newComponent = new SonosComponent({ name : component , host : this.components[component], system : this});
+    var newComponent = new SonosComponent({ name : component , host : this.components[component], system : this, debug: data.debug});
     this.components[component] = newComponent;
     newComponent.on("DeviceEvent", this.emit.bind(this, "DeviceEvent")); // reemit events
     newComponent.on("StateEvent", this.emit.bind(this, "StateEvent"));
@@ -208,6 +208,7 @@ function SonosComponent(data) {
   this.deviceid = 1;
   this.system = data.system;
   this.getUID();
+  this.debug = data.debug;
 }
 util.inherits(SonosComponent, EventEmitter);
 
@@ -540,7 +541,7 @@ SonosComponent.prototype.parseMetadata = function (metadata, callback) {
 
     var metaInfo = {};
     var meta = result["DIDL-Lite"]["item"][0];
-    if (this.debug) console.log("metadata", meta);
+    
     var streamcontent = xmlValue(meta, "r:streamContent");
     streamcontent = this.parseXMStreamContent(streamcontent);
     metaInfo.name =  streamcontent.title || xmlValue(meta, "dc:title");

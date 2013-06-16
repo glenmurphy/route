@@ -28,6 +28,7 @@ function Hue(data) {
   this.lightNames = {};
   this.lightStates = {};
   this.updateLightsList();
+  this.requestQueue = [];
   //this.updateRegistrationState();
 };
 util.inherits(Hue, EventEmitter);
@@ -98,16 +99,27 @@ Hue.prototype.exec = function(command, params) {
       }
     }
 
-    if (params.bulbName) {
-      for(var key in this.lightNames){
-        if(key.match(params.bulbName)) {
-          var bulbID = this.lightNames[key];
-          if (bulbID) this.setBulbState(bulbID, on, h, s, v, ct, params.duration);
-        }
+    var matches = this.bulbsMatchingName(params.bulbName);
+
+    for (var i = 0; i < matches.length; i++) {
+      var bulbID = matches[i];
+      if (bulbID) this.setBulbState(bulbID, on, h, s, v, ct, params.duration);
+    };
+  }
+};
+
+Hue.prototype.bulbsMatchingName = function(name) {
+  var matches = [];
+  if (name) {
+    for(var key in this.lightNames){
+      if(key.match(name)) {
+        var bulbID = this.lightNames[key];
+      matches.push(bulbID);
       }
     }
   }
-};
+  return matches;
+}
 
 Hue.prototype.allOff = function () {
   for (var key in this.lightNames) {
@@ -177,20 +189,44 @@ Hue.prototype.updateBulbState = function(bulbID) {
   request.end();
 };
 
-// hue, sat, brightness, colorTemp are defined from 0.0 to 1.0.
-Hue.prototype.setBulbState = function(bulbID, on, hue, sat, brightness, colorTemp, time) {
- var request = http.request({
+Hue.prototype.sendRequest = function(request) {
+  this.requestQueue.push(request);
+  if (this.requestQueue.length == 1)
+    process.nextTick(this.sendNextRequest.bind(this));
+};
+
+Hue.prototype.sendNextRequest = function() {
+  if (!this.requestQueue.length) return;
+  var requestInfo = this.requestQueue.shift();
+  if (!requestInfo.bulbID) return;
+   var request = http.request({
       host : this.host,
-      path : "/api/" + this.uuid + "/lights/" + bulbID + "/state",
+      path : "/api/" + this.uuid + "/lights/" + requestInfo.bulbID + "/state",
       method: 'PUT'
     }, function(res){
       res.setEncoding('utf8');
-
       res.on('data', function (chunk) {console.log(chunk);}.bind(this));
-      this.updateBulbState(bulbID);
+      res.on('end', this.requestSent.bind(this));
+      this.updateBulbState(requestInfo.bulbID);
   }.bind(this));
-  var data = {};
+  request.on('error', function(e) {console.log("!  Hue error:" + e.message)});
+  request.write(JSON.stringify(requestInfo.data));
+  request.end();
+  setTimeout(this.sendNextRequest.bind(this), 100);  
+};
 
+Hue.prototype.requestSent = function() {
+
+};
+
+// hue, sat, brightness, colorTemp are defined from 0.0 to 1.0.
+Hue.prototype.setBulbState = function(bulbID, on, hue, sat, brightness, colorTemp, time, delay) {
+  if (!Number(bulbID)) bulbID = this.lightNames[bulbID];
+  var requestInfo = {};
+  requestInfo.bulbID = bulbID;
+
+  var data = {};
+  if (on != null) data.on = (on == 'true' || on == true);
   if (hue != null) data.hue = Math.round(hue * 182.04);
   if (sat != null) data.sat = Math.round(sat * 254);
   if (brightness != null) data.bri = Math.round(brightness * 254);
@@ -201,12 +237,13 @@ Hue.prototype.setBulbState = function(bulbID, on, hue, sat, brightness, colorTem
   // corresponding to around 6500K (154) to 2000K (500)
   if (colorTemp != null) data.ct = Math.round(154 + (1.0 - colorTemp) * 346); // 154 - 500
 
-  if (on != null) data.on = on == 'true';
-  console.log(hue);
-  data = JSON.stringify(data);
-  request.write(data);
-  request.on('error', function(e) {console.log("Error:" + e.message)});
-  request.end();
+  requestInfo.data = data;
+
+  if (delay) {
+    setTimeout(this.sendRequest.bind(this, requestInfo), delay * 1000);
+  } else {
+    this.sendRequest(requestInfo);
+  }
 }
 
 Hue.prototype.updateLightsList = function() {

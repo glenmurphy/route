@@ -1,4 +1,3 @@
-//http://www.techanswerguy.com/2013/02/capturing-live-stream-from-gopro-hero-2.html
 
 var EventEmitter = require('events').EventEmitter;
 var net = require('net');
@@ -24,8 +23,11 @@ GoPro.prototype.exec = function(command, params) {
 };
 
 GoPro.prototype.setMode = function(mode) {
-  this.sendCommand("/bacpac/CM", {p:"%01"});
+  this.sendCommand("/bacpac/CM", mode);
 }
+
+//Reference:
+//http://www.techanswerguy.com/2013/02/capturing-live-stream-from-gopro-hero-2.html
 
 GoPro.prototype.sendCommand = function(path, value) {
   var query = {password: this.password, p:"%0" + value}

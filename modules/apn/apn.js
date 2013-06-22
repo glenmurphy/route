@@ -12,10 +12,10 @@ function APN(data) {
     keyData: null,                    /* String or Buffer containing key data, as certData */
     passphrase: this.passphrase,      /* A passphrase for the Key file */
     ca: null,                         /* String or Buffer of CA data to use for the TLS connection */
-    gateway: data.gateway || 'gateway.push.apple.com',/* gateway address */
+    gateway: data.gateway || 'gateway.push.apple.com', /* gateway address */
     port: 2195,                       /* gateway port */
     enhanced: true,                   /* enable enhanced format */
-    errorCallback: this.connectionError,         /* Callback when error occurs function(err,notification) */
+    errorCallback: this.connectionError, /* Callback when error occurs function(err,notification) */
     cacheLength: 100                  /* Number of notifications to cache for error purposes */
   };
 

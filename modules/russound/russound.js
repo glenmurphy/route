@@ -48,10 +48,6 @@ Russound.prototype.fadeVolume = function(controller, zone, value, duration, star
   if (percent < 1.0) this.fadeTimeouts[zone] = setTimeout(this.fadeVolume.bind(this), 100, controller, zone, value, duration, startValue, startTime);
 }
 
-
-
-
-
 Russound.prototype.log = function(data) {
   console.log("Russound LOG:" + data);
   this.emit("DeviceEvent", "Logged");
@@ -79,7 +75,6 @@ Russound.prototype.sendCommand = function(command, callback) {
 //   setTimeout(this.connect.bind(this), 1000);
 // }
 
-
 Russound.prototype.get = function (keys) {
 //GET C[1].Z[4].bass, C[1].Z[4].treble
 
@@ -102,9 +97,7 @@ Russound.prototype.setPageTarget = function(zone) {
   for (var i = 1; i < 9; i++) {
     this.setDND(i, i != zone);
   }
-
 }
-
 
 Russound.prototype.sendEvent = function(controller, zone, event, data1, data2) {
   var command = "EVENT C[" + (controller || 1) + "].Z[" + zone + "]!" + event;
@@ -112,8 +105,6 @@ Russound.prototype.sendEvent = function(controller, zone, event, data1, data2) {
   if (data2 != undefined) command += " " + data2;
   this.sendCommand(command);
 }
-
-
 
 Russound.prototype.parseResponse = function(data) {
   data = data.replace(/([\w\[\]\.]+)=/g,'"$1"=');

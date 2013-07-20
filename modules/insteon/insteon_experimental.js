@@ -241,34 +241,14 @@ Insteon.prototype.handleData = function(data) {
   }
 };
 
-/**
- * Insteon sends two types of message in response to status events
- * one of them (C7) is very quick but unreliable, the others are 
- * slow but more reliable. As the controllers send both, we want 
- * to use the first if we can, but use the second if it isn't sent
- * and we need to do so without dupes.
- */
 Insteon.prototype.emitDeviceStatus = function(info) {
-  // var date = new Date();
-  // var control_name = data.name + "." + data.control;
+  var out = [info.device_name];
+  // Multi switches pass their index via level
+  if (info.device_name.indexOf("Multi") != -1) {
+    out.push(info.level); 
+  }
+  out.push(info.command_name);
 
-  // if ((control_name in this.history) &&
-  //     this.history[control_name].command == data.command &&
-  //     date - this.history[control_name].time < 3000) {
-  //   return;
-  // }
-
-  // this.history[control_name] = {
-  //   command : data.command,
-  //   time : date
-  // };
-
-  var out = [
-    info.device_name,
-    info.command_name
-  ];
-  // if (data.control > 1)
-  //   out.push(data.control);
   var state = {};
   state["insteon." + info.device_name] = info.command_name;
   this.emit("DeviceEvent", out.join("."));

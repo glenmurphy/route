@@ -29,6 +29,7 @@ function Hue(data) {
   this.lightStates = {};
   this.updateLightsList();
   this.requestQueue = [];
+  this.debug = data.debug;
   //this.updateRegistrationState();
 };
 util.inherits(Hue, EventEmitter);
@@ -64,10 +65,9 @@ Hue.prototype.exec = function(command, params) {
     if (colorHex == 'Invalid Color Name') colorHex = params.color;
     console.log("*  Hue Executing: " + command + " : " + colorHex);
     var hsv = Colors.hex2hsv(colorHex);
-    console.log(hsv);
-      for (var i = 1; i < 4; i++) {
-        this.setBulbState(i, true, hsv.H, hsv.S/100, hsv.V/100, null);
-      };
+    for (var i = 1; i < 4; i++) {
+      this.setBulbState(i, true, hsv.H, hsv.S/100, hsv.V/100, null);
+    };
   } else if (command == "SimulateSunrise") {
 
     this.simulateSunrise("2");
@@ -75,7 +75,6 @@ Hue.prototype.exec = function(command, params) {
 
     this.allOff();
   } else if (command == "SetLightState") {
-    console.log(params);
     var color = null;
     var h = null, s = null, v = params.bri, ct = params.ct;
     var on = params.state == null ? true : params.state;
@@ -132,8 +131,8 @@ Hue.prototype.simulateSunrise = function (bulbID) {
   var steps = 500;
   var duration = 20 * 60 * 1000;
   for (var i = 0; i <= 1; i+= 1/steps) {
-  setTimeout(function (f){
-    console.log("running " + f);
+  setTimeout(function(f){
+  
     this.setBulbState(bulbID, true, null, null, f * 1.0, (0.5 - f/2));
     }.bind(this,i), i * duration);
   console.log(i * duration);
@@ -205,7 +204,7 @@ Hue.prototype.sendNextRequest = function() {
       method: 'PUT'
     }, function(res){
       res.setEncoding('utf8');
-      res.on('data', function (chunk) {console.log(chunk);}.bind(this));
+      res.on('data', function (chunk) {if (this.debug) console.log(chunk);}.bind(this));
       res.on('end', this.requestSent.bind(this));
       this.updateBulbState(requestInfo.bulbID);
   }.bind(this));
@@ -272,6 +271,8 @@ Hue.prototype.updateLightsList = function() {
                 this.updateBulbState(key);                
                 count++;
               }
+                      if (this.debug) console.log(this.lightNames);
+
               this.emit("DeviceEvent", "Connected");
             }
            

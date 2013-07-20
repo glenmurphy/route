@@ -14,6 +14,8 @@ var http = require('http');
 
 function Voice(data) {
   this.guardPhrase = data.guardPhrase;
+  this.phrases = data.phrases;
+  this.commandGuardPhrase = data.commandGuardPhrase;
   this.listeningTimeout = null;
   this.devices = data.devices;
   this.timeoutDuration = data.timeoutDuration || 10000;
@@ -23,6 +25,15 @@ function Voice(data) {
   this.port = data.port || 9001
   this.server = http.createServer(this.httpReq.bind(this)).listen(this.port);
   this.lastEvent = null;
+  this.openEndedPhrases = [];
+
+  for (var phrase in this.phrases) {
+    phrase = this.phrases[phrase];
+    var index = phrase.indexOf(" *");
+    if (index != -1) {
+      this.openEndedPhrases.push(phrase.substring(0, index));
+    }
+  }
 };
 
 util.inherits(Voice, EventEmitter);
@@ -30,10 +41,14 @@ util.inherits(Voice, EventEmitter);
 
 Voice.prototype.httpReq = function(req, res) {
   var info = url.parse(req.url, true);
-  this.handleVoiceInput(info.query);
   res.writeHead(200);
+  if (info.path == "/phrases") {
+    res.write(this.phrases.join("\n"));    
+  } else {
+    this.handleVoiceInput(info.query);
+  }
   res.end();
-};
+}; 
 
 
 Voice.prototype.addMapping = function(mapping) {
@@ -57,7 +72,7 @@ Voice.prototype.exec = function(command, params) {
 
 
 Voice.prototype.handleVoiceInput = function(params) {
-  var context = params.device ? this.devices[params.device] : null;
+  var context = params.device ? (this.devices[params.device] || params.device) : null;
   delete params.device;
   params.context = context;
 
@@ -67,9 +82,11 @@ Voice.prototype.handleVoiceInput = function(params) {
     return;
   }
 
-  if (params.action == "stopped") {
+  var isPartial = (params.action == "partial");
+  if (isPartial) return;
+
+  if (params.action == "completed") {
     this.stoppedListening(params);
-    return;
   }
 
   var strings = params.string;
@@ -85,6 +102,11 @@ Voice.prototype.handleVoiceInput = function(params) {
   var matched = false;
   for (var i = 0; i < strings.length; i++) {
     var string = strings[i].toLowerCase();
+
+    if (this.commandGuardPhrase && string.indexOf(this.commandGuardPhrase) == 0) {
+      string = string.substring(this.commandGuardPhrase.length);
+    }
+
     var originalString = string;
     var result = this.normalizeString(string);
     var resultParams = result.params;
@@ -110,7 +132,7 @@ Voice.prototype.handleVoiceInput = function(params) {
       }
       matched = true;
       break;
-    }
+    } 
   }
 
   if (!matched) {
@@ -132,6 +154,16 @@ Voice.prototype.handleVoiceInput = function(params) {
 Voice.prototype.normalizeString = function(string) {
   var splitWords = ["to", "for"];
   var params = {};
+
+  for (var prefix in this.openEndedPhrases) {
+    var prefixString = this.openEndedPhrases[prefix];
+    var index = string.indexOf(prefixString);
+    if (index == 0) {
+      params.value = string.substring(prefixString.length + 1);
+      string = string.substring(0, prefixString.length);  
+    }
+  }
+
   for (var i = 0; i < splitWords.length; i++) {
     var splitString = " " + splitWords[i] + " ";
     var toIndex = string.indexOf(splitString);

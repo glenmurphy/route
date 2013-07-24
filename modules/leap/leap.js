@@ -2,8 +2,6 @@ var EventEmitter = require('events').EventEmitter;
 var Leapjs = require('leapjs');
 var util = require('util');
 
-var controllerOptions = {enableGestures: true};
-
 function Leap(data) {
   this.controller = new Leapjs.Controller(
     {host: data.host,

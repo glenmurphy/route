@@ -56,15 +56,43 @@ Leap.prototype.handleFrame = function(frame) {
 
 Leap.prototype.handleGesture = function(gesture, frame) {
 
-  if (gesture.state == "start") {
-    Leap.frameCount = 0;
-  }
-  else if (gesture.state == "update") {
-    Leap.frameCount++;
-  }
-  else if (gesture.state == "stop" && Leap.frameCount >= this.threshold) {
-    console.log(gesture.type);
-    this.emit("DeviceEvent", gesture.type);
+  switch (gesture.state) {
+    case "start":
+      Leap.frameCount = 0;
+      break;
+    case "update":
+      Leap.frameCount++;
+      break;
+    case "stop":
+      if (Leap.frameCount >= this.threshold) {
+        switch (gesture.type) {
+          case "swipe":
+            if (Math.sqrt(Math.pow(gesture.direction[0], 2)) > Math.sqrt(Math.pow(gesture.direction[1], 2))) {
+              //Horizontal gesture
+              if(gesture.direction[0] < 0) {
+                // Left gesture
+                this.emit("DeviceEvent", "Swipe.Left");
+              }
+              else {
+                // Right gesture
+                this.emit("DeviceEvent", "Swipe.Right");
+              }
+            }
+            else {
+              //Vertical gesture
+              if(gesture.direction[1] < 0) {
+                // Downward gesture
+                this.emit("DeviceEvent", "Swipe.Down");
+              }
+              else {
+                // Upward gesture
+                this.emit("DeviceEvent", "Swipe.Up");
+              }
+            }
+            break;
+        }
+      }
+      break;
   }
 };
 

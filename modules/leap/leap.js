@@ -6,7 +6,8 @@ var util = require('util');
 var controllerOptions = {enableGestures: true};
 
 function Leap(data) {
-  this.controller = new Leapjs.Controller({host: data.host,
+  this.controller = new Leapjs.Controller(
+    {host: data.host,
     port: data.port || '127.0.0.1',
     enableGestures: data.enableGestures || false,
     enableHeartbeat: data.enableHeartbeat || true,

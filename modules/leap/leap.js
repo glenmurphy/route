@@ -1,6 +1,5 @@
 var EventEmitter = require('events').EventEmitter;
-var Leapjs = require('../../../node_modules/leapjs/lib/index');
-// var Leapjs = require('leapjs').leapjs;
+var Leapjs = require('leapjs');
 var util = require('util');
 
 var controllerOptions = {enableGestures: true};

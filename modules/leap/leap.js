@@ -90,6 +90,20 @@ Leap.prototype.handleGesture = function(gesture, frame) {
               }
             }
             break;
+          case "circle":
+            if(gesture.clockwiseness === "clockwise") {
+              this.emit("DeviceEvent", "Circle.Clockwiseness");
+            }
+            else {
+              this.emit("DeviceEvent", "Circle.CounterClockwiseness"); 
+            }
+            break;
+          case "screenTap":
+            this.emit("DeviceEvent", "ScreenTap");
+            break;
+          case "keyTap":
+            this.emit("DeviceEvent", "KeyTap");
+            break;
         }
       }
       break;

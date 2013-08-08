@@ -12,8 +12,10 @@ function Lutron(data) {
   this.controlUnits = data.controlUnits;
   this.keypads = data.keypads;
   this.commandQueue = [];
+  this.scenes = {};
   this.connect();
   this.debug = data.debug;
+  console.log(this.controlUnits);
 };
 util.inherits(Lutron, EventEmitter);
 
@@ -75,6 +77,9 @@ Lutron.prototype.unlockScenes = function() {
   this.sendCommand("SL");
 }
 
+Lutron.prototype.sceneForUnit = function(unit) {
+  return this.scenes[unit];
+}
 
 Lutron.prototype.parseData = function(data) {
   var parsed = data.match(/~?:?([^ ]*) ?(.*)/);
@@ -99,12 +104,11 @@ Lutron.prototype.parseData = function(data) {
       this.emit("StateEvent", state);
       break;
     case ("ss"):
-      var scenes = {}
       for (var i = 0; i < 8; i++) {
         var value = parseInt(data.charAt(i), 16);
-        if (value != null) scenes[i] = value;
+        if (value != null) this.scenes[i+1] = value;
       };
-      this.emit("StateEvent", {"insteon.scenes" : scenes});
+      this.emit("StateEvent", {"insteon.scenes" : this.scenes});
 
       if (this.debug) console.log("Scene status:" + JSON.stringify(scenes));
       break;

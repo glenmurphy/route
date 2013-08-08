@@ -223,7 +223,7 @@ SonosComponent.prototype.getUID = function() {
     }.bind(this));
   }.bind(this));
   req.on('error', function(e) {
-    console.log('! Sonos', this.name, e.message);
+    console.log('!  Sonos', this.name, e.message);
   }.bind(this));
 };
 
@@ -363,7 +363,7 @@ SonosComponent.prototype.playURI = function(uri, metadata, callback) {
     this.setCurrentURI(uri, metadata, function(resp) {
       var parser = new xml2js.Parser();
       parser.parseString(resp, function (err, result) {
-        console.log("RESPONSE: " + resp);
+        //console.log("RESPONSE: " + resp);
         this.play();
       }.bind(this));
     }.bind(this));
@@ -439,7 +439,7 @@ SonosComponent.prototype.queueNextTrack = function(first) {
   var uri = this.urisToQueue.shift();
   var metadata = this.metadatasToQueue.shift();
   this.addURIToQueue(uri, metadata, function(response){
-    console.log("response: ", this.urisToQueue.length, response);
+    //console.log("response: ", this.urisToQueue.length, response);
     if (first && this.queueFirstCallback) this.queueFirstCallback();
     if (this.urisToQueue.length) {
       this.queueNextTrack();

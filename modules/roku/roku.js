@@ -19,6 +19,9 @@ Roku.prototype.exec = function(command, params) {
   } else if (command == "SearchRoku") {
     console.log("*  Roku Search: " + command + " : " + params.forValue);
     this.searchRoku(params.forValue);
+  } else if (command == "Navigate") {
+    console.log("*  Roku Navigate: " + command + " : " + params.forValue);
+    this.navigateRoku(params.instructions);
   } else if (command == "SendEvent") {
     this.sendEvent(params.rokuEvent);
   } else {
@@ -31,8 +34,27 @@ Roku.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 };
 
+Roku.prototype.navigateRoku = function (directions) {
+  var steps = directions.split(" ");
+  var lastAction;
+    console.log(steps);
+  for (var i = 0; i < steps.length; i++) {
+    var step = steps[i];
+    var numberIndex = numbers.indexOf(step);
+    if (step < 10) {
+      for (var j = 0; j < parseInt(step); j++) {
+        this.sendEvent(lastAction);
+      };
+    } else {
+      this.sendEvent(step);
+      lastAction = step;
+    }
+  };
+}
+
 Roku.prototype.searchRoku = function (query) {
 // New logic for 5.0
+  this.sendEvent("HOME");
   this.sendEvent("HOME");
   setTimeout(function(){
     // Navigate to search
@@ -43,9 +65,13 @@ Roku.prototype.searchRoku = function (query) {
     this.sendText(query);
     setTimeout(function(){
       this.sendEvent("Fwd");
+    }.bind(this), 3000);
+    setTimeout(function(){
       this.sendEvent("Right");
-    }.bind(this), 2000);
-  }.bind(this), 5000);
+      this.sendEvent("Right");
+      this.sendEvent("Right");
+    }.bind(this), 3500);
+  }.bind(this), 10000);
 };
 
 Roku.prototype.launchChannel = function (channelID) {
@@ -73,12 +99,14 @@ Roku.prototype.sendText = function(text) {
 };
 
 Roku.prototype.sendEvent = function(key) {
-  if (key.length == 1) key = "Lit_" + escape(key);
-  var isFirstRequest = this.eventQueue.length === 0;
-  this.eventQueue.push(key);
-  if (isFirstRequest) {
-    setTimeout(this.sendNextEvent.bind(this),150);
-  }
+  try {
+    if (key.length == 1) key = "Lit_" + escape(key);
+    var isFirstRequest = this.eventQueue.length === 0;
+    this.eventQueue.push(key);
+    if (isFirstRequest) {
+      setTimeout(this.sendNextEvent.bind(this),333);
+    }
+  } catch (e) {}
 };
 
 Roku.prototype.sendNextEvent = function() {

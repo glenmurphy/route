@@ -197,8 +197,13 @@ Hue.prototype.sendRequest = function(request) {
 Hue.prototype.sendNextRequest = function() {
   if (!this.requestQueue.length) return;
   var requestInfo = this.requestQueue.shift();
-  if (!requestInfo.bulbID) return;
-   var request = http.request({
+  if (this.debug) console.log("D  Hue sending event:", requestInfo);
+  setTimeout(this.sendNextRequest.bind(this), 100); 
+  if (!requestInfo.bulbID) {
+    console.log("!  Hue: missing bulb id");
+    return;
+  }
+  var request = http.request({
       host : this.host,
       path : "/api/" + this.uuid + "/lights/" + requestInfo.bulbID + "/state",
       method: 'PUT'
@@ -210,8 +215,7 @@ Hue.prototype.sendNextRequest = function() {
   }.bind(this));
   request.on('error', function(e) {console.log("!  Hue error:" + e.message)});
   request.write(JSON.stringify(requestInfo.data));
-  request.end();
-  setTimeout(this.sendNextRequest.bind(this), 100);  
+  request.end(); 
 };
 
 Hue.prototype.requestSent = function() {

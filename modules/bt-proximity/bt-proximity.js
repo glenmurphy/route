@@ -7,6 +7,10 @@ var spawn = require('child_process').spawn,
  * look for a specific bluetooth device. Because those tools can be
  * somewhat brittle (or maybe it's just my adapter), it restarts the
  * bluetooth device each time.
+ *
+ * Before using, you need to do
+ *   hcitool lescan
+ *   hcitool lecc [MACADDRESS]
  */
 function BTProximity(data) {
   this.mac = data.mac;
@@ -96,6 +100,7 @@ BTProximity.prototype.handleData = function(data) {
   for (var i = 0; i < lines.length; i++) {
     line = lines[i].toLowerCase();
     if (line.indexOf("connection successful") != -1) {
+      console.log("BTProximity: Found: " + (new Date()).toLocaleTimeString());
       this.setPresent();
     } else if (line.indexOf("too many open files") != -1) {
       this.init();

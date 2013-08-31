@@ -32,25 +32,28 @@ util.inherits(Insteon, EventEmitter);
 Insteon.SMARTLINC_PLM_PORT = 9761;
 
 Insteon.prototype.sendCommand = function(device_name, command_name, level) {
-  console.log(device_name, command_name, level);
-  var device_id = this.devices[device_name] || device_id;
+  console.log("*  Insteon:", device_name, command_name, level);
+  var device_id = this.devices[device_name] || device_name;
   var command_id = Insteon.COMMAND_IDS[command_name];
   if (!command_id || !device_id) return;
   if (undefined === level) level = "FF";
-  var prefix = device_id.length == 2 ? "0261" : "0262";
-  var string = prefix + device_id + "0F" + command_id + level;
+  var isGroupCommand = device_id.length == 2;
+  var prefix = isGroupCommand ? "0261" : "0262";
+  var string = prefix + device_id + (isGroupCommand ? "" : "0F") + command_id + level;
   this.sendString(string);
 };
 
 
 Insteon.prototype.exec = function(command) {
-  console.log("*  Insteon Executing: " + command);
+  console.log("*  Insteon executing: " + command);
 
   var string = this.commands[command];
   if (string) {
     this.sendString(string);
   } else if (command == "SetLightState") {
-    
+  } else if (command == "AllOff") {
+    this.sendCommand("FF", "Off");
+    console.log("*  Insteon: AllOff");
   } else { // Build a command manually
     var segments = command.split(".");
     var device_name = segments.shift();

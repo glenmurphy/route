@@ -118,6 +118,12 @@ Sonos.prototype.exec = function(command, params) {
     case "Unmute":
       component.setMute(false);
       break;
+    case "SetVolume":
+      component.setVolume(params.value);
+      break;
+    case "AdjustVolume":
+      component.adjustVolume(parseInt(params.delta));
+      break;
     case "Spotify.ListenTo":
       component.playSpotifyTrack(params.string);
       break;
@@ -323,6 +329,7 @@ SonosComponent.prototype.playQueue = function(callback) {
 };
 
 SonosComponent.prototype.setPlayMode = function(mode, callback) { // NORMAL, REPEAT_ALL, SHUFFLE, SHUFFLE_NOREPEAT
+  console.log("*  Sonos " + this.name, "set play mode:", mode);
   this.callAction("AVTransport", "SetPlayMode", {InstanceID : 0, NewPlayMode : mode}, this.deviceid, callback);
 };
 
@@ -342,7 +349,6 @@ SonosComponent.prototype.playFavorite = function(name, callback) {
   for (var f in this.system.favorites) {
     f = this.system.favorites[f];
     if (f.name == name || f.url == name) {
-      console.log("matched ", f);
       this.playURI(f.url, f.urlMetadata, callback);
       return;
     }
@@ -464,6 +470,12 @@ SonosComponent.prototype.getVolume = function(callback) {
 SonosComponent.prototype.setVolume = function(volume) {
   this.volume = volume;
   this.callAction("RenderingControl", "SetVolume", {DesiredVolume : volume, InstanceID : 0, Channel : "Master"}, this.deviceid);
+};
+
+SonosComponent.prototype.adjustVolume = function(delta) {
+  this.getVolume(function (volume) {
+    this.setVolume(volume + delta);
+  }.bind(this));
 };
 
 SonosComponent.prototype.setMute = function(flag) {

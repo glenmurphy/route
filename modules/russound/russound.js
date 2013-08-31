@@ -125,7 +125,7 @@ Russound.prototype.handleNotification = function(data) {
       var on = data[key] == "ON";
       this.emit("DeviceEvent", on ? "On" : "Off", null,  {initializing: this.initializing});
     }
-    this.emit("DeviceEvent", key, data[key], {initializing: this.initializing});
+    if (this.emitEvents) this.emit("DeviceEvent", key, data[key], {initializing: this.initializing});
     changes["russound." + key] = data[key]; 
     this.status[key] = data[key];
   }

@@ -15,7 +15,6 @@ function Lutron(data) {
   this.scenes = {};
   this.connect();
   this.debug = data.debug;
-  console.log(this.controlUnits);
 };
 util.inherits(Lutron, EventEmitter);
 

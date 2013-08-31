@@ -66,7 +66,7 @@ Hue.prototype.exec = function(command, params) {
     console.log("*  Hue Executing: " + command + " : " + colorHex);
     var hsv = Colors.hex2hsv(colorHex);
     for (var i = 1; i < 4; i++) {
-      this.setBulbState(i, true, hsv.H, hsv.S/100, hsv.V/100, null);
+      this.setBulbState(i, {on:true, hue:hsv.H, sat:hsv.S/100, bri:hsv.V/100});
     };
   } else if (command == "SimulateSunrise") {
 
@@ -102,7 +102,7 @@ Hue.prototype.exec = function(command, params) {
 
     for (var i = 0; i < matches.length; i++) {
       var bulbID = matches[i];
-      if (bulbID) this.setBulbState(bulbID, on, h, s, v, ct, params.duration);
+      if (bulbID) this.setBulbState(bulbID, {on:on, hue:h, sat:s, bri:v, colorTemp:ct, time:params.duration});
     };
   }
 };
@@ -123,7 +123,7 @@ Hue.prototype.bulbsMatchingName = function(name) {
 Hue.prototype.allOff = function () {
   for (var key in this.lightNames) {
     var bulbID = this.lightNames[key];
-    this.setBulbState(bulbID, false, null, null, null, null);
+    this.setBulbState(bulbID, {on:false});
   }
 }
 
@@ -132,8 +132,7 @@ Hue.prototype.simulateSunrise = function (bulbID) {
   var duration = 20 * 60 * 1000;
   for (var i = 0; i <= 1; i+= 1/steps) {
   setTimeout(function(f){
-  
-    this.setBulbState(bulbID, true, null, null, f * 1.0, (0.5 - f/2));
+    this.setBulbState(bulbID, {on:true, bri:f * 1.0, colorTemp:(0.5 - f/2)});
     }.bind(this,i), i * duration);
   console.log(i * duration);
   }
@@ -197,8 +196,8 @@ Hue.prototype.sendRequest = function(request) {
 Hue.prototype.sendNextRequest = function() {
   if (!this.requestQueue.length) return;
   var requestInfo = this.requestQueue.shift();
-  if (this.debug) console.log("D  Hue sending event:", requestInfo);
-  setTimeout(this.sendNextRequest.bind(this), 100); 
+  if (this.debug) console.log("D  Hue sending event:", JSON.stringify(requestInfo));
+  //setTimeout(this.sendNextRequest.bind(this), 200); 
   if (!requestInfo.bulbID) {
     console.log("!  Hue: missing bulb id");
     return;
@@ -209,41 +208,67 @@ Hue.prototype.sendNextRequest = function() {
       method: 'PUT'
     }, function(res){
       res.setEncoding('utf8');
-      res.on('data', function (chunk) {if (this.debug) console.log(chunk);}.bind(this));
-      res.on('end', this.requestSent.bind(this));
+      res.data = "";
+      res.on('data', function (chunk) {res.data += chunk;}.bind(this));
+      res.on('end', function () {
+        var response = res.data;
+        if (this.debug) console.log("D  Hue <", response);
+        response = JSON.parse(response);
+        var retry = false;
+        for (var i in response) {
+          var item = response[i];
+          if (item.error) {
+            if (item.error.type == "201") continue; // Bulb is off
+            console.log("!  Hue error " + item.error.type + ":", item.error.description, "\n  ", item.error.address);
+            if (item.error.type == "901") retry = true; // Bridge error
+          } else {
+            
+          }
+        }
+        if (retry && !(requestInfo.tries > 5)) {
+          console.log("retrying", requestInfo);
+          requestInfo.tries = (requestInfo.tries || 0) + 1;
+          this.requestQueue.unshift(requestInfo);
+        }
+        setTimeout(this.sendNextRequest.bind(this), retry ? 300 : 100); 
+
+      }.bind(this));
       this.updateBulbState(requestInfo.bulbID);
   }.bind(this));
-  request.on('error', function(e) {console.log("!  Hue error:" + e.message)});
+  request.on('error', function(e) {
+    console.log("!  Hue error:" + e.message);
+  });
   request.write(JSON.stringify(requestInfo.data));
   request.end(); 
 };
 
-Hue.prototype.requestSent = function() {
+Hue.prototype.requestSent = function(response) {
 
 };
 
 // hue, sat, brightness, colorTemp are defined from 0.0 to 1.0.
-Hue.prototype.setBulbState = function(bulbID, on, hue, sat, brightness, colorTemp, time, delay) {
+Hue.prototype.setBulbState = function(bulbID, values) {
   if (!Number(bulbID)) bulbID = this.lightNames[bulbID];
   var requestInfo = {};
   requestInfo.bulbID = bulbID;
 
   var data = {};
-  if (on != null) data.on = (on == 'true' || on == true);
-  if (hue != null) data.hue = Math.round(hue * 182.04);
-  if (sat != null) data.sat = Math.round(sat * 254);
-  if (brightness != null) data.bri = Math.round(brightness * 254);
-  if (time != null) data.transitiontime = Math.round(time * 10);
+  if (values.on != null) data.on = (values.on == 'true' || values.on == true);
+  if (values.hue != null) data.hue = Math.round((values.hue % 360) * 182.04);
+  if (values.sat != null) data.sat = Math.round(values.sat * 254);
+  if (values.bri != null) data.bri = Math.round(values.bri * 254);
+  if (values.time != null) data.transitiontime = Math.round(values.time * 10);
+  if (values.effect != null) data.effect = values.effect;
 
   // The colour temperature (white only) 154 is the coolest, 500 is the warmest this appears to
   // be measured in Mireds, equivilent to 1000000/T (where T is the temperature in Kelvin) 
   // corresponding to around 6500K (154) to 2000K (500)
-  if (colorTemp != null) data.ct = Math.round(154 + (1.0 - colorTemp) * 346); // 154 - 500
+  if (values.colorTemp != null) data.ct = Math.round(154 + (1.0 - values.colorTemp) * 346); // 154 - 500
 
   requestInfo.data = data;
 
-  if (delay) {
-    setTimeout(this.sendRequest.bind(this, requestInfo), delay * 1000);
+  if (values.delay) {
+    setTimeout(this.sendRequest.bind(this, requestInfo), values.delay * 1000);
   } else {
     this.sendRequest(requestInfo);
   }

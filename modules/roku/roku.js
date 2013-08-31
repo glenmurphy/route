@@ -71,7 +71,7 @@ Roku.prototype.searchRoku = function (query) {
       this.sendEvent("Right");
       this.sendEvent("Right");
     }.bind(this), 3500);
-  }.bind(this), 10000);
+  }.bind(this), 9000);
 };
 
 Roku.prototype.launchChannel = function (channelID) {

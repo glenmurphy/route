@@ -20,7 +20,7 @@ function Lutron(data) {
 util.inherits(Lutron, EventEmitter);
 
 Lutron.prototype.exec = function(command, data) {
-  console.log("*  Lutron Executing: " + command);
+  console.log("*  Lutron Executing: " + command, data);
 
   if (command == "SetScene") {
     var scene = data.scene;
@@ -44,6 +44,7 @@ Lutron.prototype.sendCommand = function(string) {
 Lutron.prototype.sendNextCommand = function() {
   if (!this.commandQueue.length) return;
   var string = this.commandQueue.shift();
+  if (this.debug) console.log("D  Lutron >", string);
   this.client.write(string, "UTF8", function () {
     setTimeout(this.sendNextCommand.bind(this),1000);  
   }.bind(this));
@@ -86,7 +87,7 @@ Lutron.prototype.parseData = function(data) {
   var command = parsed[1];
   var data = parsed[2];
 
-  if (this.debug) console.log("Lutron", command, data);
+  if (this.debug) console.log("D  Lutron <", command, data);
 
   switch (command) {
 
@@ -110,7 +111,7 @@ Lutron.prototype.parseData = function(data) {
       };
       this.emit("StateEvent", {"insteon.scenes" : this.scenes});
 
-      if (this.debug) console.log("Scene status:" + JSON.stringify(scenes));
+      if (this.debug) console.log("Scene status:" + JSON.stringify(this.scenes));
       break;
     case ("ERROR"):
       console.log(data);

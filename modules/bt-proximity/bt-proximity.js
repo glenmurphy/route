@@ -100,12 +100,8 @@ BTProximity.prototype.handleData = function(data) {
   var lines = data.toString().split("\n");
   for (var i = 0; i < lines.length; i++) {
     line = lines[i].toLowerCase();
-<<<<<<< HEAD
     if (line.indexOf("connection successful") != -1 || line.indexOf("[con]") != -1) {
-=======
-    if (line.indexOf("connection successful") != -1) {
       console.log("BTProximity: Found: " + (new Date()).toLocaleTimeString());
->>>>>>> 667f301b68e4afe09a78c4f688f8dbd54d855d37
       this.setPresent();
     } else if (line.indexOf("too many open files") != -1) {
       this.init();

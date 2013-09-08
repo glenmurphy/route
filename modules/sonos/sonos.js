@@ -257,7 +257,7 @@ SonosComponent.prototype.playSpotifyTrack = function (url, metadata) {
 };
 
 SonosComponent.prototype.isPlaying = function() {
-  return this.player_state === "PLAYING";
+  return this.playingState === "PLAYING";
 };
 
 SonosComponent.prototype.playPause = function() {

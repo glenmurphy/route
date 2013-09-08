@@ -67,6 +67,7 @@ function sendEvent(name) {
 <script src="functions.js"></script>
 <script src="sonos.js"></script>
 <script src="switch.js"></script>
+<script src="status.js"></script>
 <script src="stereo.js"></script>
 <script src="volume.js"></script>
 <body>
@@ -77,11 +78,6 @@ function sendEvent(name) {
   </div>
 
   <div class="room" style="left:320px;">
-    <div class="room-name">OFFICE</div>
-    <div id="office-main-light"></div>
-  </div>
-
-  <div class="room" style="left:640px;">
     <div class="room-name">MASTER BED</div>
     <div class="group">
       <div id="master-bed-stereo"></div>
@@ -90,10 +86,31 @@ function sendEvent(name) {
       <div id="master-bed-wall"></div>
     </div>
   </div>
+
+  <div class="room" style="left:640px;">
+    <div class="room-name">OFFICE</div>
+    <div id="office-main-light"></div>
+  </div>
+
+  <div class="room" style="left:640px; top:97px;">
+    <div class="room-name">KITCHEN</div>
+    <div class="group" id="kitchen-lights"></div>
+    <div class="group" id="kitchen-equipment"></div>
+  </div>
+
+  <div class="room" style="left:640px; top:261px;">
+    <div class="room-name">HOUSE</div>
+    <div class="group" id="house-state"></div>
+  </div>
+
 </body>
 <script>
 var socket = io.connect();
+socket.on('disconnect', function() {
+  socket.socket.connect();
+});
 
+// Livingroom
 new Stereo([
   {
     name : "Sonos",
@@ -133,8 +150,16 @@ new Switch("Lutron.LivingroomLoungeLamp", "Lamp", socket, $('living-lights'));
 new Switch("Lutron.HallwayPendantLights", "Pendant", socket, $('living-lights'));
 new Switch("Lutron.KitchenDiningLights", "Dining", socket, $('living-lights'));
 
+// Kitchen
+new Switch("Lutron.KitchenBarLights", "Bar lights", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenCabinetLights", "Cabinet", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenCeilingLights", "Ceiling", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenCoffeeMachine", "Coffee", socket, $('kitchen-equipment'));
+
+// Office
 new Switch("Lutron.OfficePendantLight", "Office", socket, $('office-main-light'));
 
+// Bedroom
 new Stereo([
   {
     name : "MacMini",
@@ -163,4 +188,10 @@ new Stereo([
 ], socket, $('master-bed-stereo'));
 new Sonos("Sonos.Masterbed", socket, $("master-bed-stereo"));
 new Switch("Lutron.MasterbedWallLights", "Wall lights", socket, $('master-bed-wall'));
+
+// House
+new Status({
+  "Proximity.Present" : "Glen is here",
+  "Proximity.Away" : "Glen is away"
+}, socket, $("house-state"));
 </script>

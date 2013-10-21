@@ -104,6 +104,13 @@ Hue.prototype.exec = function(command, params) {
       var bulbID = matches[i];
       if (bulbID) this.setBulbState(bulbID, {on:on, hue:h, sat:s, bri:v, colorTemp:ct, time:params.duration});
     };
+  } else if (command == "ToggleLightState") {
+    var matches = this.bulbsMatchingName(params.bulbName);
+
+    for (var i = 0; i < matches.length; i++) {
+      var bulbID = matches[i];
+      if (bulbID) this.toggleBulbState(bulbID, {});
+    };
   }
 };
 
@@ -245,6 +252,27 @@ Hue.prototype.sendNextRequest = function() {
 Hue.prototype.requestSent = function(response) {
 
 };
+
+// Toggle bulb state
+Hue.prototype.toggleBulbState = function(bulbID, values) {
+
+  console.log("Toggle: ", bulbID);
+ 
+  if (!Number(bulbID)) bulbID = this.lightNames[bulbID];
+  var requestInfo = {};
+  requestInfo.bulbID = bulbID;
+
+  // Swap bulb on state
+  var data = {};
+  data.on = !(this.lightStates[bulbID].state.on);
+  requestInfo.data = data;
+  
+  if (values.delay) {
+    setTimeout(this.sendRequest.bind(this, requestInfo), values.delay * 1000);
+  } else {
+    this.sendRequest(requestInfo);
+  }
+}
 
 // hue, sat, brightness, colorTemp are defined from 0.0 to 1.0.
 Hue.prototype.setBulbState = function(bulbID, values) {

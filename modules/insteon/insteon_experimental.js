@@ -58,7 +58,7 @@ Insteon.prototype.exec = function(command) {
     var segments = command.split(".");
     var device_name = segments.shift();
     var command_name = segments.shift();
-    var data = segments.shift();
+    var data = segments.shift(); // use this e.g. for level
     this.sendCommand(device_name, command_name, data);
   }
 };
@@ -152,7 +152,7 @@ Insteon.COMMAND_NAMES = {
   "18" : "HoldStop",
   "19" : "Status",
   "2E" : "OnWithRate",
-  "2F" : "OffWithRate"
+  "2F" : "OffWithRate",
 };
 Insteon.COMMAND_IDS = invertObject(Insteon.COMMAND_NAMES);
 
@@ -185,7 +185,7 @@ Insteon.prototype.parseCommand = function(data) {
 
   info.device_name = this.nameForDevice(info.device);
   info.target_name = this.nameForDevice(info.target);
-
+  
   info.level = parseInt(field_2, 10);
   if (info.isAck) {
     info.db_delta = parseInt(field_1,10);

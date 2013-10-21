@@ -9,7 +9,7 @@ function Netatmo(data) {
   this.connection.setConfig( data.clientId , data.clientSecret , data.userName , data.password);
   this.connection.getToken(function(err) {
     if (err) return console.log('getToken: ' + err.message);
-    console.log("*  Netatmo logged in");
+    if (this.debug) console.log("*  Netatmo logged in");
     // good to go!
     this.check()
   }.bind(this))
@@ -34,6 +34,7 @@ Netatmo.prototype.check = function() {
   }.bind(this));
 }
 
+Netatmo.TYPES = [ 'temperature', 'humidity', 'co2', 'pressure', 'noise' ];
 Netatmo.prototype.getMeasurements = function() {
   var allDevices = this.devices.concat(this.modules);
   for (var i in allDevices) {
@@ -42,21 +43,23 @@ Netatmo.prototype.getMeasurements = function() {
       device_id : this.deviceId,
       module_id : device._id,
       scale     : 'max',
-      type      : [ 'temperature', 'humidity', 'pressure', 'noise' ],
+      type      : Netatmo.TYPES,
       date_end   : "last",
       };
     var name = device.module_name;
     this.connection.getMeasurement(params, function(device, err, results) {
       if (err) return console.log('getMeasurement: ' + err.message);
       if (results.status !== 'ok')  { console.log('getMeasurement not ok', results); return console.log(results); }
-      //console.log("* netatmo", device.module_name, JSON.stringify(results.body));
       var measurements = results.body[0].value[0];
-      var temperature = measurements[0];
-      var humidity = measurements[1];
-      var pressure = measurements[2];
-      var noise = measurements[3];
-      temperature = Math.round(temperature * 9 / 5 + 32);
-      this.emit("DeviceEvent", device.module_name + "." + temperature);
+      var status = {}
+      for (var i = 0; i < measurements.length; i++) {
+        if (measurements[i]) status[Netatmo.TYPES[i]] = measurements[i];
+      };
+      status.temperature = Math.round(status.temperature * 9 / 5 + 32);
+      this.emit("DeviceEvent", device.module_name + "." + status.temperature, status);
+      var state = {};
+      state["Netatmo." + device.module_name] = status;
+      this.emit("StateEvent", state);
     }.bind(this, device));
   }
   setTimeout(this.getMeasurements.bind(this), 5 * 60 * 60 * 1000);

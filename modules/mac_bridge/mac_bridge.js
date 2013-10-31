@@ -68,7 +68,7 @@ Bridge.prototype.handleData = function(data) {
       this.playerInfo = json; 
       this.emit("StateEvent", json);
     } catch (e) {
-      console.log(e);
+      console.log("! Bridge", e);
     }
     this.dataBuffer = null;
   } else {

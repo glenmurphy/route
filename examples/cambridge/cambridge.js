@@ -62,7 +62,7 @@ var lutron = route.addDevice({
   type : Lutron,
   name : "Lutron",
   init : {
-    host : "10.0.1.21",
+    host : "10.0.1.34",
     username : "route",
     password: "route",
     devices : {
@@ -71,7 +71,7 @@ var lutron = route.addDevice({
       "KitchenCeilingLights" : { id : 25, type : Lutron.TYPE_LIGHT },
       "KitchenDiningLights" : { id : 27, type : Lutron.TYPE_LIGHT },
       "KitchenKeypad" : { id : 24, type : Lutron.TYPE_KEYPAD},
-
+      "KitchenCoffeeMachine" : { id : 36, type : Lutron.TYPE_LIGHT },
       "LivingroomEntryLight" : { id : 30, type : Lutron.TYPE_LIGHT },
       "LivingroomLoungeLamp" : { id : 18, type : Lutron.TYPE_LIGHT },
       "LivingroomPathLights" : { id : 31, type : Lutron.TYPE_LIGHT },
@@ -80,8 +80,8 @@ var lutron = route.addDevice({
         id : 14, type : Lutron.TYPE_KEYPAD,
         buttons : {
           1 : "AllOn",
-          2 : "Pedant",
-          3 : "UpperShades",
+          2 : "Pendant",
+          3 : "Sonos",
           4 : "LowerShades",
           5 : "Lamp",
           6 : "Goodnight"
@@ -93,7 +93,17 @@ var lutron = route.addDevice({
 
       "MasterbedRemote" : { id : 29, type : Lutron.TYPE_REMOTE },
       "MasterbedWallLights" : { id : 28, type : Lutron.TYPE_LIGHT },
-      "Masterbed.Keypad" : { id : 4, type : Lutron.TYPE_KEYPAD },
+      "MasterbedKeypad" : {
+        id : 4, type : Lutron.TYPE_KEYPAD,
+        buttons : {
+          1 : "AllOn",
+          2 : "Wall",
+          3 : "3",
+          4 : "4",
+          5 : "Sonos",
+          6 : "Goodnight"
+        }
+      },
 
       "HallwayPendantLights" : { id : 20, type : Lutron.TYPE_LIGHT },
       "HallwayKeypad" : { id : 21, type : Lutron.TYPE_KEYPAD },
@@ -156,21 +166,33 @@ route.addEventMap({
     "Sonos.Livingroom.Pause",
     "Sonos.Masterbed.Pause",
     "Denon.Switch.Sonos",
-  ]
+  ],
+  "Lutron.LivingroomKeypad.Sonos.On" : "Sonos.Livingroom.PlayPause",
+  "Lutron.MasterbedKeypad.Sonos.On" : "Sonos.Masterbed.PlayPause",
+  "Web.Livingroom.PlayPause" : "Sonos.Livingroom.PlayPause",
+  "Web.Masterbed.PlayPause" : "Sonos.Masterbed.PlayPause"
 });
 
-route.map("Proximity.Present", function() {
+function unlock() {
+  console.log("Attempting unlock");
   var options = {
     host: '10.0.1.41',
     port: 8083,
-    path: '/ZWaveAPI/Run/devices[2].instances[0].commandClasses[0x62].Set(0)'
+    path: '/ZWaveAPI/Run/devices[2].instances[0].commandClasses[0x62].Set(0)',
+    agent : false,
+    method : 'GET'
   };
-  http.get(options, function(res) {
+  var req = http.request(options, function(res) {
     console.log("Unlocked front door");
-  }).on('error', function(e) {
+  });
+  req.on('error', function(e) {
     console.log("Unable to unlock front door");
   });
-});
+  req.end();
+}
+
+route.map("Web.Unlock", unlock);
+route.map("Proximity.Present", unlock);
 
 route.map("Web.Lutron.*", function(eventname, data) {
   lutron.exec(eventname.substring(11)); // chop off "Web.Lutron."

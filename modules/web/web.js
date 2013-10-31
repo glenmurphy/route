@@ -8,7 +8,7 @@ var path = require('path');
 
 function Web(data) {
   this.dir = data.dir;
-  this.server = http.createServer(this.handleReq.bind(this)).listen(data.port ? data.port : 8080);
+  this.server = http.createServer(this.handleReq.bind(this)).listen(data.port ? data.port : 8000);
 
   this.socket = io.listen(this.server, { log: false });
   this.socket.on('connection', this.handleSocketConnection.bind(this));

@@ -17,7 +17,7 @@ util.inherits(Russound, EventEmitter);
 Russound.prototype.exec = function(command, params) {
   var event = command;
   var controller = params.controller || "1"
-  var zone = params.zone || this.zoneNames[params.zoneName];
+  var zone = params.zone || this.zoneNames[params.zoneName] || 1;
 
   var eventText = "EVENT C[" + controller + "].Z[" + zone + "]!" + event + " " + params.data1 + " " + (params.data2 || "")
   console.log("*  Russound Executing: " + eventText);
@@ -40,17 +40,14 @@ Russound.prototype.fadeVolume = function(controller, zone, value, duration, star
     if (this.fadeTimeouts[zone]) clearTimeout(this.fadeTimeouts[zone])
   }
 
+  if (!duration) return this.setVolume(controller, zone, value);
+  
   var percent = (now - startTime) / duration;
   if (percent > 1.0) percent = 1.0;
   var newValue = startValue + Math.round((value - startValue) * percent);
   this.setVolume(controller, zone, newValue);
 
   if (percent < 1.0) this.fadeTimeouts[zone] = setTimeout(this.fadeVolume.bind(this), 100, controller, zone, value, duration, startValue, startTime);
-}
-
-Russound.prototype.log = function(data) {
-  console.log("Russound LOG:" + data);
-  this.emit("DeviceEvent", "Logged");
 }
 
 Russound.prototype.wake = function(event) {
@@ -64,7 +61,7 @@ Russound.prototype.wake = function(event) {
 }
 
 Russound.prototype.sendCommand = function(command, callback) {
-  if (this.debug) console.log("Russound >", command);
+  if (this.debug && command.length) console.log("Russound >", command);
   this.client.write(command + "\r");
   this.callbackStack.push(callback);
 }
@@ -81,16 +78,16 @@ Russound.prototype.get = function (keys) {
 }
 
 
-Russound.prototype.selectSource = function(zone, source) {
-  this.sendEvent(null, zone, "SelectSource", source);
+Russound.prototype.selectSource = function(controller, zone, source) {
+  this.sendEvent(controller, zone, "SelectSource", source);
 }
 
-Russound.prototype.allOff = function() {
-  this.sendEvent(null, 1, "AllOff");
+Russound.prototype.allOff = function(controller) {
+  this.sendEvent(controller, 1, "AllOff");
 }
 
-Russound.prototype.setDND = function(zone, state) {
-  this.sendEvent(null, zone, "DoNotDisturb", state ? "ON" : "OFF");
+Russound.prototype.setDND = function(controller, zone, state) {
+  this.sendEvent(controller, zone, "DoNotDisturb", state ? "ON" : "OFF");
 }
 
 Russound.prototype.setPageTarget = function(zone) {
@@ -128,23 +125,20 @@ Russound.prototype.handleNotification = function(data) {
       var on = data[key] == "ON";
       this.emit("DeviceEvent", on ? "On" : "Off", null,  {initializing: this.initializing});
     }
-    this.emit("DeviceEvent", key, data[key], {initializing: this.initializing});
+    if (this.emitEvents) this.emit("DeviceEvent", key, data[key], {initializing: this.initializing});
     changes["russound." + key] = data[key]; 
     this.status[key] = data[key];
-    if (this.debug) console.log("Russound", key, data[key])
   }
   this.emit("StateEvent", changes);
-  if (this.initializing) {
 
-  }
 }
 
 Russound.prototype.handleData = function(data) {
-  if (this.debug) console.log("Russound <", data);
   if (!data.endsWith("\r\n")) return;
   var lines = data.split("\r\n");
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
+    if (this.debug && line.length) console.log("Russound <", line);
 
     var response = line.charAt(0);
     line = line.substring(2);
@@ -223,11 +217,15 @@ Russound.prototype.handleConnected = function() {
   this.emit("StateEvent", {russoundConnected:true});
   this.watchForChanges();
   if (!this.keepAliveInterval) {
-    this.keepAliveInterval = setInterval(this.keepAlive.bind(this), 10000);
+    this.keepAliveInterval = setInterval(this.keepAlive.bind(this), 60000);
   }
 };
 
 Russound.prototype.handleEnd = function() {
+  if (this.keepAliveInterval) {
+    clearInterval(this.keepAliveInterval);
+    delete this.keepAliveInterval;
+  }
   this.emit("DeviceEvent", "Russound.Disconnected");
   this.emit("StateEvent", {russoundConnected:false});
 };

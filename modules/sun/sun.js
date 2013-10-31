@@ -57,13 +57,14 @@ Sun.prototype.calculateSunEvents = function() {
 }
 
 Sun.prototype.getSunEvent = function (date, sunEvents) {
-  var sunEvent; 
+  var sunEvent = "Night";
   for (var i = 0; i < Sun.TIMEARRAY.length; i++) {
     var attrname = Sun.TIMEARRAY[i];
     if (sunEvents[attrname] < date) {
       sunEvent = attrname;
     }
   }
+
   return sunEvent;
 }
 

@@ -1,0 +1,4 @@
+{ 
+  "name" : "Serial",
+  "main" : "./serial.js"
+}

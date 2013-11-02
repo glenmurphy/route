@@ -4,6 +4,9 @@ var url = require('url');
 var util = require('util');
 var xml2js = require('xml2js');
 var os = require('os');
+var fs = require('fs');
+var gm = require('gm');
+var im = gm.subClass({ imageMagick: true });
 
 // see http://IP:1400/status/upnp for status
 // subscription logs at http://IP:1400/status/opt/log/anacapa.trace
@@ -26,6 +29,7 @@ function Sonos(data) {
   this.listenPort = data.listenPort || 9000;
 
   this.server = http.createServer(this.handleReq.bind(this)).listen(this.listenPort);
+  this.cacheArtwork = data.cacheArtwork;
   this.debug = data.debug;
 
   this.spotifyAccountId = data.spotifyAccountId;
@@ -182,9 +186,22 @@ Sonos.prototype.componentForIP = function(ip) {
 };
 
 Sonos.prototype.handleReq = function(req, res) {
-  var address = req.connection.remoteAddress;
-  var component = this.componentForIP(address);
-  component.handleReq(req,res);
+  var info = url.parse(req.url, true);
+  if ((info.pathname == "/artwork.jpg") || (info.pathname == "/artwork-blur.jpg") ) { 
+    var artworkPath = os.tmpdir() + info.pathname;
+    if (fs.existsSync(artworkPath)) {
+      res.writeHead(200, {'Content-Type': "image/jpeg"});
+      fs.createReadStream(artworkPath).pipe(res);
+    } else {
+      console.log("no");
+      res.end();
+    }
+  } else {
+    var address = req.connection.remoteAddress;
+    var component = this.componentForIP(address);
+    if (component) component.handleReq(req,res);
+  }
+
 };
 
 Sonos.prototype.metadataForInfo = function (info) {
@@ -301,7 +318,8 @@ SonosComponent.prototype.prevTrack = function(callback) {
 };
 
 SonosComponent.prototype.nextTrack = function(callback) {
-  this.callAction("AVTransport", "Next", {InstanceID : 0}, this.deviceid, callback);
+  var target = this.coordinator || this;
+  target.callAction("AVTransport", "Next", {InstanceID : 0}, this.deviceid, callback);
 };
 
 SonosComponent.prototype.removeAllTracksFromQueue = function(callback) {
@@ -582,6 +600,36 @@ SonosComponent.prototype.updatePlayerState = function(playerState) {
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {
+  if (this.system.cacheArtwork && im) {
+    var options = {url: details.artwork};
+    var artworkPath = os.tmpdir() + "artwork.jpg";
+    var artworkBlurPath = os.tmpdir() + "artwork-blur.jpg";
+    var artworkFile = fs.createWriteStream(artworkPath);
+    var file = fs.createWriteStream(artworkPath);
+
+    var system = this.system;
+    if (details.artwork != this.cachedArtworkURL) {
+      // console.time("Fetching artwork");
+      var request = http.get(details.artwork, function(response) {
+        response.pipe(file);
+        file.on('finish', function() {
+          file.close();
+          var artworkBlurFile = fs.createWriteStream(artworkBlurPath);
+          im(artworkPath).scale(1000).blur(0,36).write(artworkBlurPath, function (err) {
+            if (err) {
+              if (this.debug) console.log(err);
+            } else {
+              var state = {"sonosArtwork": "http://" + system.listenIp + ":" + system.listenPort + "/artwork-blur.jpg"};
+              system.emit("StateEvent", state);              
+            }
+          });
+        });
+      });
+    }else {
+    }
+    this.cachedArtworkURL = details.artwork;    
+  }
+
   this.emit("DeviceEvent", this.name + ".TrackInfo", details, {initializing:this.initializing});
 
   var state = {};

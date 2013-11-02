@@ -1,0 +1,4 @@
+{ 
+  "name" : "Meraki",
+  "main" : "./meraki.js"
+}

@@ -1,0 +1,4 @@
+{ 
+  "name" : "MusicSearch",
+  "main" : "./music_search.js"
+}

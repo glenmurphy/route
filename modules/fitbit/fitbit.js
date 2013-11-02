@@ -4,6 +4,7 @@ var url = require('url');
 var util = require('util');
 var oauth = require('oauth');
 var xml2js = require('xml2js');
+var storage = require('../storage').Storage;
 
 Fitbit.PORT = 9040;
 function Fitbit(data) {
@@ -12,13 +13,22 @@ function Fitbit(data) {
   this.users = data.users;
   this.oauth = new oauth.OAuth( '', '', data.token, data.secret, '1.0', null, 'HMAC-SHA1');
   this.debug = data.debug;
-  for (var user in this.users) {
-    this.updateCollection(user, "activities");
-    this.updateCollection(user, "body");
-    this.updateCollection(user, "sleep");
-    this.updateCollection(user, "heart");
-    this.fetchSleepInfo(user);
+  this.storage = new storage("Fitbit");
+
+  var lastcheck = new Date(this.storage.getItem("lastCheck"));
+  lastcheck = new Date() - lastcheck;
+  this.storage.setItem("lastCheck", new Date());
+
+  if (lastcheck > 10 * 60 * 1000) {
+    for (var user in this.users) {
+      this.updateCollection(user, "activities");
+      this.updateCollection(user, "body");
+      this.updateCollection(user, "sleep");
+      this.updateCollection(user, "heart");
+      this.fetchSleepInfo(user);
+    }
   }
+
 }
 util.inherits(Fitbit, EventEmitter);
 

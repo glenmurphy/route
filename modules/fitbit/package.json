@@ -1,0 +1,4 @@
+{ 
+  "name" : "Fitbit",
+  "main" : "./fitbit.js"
+}

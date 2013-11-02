@@ -28,11 +28,11 @@ Route.ObjectsEqual = function(x, y) {
     if ( y.hasOwnProperty( p ) && ! x.hasOwnProperty( p ) ) return false;
   }
   return true;
-}
+};
 
 Route.Pad = function(str, char, len) {
   return str + new Array(Math.max(len - str.length, 0)).join(char);
-}
+};
 
 Route.prototype.addDevice = function(data) {
   if (data.name in this.devices) {
@@ -40,7 +40,7 @@ Route.prototype.addDevice = function(data) {
     return;
   }
 
-  var obj = new data.type(data.init);
+  var obj = new data.type(data.init, data.name);
   this.devices[data.name] = obj;
   obj.on("DeviceEvent", this.handleEvent.bind(this, data.name));
   
@@ -51,20 +51,29 @@ Route.prototype.addDevice = function(data) {
   return obj;
 };
 
-Route.prototype.handleEvent = function(deviceName, event, data) {
+Route.prototype.handleEvent = function(deviceName, event, data, flags) {
   var eventName = deviceName + '.' + event;
+  flags = flags || {};
 
-  // Log the event
-  var date = new Date();
-  var date_string = date.toLocaleTimeString();
-  console.log("\n" + Route.Pad("-- Event: " + eventName + ":" + (JSON.stringify(data) || "") + ", " + date_string + " ", "-", "70"));
+  if (!flags.initializing) {
+    // Log the event
+    var date = new Date(); 
+    var date_string = date.toLocaleTimeString();
 
-  // Spew off commands attached to this event.
-  var matchingEvents = this.allEventsMatchingName(eventName);
-  for (var i = 0; i < matchingEvents.length; i++) {
-    var commands = this.eventMap[matchingEvents[i]];
-    this.execCommands(commands, data, eventName);
-  };
+    console.log("\n" + Route.Pad("-- " + date_string + " -- " + eventName + " ", "-", "70"));
+    try {
+      if (data) console.log(JSON.stringify(data, undefined, Object.keys(data).length > 1 ? 3 : undefined));
+    } catch (e){ // Not a json-able object
+      console.log("( " + data + " )");
+    }
+
+    // Spew off commands attached to this event, unless the device is being initialized.
+    var matchingEvents = this.allEventsMatchingName(eventName);
+    for (var i = 0; i < matchingEvents.length; i++) {
+      var commands = this.eventMap[matchingEvents[i]];
+      this.execCommands(commands, data, eventName);
+    }
+  }
 
   // Let any state observers know if anything changed.
   if (!(eventName in this.state) || !Route.ObjectsEqual(this.state[eventName], data)) {
@@ -73,10 +82,9 @@ Route.prototype.handleEvent = function(deviceName, event, data) {
 };
 
 Route.prototype.updateState = function(name, data) {
-  if (!data) 
-    var data = {};
+  if (!data) data = {};
 
-  if (this.debug) console.log("State Changed:", name, data);
+  if (this.debug) console.log("State Changed:", name, JSON.stringify(data));
   data.stateUpdatedTime = new Date().getTime();
   this.state[name] = data;
   this.emit("StateChanged", name, data);

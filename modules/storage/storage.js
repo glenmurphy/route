@@ -1,5 +1,15 @@
 var persist = require('node-persist');
-persist.initSync({dir:process.cwd() + "/storage/"});
+persist.initSync({
+  dir:process.cwd() + "/storage",
+  parse: function (json) {
+    try {
+      return JSON.parse(json);
+    } catch (e) {
+      console.log("! Storage error", e, json);
+      return undefined
+    }
+  }
+});
 
 function Storage(prefix) {
   if (prefix) this.prefix = prefix;

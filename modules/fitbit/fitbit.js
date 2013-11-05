@@ -28,10 +28,8 @@ function Fitbit(data) {
       this.fetchSleepInfo(user);
     }
   }
-
 }
 util.inherits(Fitbit, EventEmitter);
-
 
 Fitbit.prototype.handleReq = function(req, res) {
   console.log(req.url);

@@ -1,0 +1,4 @@
+{ 
+  "name" : "iCal",
+  "main" : "./ical.js"
+}

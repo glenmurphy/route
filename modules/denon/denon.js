@@ -66,12 +66,20 @@ Denon.prototype.exec = function(command) {
       sourceId = (sourceName in this.sources) ? this.sources[sourceName] : sourceName;
       this.send("SI" + sourceId);
       this.emit("DeviceEvent", "Switch." + sourceName);
+      break;
     case "Volume":
       var vol = parseInt(fields.shift());
       if (!isNaN(vol)) {
         this.send("MV" + vol);
         this.emit("DeviceEvent", "Volume", {volume : vol});
       }
+      break;
+    case "VolumeUp":
+      this.volumeUp();
+      break;
+    case "VolumeDown":
+      this.volumeDown();
+      break;
     default:
       break;
   }

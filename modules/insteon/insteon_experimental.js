@@ -10,6 +10,7 @@ function Insteon(data) {
   this.hostid = data.hostid;
   this.connect();
   this.debug = data.debug;
+  this.useGroupEvents = data.useGroupEvents;
   this.writeQueue = [];
   // Dupe preventer. Stores IDs.
   this.history = {};
@@ -156,10 +157,11 @@ Insteon.COMMAND_NAMES = {
 };
 Insteon.COMMAND_IDS = invertObject(Insteon.COMMAND_NAMES);
 
-
 Insteon.prototype.nameForDevice = function (device) {
-  if (device == "000001") return "GROUP1";
-  if (device == "000001") return "GROUP2";
+  if (device == "000001") return "GROUP-1";
+  if (device == "000002") return "GROUP-2";
+  if (device == "000003") return "GROUP-3";
+  if (device == "000004") return "GROUP-4";
   if (device == this.hostid) return "CONTROL";
   return this.device_ids[device] || device; 
 };
@@ -232,6 +234,8 @@ Insteon.prototype.handleData = function(data) {
       if (info.isAck) {
       } else if (info && info.target == this.hostid) {
         this.emitDeviceStatus(info);
+      } else if (info && this.useGroupEvents && info.isGroup) {
+        this.emitDeviceStatus(info);
       }
       break;
     default:
@@ -245,11 +249,34 @@ Insteon.prototype.handleData = function(data) {
 };
 
 Insteon.prototype.emitDeviceStatus = function(info) {
+  var date = new Date();
   var out = [info.device_name];
+
   // Multi switches pass their index via level
   if (info.device_name.indexOf("Multi") != -1) {
-    out.push(info.level); 
+    if (info.isBroadcast) {
+      out.push(parseInt(info.target, 10));
+    } else {
+      out.push(info.level); 
+    }
   }
+
+  // Dedupe against commands in history (e.g. a C7 event just arrived for same command)
+  if ( this.useGroupEvents &&
+      (info.device in this.history) &&
+      this.history[info.device].command == info.command &&
+      date - this.history[info.device].time < 3000) {
+    return;
+  }
+
+  // Add event to history in order to dedupe group events
+  if (this.useGroupEvents) {
+    this.history[info.device] = {
+      command : info.command,
+      time : date
+    };
+  }
+
   out.push(info.command_name);
 
   var state = {};

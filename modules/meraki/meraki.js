@@ -58,7 +58,7 @@ Meraki.prototype.handleProbeItem = function(item) {
   if (!record) {
     record = this.info[id] = {signals : {}};
     var isNexus = this.nexii[id] != undefined;
-    if (!isNexus) this.emit("DeviceEvent", id + ".Appeared");
+    //if (!isNexus) this.emit("DeviceEvent", id + ".Appeared");
   }
   if (!record.last_seen || (record.last_seen < item.last_seen)) record.last_seen = item.last_seen;
 
@@ -98,7 +98,7 @@ Meraki.prototype.updateLocations = function() {
     // Dissapear after 10m
     var lastSeen = Math.round(Math.max(0, (new Date() - record.last_seen)  / 1000));
     if (lastSeen > 600) {
-      this.emit("DeviceEvent", id + ".Disappeared");
+      //this.emit("DeviceEvent", id + ".Disappeared");
       delete this.info[id];
       continue;
     }
@@ -152,7 +152,7 @@ Meraki.prototype.updateLocations = function() {
 
       if (this.lastBeacon[name] != bestBeacon) {
         this.lastBeacon[name] = bestBeacon;
-        if (!isNexus) this.emit("DeviceEvent", id + "." + bestBeacon);
+        //if (!isNexus) this.emit("DeviceEvent", id + "." + bestBeacon);
       }
     }
   }

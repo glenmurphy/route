@@ -27,7 +27,7 @@ function SNMP(data) {
 
   this.session.trap (snmp.TrapType.LinkDown, function (error) {
     if (error)
-      console.error (error);
+      console.error ("!  SNMP ", error);
   });
 };
 util.inherits(SNMP, EventEmitter);

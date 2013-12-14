@@ -60,17 +60,20 @@ Leap.prototype.handleGesture = function(gesture, frame) {
 
   switch (gesture.state) {
     case "start":
+      console.log("Starting" + gesture.id);
       if (Leap.gestureId === 0) {
         Leap.gestureId = gesture.id;
         Leap.frameCount = 0;
       }
       break;
     case "update":
+      console.log("Updating" + gesture.id);
       if(Leap.gestureId === gesture.id) {
         Leap.frameCount++;
       }
       break;
     case "stop":
+      console.log("Stopping" + gesture.id);
       if (Leap.gestureId === gesture.id) {
         if (Leap.frameCount >= this.threshold) {
           switch (gesture.type) {

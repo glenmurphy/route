@@ -5,8 +5,8 @@ persist.initSync({
     try {
       return JSON.parse(json);
     } catch (e) {
-      console.log("! Storage error", e, json);
-      return undefined
+      console.log("! Storage error", e, "'" + json + "'" );
+      return undefined;
     }
   }
 });

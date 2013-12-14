@@ -32,16 +32,108 @@ util.inherits(Insteon, EventEmitter);
 
 Insteon.SMARTLINC_PLM_PORT = 9761;
 
+Insteon.COMMAND_NAMES = {
+  "00" : "RESP",
+  "04" : "ACK04?",
+  "06" : "ACK06?",
+  "0F" : "Ping",
+  "10" : "IDRequest",
+  "11" : "On",
+  "12" : "FastOn",
+  "13" : "Off",
+  "14" : "FastOff",
+  "15" : "Dim1",
+  "16" : "Brighten1",
+  "17" : "HoldStart",
+  "18" : "HoldStop",
+  "19" : "Status",
+  "2E" : "OnWithRate",
+  "2F" : "OffWithRate",
+};
+Insteon.COMMAND_IDS = invertObject(Insteon.COMMAND_NAMES);
+
+Insteon.MESSAGE_FLAGS = {
+  "100" : "Broadcast Message",
+  "000" : "Direct Message",
+  "001" : "ACK of Direct Message",
+  "101" : "NAK of Direct Message", 
+  "110" : "Group Broadcast Message",
+  "010" : "Group Cleanup Direct Message", 
+  "011" : "ACK of Group Cleanup Direct Message",
+  "111" : "NAK of Group Cleanup Direct Message",
+};
+
+Insteon.X10_PREFIX = "X10:";
+
+Insteon.X10_HOUSE_CODES = {
+  "A": "6",
+  "B": "E",
+  "C": "2",
+  "D": "A",
+  "E": "1",
+  "F": "9",
+  "G": "5",
+  "H": "D",
+  "I": "7",
+  "J": "F",
+  "K": "3",
+  "L": "B",
+  "M": "0",
+  "N": "8",
+  "O": "4",
+  "P": "C",
+};
+
+Insteon.X10_UNIT_CODES = {
+  "1" : "600",
+  "2" : "E00",
+  "3" : "200",
+  "4" : "A00",
+  "5" : "100",
+  "6" : "900",
+  "7" : "500",
+  "8" : "D00",
+  "9" : "700",
+  "10": "F00",
+  "11": "300",
+  "12": "B00",
+  "13": "000",
+  "14": "800",
+  "15": "400",
+  "16": "C00",
+};
+
+Insteon.X10_CMD_CODES = {
+  "On":     "280",
+  "Off":    "380",
+  "Bright": "580",
+  "Dim":    "480",
+  "AllOn":  "180",
+  "AllOff": "680",
+}
+
 Insteon.prototype.sendCommand = function(device_name, command_name, level) {
   console.log("*  Insteon:", device_name, command_name, level);
   var device_id = this.devices[device_name] || device_name;
-  var command_id = Insteon.COMMAND_IDS[command_name];
-  if (!command_id || !device_id) return;
-  if (undefined === level) level = "FF";
-  var isGroupCommand = device_id.length == 2;
-  var prefix = isGroupCommand ? "0261" : "0262";
-  var string = prefix + device_id + (isGroupCommand ? "" : "0F") + command_id + level;
-  this.sendString(string);
+
+  var isX10 = device_id.indexOf(Insteon.X10_PREFIX) == 0;
+
+  if (isX10) {
+    device_id = device_id.substring(Insteon.X10_PREFIX.length);
+    var houseCode = device_id.substring(0,1);
+    var unitCode = device_id.substring(1);
+    this.sendString("0263" + Insteon.X10_HOUSE_CODES[houseCode] +  Insteon.X10_UNIT_CODES[unitCode]);
+    this.sendString("0263" + Insteon.X10_HOUSE_CODES[houseCode] +  Insteon.X10_CMD_CODES[command_name]);
+  } else {
+    var command_id = Insteon.COMMAND_IDS[command_name];
+    if (!command_id || !device_id) return;
+    if (undefined === level) level = "FF";
+    var isGroupCommand = device_id.length == 2;
+    var prefix = isGroupCommand ? "0261" : "0262";
+    var string = prefix + device_id + (isGroupCommand ? "" : "0F") + command_id + level;
+    this.sendString(string);
+
+  }
 };
 
 
@@ -116,17 +208,6 @@ Insteon.prototype.sendStatusRequests = function() {
   }
 };
 
-Insteon.MESSAGE_FLAGS = {
-  "100" : "Broadcast Message",
-  "000" : "Direct Message",
-  "001" : "ACK of Direct Message",
-  "101" : "NAK of Direct Message", 
-  "110" : "Group Broadcast Message",
-  "010" : "Group Cleanup Direct Message", 
-  "011" : "ACK of Group Cleanup Direct Message",
-  "111" : "NAK of Group Cleanup Direct Message",
-};
-
 function invertObject (obj) {
   var new_obj = {};
   for (var prop in obj) {
@@ -136,26 +217,6 @@ function invertObject (obj) {
   }
   return new_obj;
 }
-
-Insteon.COMMAND_NAMES = {
-  "00" : "RESP",
-  "04" : "ACK04?",
-  "06" : "ACK06?",
-  "0F" : "Ping",
-  "10" : "IDRequest",
-  "11" : "On",
-  "12" : "FastOn",
-  "13" : "Off",
-  "14" : "FastOff",
-  "15" : "Dim1",
-  "16" : "Brighten1",
-  "17" : "HoldStart",
-  "18" : "HoldStop",
-  "19" : "Status",
-  "2E" : "OnWithRate",
-  "2F" : "OffWithRate",
-};
-Insteon.COMMAND_IDS = invertObject(Insteon.COMMAND_NAMES);
 
 Insteon.prototype.nameForDevice = function (device) {
   if (device == "000001") return "GROUP-1";
@@ -219,7 +280,7 @@ Insteon.prototype.printCommand = function(info) {
                + (info.command_name || "?")
                + (info.level ? "(" + info.level + ")" : "")
                + " \t(" + info.flags + ", "
-               + info.num_hops + "/" + info.max_hops + " hops) \t[" + info.cmd + "]");
+               + info.num_hops + "/" + info.max_hops + " hops) \t[" + info.cmd + "]" + info.isAck);
 };
 
 

@@ -7,12 +7,24 @@ function Syslog(data) {
   this.port = data.port || 514;
   this.matches = data.matches;
   this.debug = data.debug;
+  this.debugIgnore = data.debugIgnore;
   this.syslogServer = syslogReceiver.getServer(this.port, null, this.handleLog.bind(this));
 }; 
 util.inherits(Syslog, EventEmitter);
 
 Syslog.prototype.handleLog = function(evt) {
-  if (this.debug) console.log(evt.original);
+  if (this.debug) {
+    var ignore = false;
+    for (var i in this.debugIgnore) {
+      var match = evt.original.match(this.debugIgnore[i]);
+      if (match) {
+        ignore = true;
+        break;
+      }
+    }
+    if (!ignore) 
+      console.log(evt.original);
+  }
   for (var regex in this.matches) {
     var match = evt.original.match(regex);
     if (match) {

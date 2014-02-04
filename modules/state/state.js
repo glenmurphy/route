@@ -1,7 +1,8 @@
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 
-function State() {
+function State(debug) {
+  if (debug) this.debug=true;
   this.values = {};
 };
 util.inherits(State, EventEmitter);
@@ -38,7 +39,12 @@ State.prototype.addValues = function(values) {
     this.setValueForKeyPath(value, keypath);
     //this.values[keypath] = value;
   }
-  this.emit("StateEvent", values);
+  if (this.debug) {
+    this.emit("StateEvent", this.allValues());
+  } else {
+    this.emit("StateEvent", values);
+  }
+
 }
 
 exports.State = State;

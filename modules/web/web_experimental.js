@@ -14,7 +14,7 @@ function Web(data) {
   if (data.securePort) {
     var options = {
         key: fs.readFileSync(data.key),
-        cert: fs.readFileSync(data.cert)
+        cert: fs.readFileSync(data.cert),
     }
     this.secureServer = https.createServer(options, this.handleReq.bind(this)).listen(data.securePort || 8081);    
     this.secureSocket = io.listen(this.secureServer, { log: false });
@@ -23,6 +23,7 @@ function Web(data) {
   }
 
   this.server = http.createServer(this.handleReq.bind(this)).listen(data.port || 8080);
+  if (data.eventPort) this.eventServer = http.createServer(this.handleEventReq.bind(this)).listen(data.eventPort);
   this.socket = io.listen(this.server, { log: false });
   this.socket.on('connection', this.handleSocketConnection.bind(this));
   this.socket.on('error', this.handleSocketError.bind(this));
@@ -35,6 +36,17 @@ util.inherits(Web, EventEmitter);
 
 Web.prototype.setTextResponse = function (response) {
   this.textResponse = response;
+}
+
+// This function only allows event requests (for external use)
+Web.prototype.handleEventReq = function(req, res) {
+  var info = url.parse(req.url, true);
+  var prefix = "/event/";
+  if (info.pathname.indexOf(prefix) == 0) {
+    this.handleReq(req,res);
+  } else {
+    res.end();
+  }
 }
 
 Web.prototype.handleReq = function(req, res) {
@@ -58,7 +70,16 @@ Web.prototype.handleReq = function(req, res) {
     res.writeHead(302, {'Location': this.basedir});
     res.end();
   } else {
-    this.staticServer.serve(req, res);
+    if (this.debug) console.log(req.url);
+    this.staticServer.serve(req, res, function (err, result) {
+            if (err) { // There was an error serving the file
+                util.error("Error serving " + req.url + " - " + err.message);
+
+                // Respond to the client
+                res.writeHead(err.status, err.headers);
+                res.end();
+            }
+        });
   }
 };
 
@@ -67,7 +88,7 @@ Web.prototype.handleEvent = function(info) {
 }
 
 Web.prototype.handleSocketConnection = function(socket) {
-  this.emit("DeviceEvent", "ClientConnected");
+  //this.emit("DeviceEvent", "ClientConnected");
   this.clients.push(socket);
   try {
     socket.emit('state', this.state.allValues());    
@@ -88,7 +109,7 @@ Web.prototype.handleSocketMessage = function(message) {
 };
 
 Web.prototype.handleSocketClose = function(socket) {
-  this.emit("DeviceEvent", "ClientDisconnected");
+  //this.emit("DeviceEvent", "ClientDisconnected");
   for (var i=0; i < this.clients.length; i++) {
     if (this.clients[i] == socket) {
       this.clients.splice(i, 1);

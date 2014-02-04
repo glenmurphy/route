@@ -1,0 +1,4 @@
+{ 
+  "name" : "SamsungTV",
+  "main" : "./samsung_tv.js"
+}

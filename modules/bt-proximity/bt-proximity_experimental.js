@@ -80,10 +80,16 @@ BTProximity.prototype.setAway = function(mac) {
   }
 };
 
-BTProximity.prototype.setPresent = function(mac) {
+BTProximity.prototype.setPresent = function(mac, peripheral) {
+  var name = (this.people_ids[mac] || peripheral.advertisement.localName)
+
+  var now = new Date().getTime();
+  var elapsed = (now - this.lastSeen[mac]) / 1000;
+  //if ((now - this.lastSeen[mac]) < 100) return;
+  //console.log(mac, name, peripheral.rssi + 100, elapsed);
 
   // Update the last time we saw this id
-  this.lastSeen[mac] = new Date().getTime();
+  this.lastSeen[mac] = now
 
   // If mac is already counted as present, return
   for (var id in this.present_ids) {
@@ -94,9 +100,11 @@ BTProximity.prototype.setPresent = function(mac) {
   this.present_ids.push(mac);
   
   if (this.debug) {
-    console.log("BTProximity: User "+this.people_ids[mac]+" found " + (new Date()).toLocaleTimeString());
+    console.log("BTProximity: User "+ name +" found " + (new Date()).toLocaleTimeString());
+    console.log(mac, JSON.stringify(peripheral.advertisement.serviceUuids));//, /*peripheral.advertisement);
+
   }
-  this.emit("DeviceEvent", "Present." + this.people_ids[mac]);
+  this.emit("DeviceEvent", "Present." + name);
 };
 
 BTProximity.prototype.handleDiscover = function(peripheral) {
@@ -106,11 +114,13 @@ BTProximity.prototype.handleDiscover = function(peripheral) {
   // If the mac we found is in our people list, set person to present
   for (var id in this.people_ids) {
     if (id == mac) {
-      this.setPresent(mac);  
+      this.setPresent(mac, peripheral);  
     }
   }
 
-  //if (this.debug) console.log(mac);
+  if (this.debug) {
+    this.setPresent(mac, peripheral);
+  }
 };
 
 exports.BTProximity = BTProximity;

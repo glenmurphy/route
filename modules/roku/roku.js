@@ -55,11 +55,12 @@ Roku.prototype.navigateRoku = function (directions) {
 Roku.prototype.searchRoku = function (query) {
 // New logic for 5.0
   this.sendEvent("HOME");
-  this.sendEvent("HOME");
+  this.sendEvent("HOME"); 
   setTimeout(function(){
     // Navigate to search
-    this.sendEvent("Down");
-    this.sendEvent("Down");
+    this.sendEvent("Up");
+    this.sendEvent("Up");
+    this.sendEvent("Up");
     this.sendEvent("Right");
     // Send query
     this.sendText(query);

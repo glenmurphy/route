@@ -142,16 +142,24 @@ Route.prototype.execCommands = function(commands, params, eventName) {
     var newparams = command_info.query;
     command = command_info.pathname;
 
+    var dot_index = command.indexOf(".");
+    if (dot_index == -1 || dot_index == command.length - 1) return;
+    var components = command.split(".");
+
     // Insert passed in parameters for $values in command string.
+    for (var i = 0; i < components.length; i++) {
+      if (components[i].charAt(0) == "$") {
+        components[i] = params ? params[components[i].substring(1)] : undefined;
+      }
+    };
+
+    // Insert passed in parameters for $values in query string.
     for (var key in newparams) {
       if (newparams[key].charAt(0) == "$") {
         newparams[key] = params ? params[newparams[key].substring(1)] : undefined;
       }
     }
 
-    var dot_index = command.indexOf(".");
-    if (dot_index == -1 || dot_index == command.length - 1) return;
-    var components = command.split(".");
     var deviceName = components[0];
     var command = components.splice(1).join(".");
 

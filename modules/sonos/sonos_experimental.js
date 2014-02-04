@@ -34,7 +34,7 @@ function Sonos(data) {
 
   this.spotifyAccountId = data.spotifyAccountId;
   this.spotifySid = data.spotifySid;
-
+  this.spotifyArtworkPrefix = data.spotifyArtworkPrefix;
   this.components = data.components || { "Main" : this.host }; // Create a component list from a single host if needed
   this.defaultComponent = data.defaultComponent || "Main";
   for (var component in this.components) { // Instantiate components
@@ -265,7 +265,7 @@ SonosComponent.prototype.callAction = function(service, action, args, device, ca
 
 SonosComponent.prototype.sendCommand = function(endpoint, action, body, callback) { 
   var data = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>' + body + '</s:Body></s:Envelope>';
-  if (this.debug) console.log("> Sonos:", data);
+  if (this.debug) console.log(" > Sonos:", data);
   var request = http.request({
     host : this.host,
     port : Sonos.PORT,
@@ -282,10 +282,11 @@ SonosComponent.prototype.sendCommand = function(endpoint, action, body, callback
       data += chunk;
     });
     response.on('end', function () {
+      if (this.debug) console.log(" < Sonos:", data);
       if (callback) {
         callback(data);
       }
-    });
+    }.bind(this));
   });
   
   request.on('error', function() {});
@@ -518,13 +519,15 @@ SonosComponent.prototype.getFavorites = function(callback) {
             var favorites = [];
             for (var i = 0; i < results.length; i++) {
               var meta = results[i];
+              var albumURI = meta["upnp:albumArtURI"] ? url.resolve("http://" + this.host + ":" + Sonos.PORT, meta["upnp:albumArtURI"][0]) : undefined;
+
               var favoriteInfo = {
                 name : meta["dc:title"][0],
                 description : meta["r:description"][0],
                 type : meta["r:type"][0],
                 url : meta.res[0]._,
                 urlMetadata : meta["r:resMD"][0],
-                // Artwork : url.resolve("http://" + this.host + ":" + Sonos.PORT, meta["upnp:albumArtURI"][0])
+                artwork : albumURI
               };
               favorites.push(favoriteInfo);
             };
@@ -533,7 +536,8 @@ SonosComponent.prototype.getFavorites = function(callback) {
           }.bind(this));
         }.bind(this));
       } catch (e) {
-        if (this.debug) console.log("!  Sonos favorites", e, data)
+        //if (this.debug) 
+          console.log("!  Sonos favorites", e, data)
       }
     }.bind(this));
 };
@@ -571,10 +575,10 @@ SonosComponent.prototype.parseMetadata = function (metadata, callback) {
 
     var metaInfo = {};
     var meta = result["DIDL-Lite"]["item"][0];
-    
     var streamcontent = xmlValue(meta, "r:streamContent");
     streamcontent = this.parseXMStreamContent(streamcontent);
     metaInfo.name =  streamcontent.title || xmlValue(meta, "dc:title");
+    metaInfo.url =  meta.res[0]._;
     metaInfo.artist = streamcontent.artist || xmlValue(meta, "dc:creator");
     metaInfo.album = xmlValue(meta, "upnp:album");
     if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
@@ -600,31 +604,45 @@ SonosComponent.prototype.updatePlayerState = function(playerState) {
 };
 
 SonosComponent.prototype.updateTrackInfo = function(details) {
+
+  // Optionally, replace spotify with an alternate URL to avoid green badging
+  if (this.system.spotifyArtworkPrefix) {
+    if (details.url.indexOf("x-sonos-spotify:") === 0) {
+      var info = url.parse(details.url, true);
+      var trackId = info.pathname.split("%3a").pop();
+      details.artwork = this.system.spotifyArtworkPrefix + trackId;
+    }
+  }
+
   if (this.system.cacheArtwork && im) {
     var options = {url: details.artwork};
-    var artworkPath = os.tmpdir() + "artwork.jpg";
+    var artworkPath = os.tmpdir() + this.name + "-artwork.jpg";
     var artworkBlurPath = os.tmpdir() + "artwork-blur.jpg";
     var artworkFile = fs.createWriteStream(artworkPath);
     var file = fs.createWriteStream(artworkPath);
 
     var system = this.system;
     if (details.artwork != this.cachedArtworkURL) {
-      // console.time("Fetching artwork");
       var request = http.get(details.artwork, function(response) {
         response.pipe(file);
         file.on('finish', function() {
           file.close();
+          // console.log("cached artwork", artworkPath, details);
+
+          this.emit("DeviceEvent", this.name + ".ArtworkSaved", {path:artworkPath}, {initializing:this.initializing});
+try {
           var artworkBlurFile = fs.createWriteStream(artworkBlurPath);
           im(artworkPath).scale(1000).blur(0,36).write(artworkBlurPath, function (err) {
             if (err) {
-              if (this.debug) console.log(err);
+              console.log("! Sonos blur error", err);
             } else {
               var state = {"sonosArtwork": "http://" + system.listenIp + ":" + system.listenPort + "/artwork-blur.jpg"};
               system.emit("StateEvent", state);              
             }
           });
-        });
-      });
+        } catch (e) {}
+        }.bind(this));
+      }.bind(this));
     }else {
     }
     this.cachedArtworkURL = details.artwork;    

@@ -82,7 +82,7 @@ Telnet.prototype.connect = function() {
 
   this.client.on('data', this.handleData.bind(this));
   this.client.on('error', this.handleError.bind(this));
-  this.client.on('close', this.handleError.bind(this));
+  this.client.on('close', this.handleClose.bind(this));
 };
 
 Telnet.prototype.reconnect = function() {
@@ -101,7 +101,11 @@ Telnet.prototype.handleData = function(data) {
 
 Telnet.prototype.handleError = function(e) {
   console.log("!  Telnet\t" + e);
-  this.reconnect();
+
+};
+
+Telnet.prototype.handleClose = function(e) {
+  setTimeout(this.reconnect.bind(this), 10000);
 };
 
 Telnet.prototype.handleEnd = function() {

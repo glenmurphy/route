@@ -59,7 +59,7 @@ Hue.prototype.updateRegistrationState = function() {
 }
 
 Hue.prototype.exec = function(command, params) {
-    console.log("*  Hue Executing: [" + command + "] : ");
+  console.log("*  Hue Executing: [" + command + "] : " + JSON.stringify(params));
   if (command == "SetLightColor") {
     var colorHex = Colors.name2hex(params.color.replace(/ /g,''));
     if (colorHex == 'Invalid Color Name') colorHex = params.color;

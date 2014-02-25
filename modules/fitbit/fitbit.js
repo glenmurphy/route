@@ -62,7 +62,7 @@ Fitbit.prototype.updateCollection = function(userId, type) {
      try{
       state["fitbit." + userId + "." + type] = JSON.parse(data);
      } catch (e) {
-       console.log("Could not parse fitbit", url, err, data, response.statusCode);
+       console.log("Could not parse fitbit", url, err, data, response ? response.statusCode : "");
      }
      if (this.debug) console.log(JSON.stringify(state, null, '  '));
      this.emit("StateEvent", state);

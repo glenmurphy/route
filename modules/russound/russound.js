@@ -29,15 +29,19 @@ Russound.prototype.getVolume = function(controller, zone) {
 }
 
 Russound.prototype.setVolume = function(controller, zone, value) {
+  if (value == NaN) return;
   this.sendEvent(controller, zone, "KeyPress", "Volume", value);
 }
 
 Russound.prototype.fadeVolume = function(controller, zone, value, duration, startValue, startTime) {
+  if (!value) return;
+
   var now = new Date();
   if (!startTime) {
     startTime = now;
     startValue = this.getVolume(controller,zone);
     if (this.fadeTimeouts[zone]) clearTimeout(this.fadeTimeouts[zone])
+    //console.log("Animating audio from", startValue, value);
   }
 
   if (!duration) return this.setVolume(controller, zone, value);

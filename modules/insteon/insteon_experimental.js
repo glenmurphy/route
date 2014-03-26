@@ -34,8 +34,8 @@ Insteon.SMARTLINC_PLM_PORT = 9761;
 
 Insteon.COMMAND_NAMES = {
   "00" : "RESP",
-  "04" : "ACK04?",
-  "06" : "ACK06?",
+  // "04" : "ACK04?",
+  // "06" : "ACK06?",
   "0F" : "Ping",
   "10" : "IDRequest",
   "11" : "On",
@@ -167,7 +167,7 @@ Insteon.prototype.sendNextString = function() {
   try {
     if (!this.writeQueue.length) return;
     var string = this.writeQueue.shift();
-    if (this.debug) console.log("\tInsteon Sending: " + string);
+    if (this.debug) console.log("d  < Insteon Sending: " + string);
     string = new Buffer(string, "hex");
     this.client.write(string, "UTF8", function () {
       setTimeout(this.sendNextString.bind(this),1000);  
@@ -275,7 +275,7 @@ Insteon.prototype.parseCommand = function(data) {
 Insteon.prototype.printCommand = function(info) {
   if (!info) return;
   if (info.isNak) console.log("\tFAILED");
-  console.log("\t" + info.device_name + " -> " +
+  console.log("d  > " + info.device_name + " -> " +
     info.target_name + " \t"
                + (info.command_name || "?")
                + (info.level ? "(" + info.level + ")" : "")
@@ -290,6 +290,7 @@ Insteon.prototype.handleData = function(data) {
     // Try to decode the string.
     var cmd = data.substr(0, 4);
     var info = this.parseCommand(data);
+      
     switch (cmd) {
     case '0250':
       if (info.isAck) {

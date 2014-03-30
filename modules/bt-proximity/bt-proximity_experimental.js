@@ -75,7 +75,7 @@ BTProximity.prototype.setAway = function(mac) {
       if (this.debug) {
         console.log("BTProximity: User "+ this.people_ids[mac] +" is away " + (new Date()).toLocaleTimeString());
       }
-      this.emit("DeviceEvent", "Away." + this.people_ids[mac]);
+      this.emit("DeviceEvent", "Away." + this.people_ids[mac] || mac);
     }
   }
 };
@@ -93,6 +93,7 @@ BTProximity.prototype.setPresent = function(mac, peripheral) {
 
   // If mac is already counted as present, return
   for (var id in this.present_ids) {
+    //if (this.debug) console.log("Ignoring ", peripheral.advertisement.localName, mac, peripheral.rssi)
     if (mac == this.present_ids[id]) return;
   }
     
@@ -100,11 +101,13 @@ BTProximity.prototype.setPresent = function(mac, peripheral) {
   this.present_ids.push(mac);
   
   if (this.debug) {
-    console.log("BTProximity: User "+ name +" found " + (new Date()).toLocaleTimeString());
-    console.log(mac, JSON.stringify(peripheral.advertisement.serviceUuids));//, /*peripheral.advertisement);
-
+    console.log("BTProximity: User "+ name +" found ",
+        (new Date()).toLocaleTimeString(),
+        mac,
+        peripheral.rssi,
+        JSON.stringify(peripheral.advertisement));
   }
-  this.emit("DeviceEvent", "Present." + name);
+  if (name) this.emit("DeviceEvent", "Present." + name);
 };
 
 BTProximity.prototype.handleDiscover = function(peripheral) {

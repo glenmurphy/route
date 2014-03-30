@@ -40,7 +40,7 @@ InsteonIPCamera.prototype.sendCommand = function(path, value) {
     });
 
     res.on('end', function(){
-      fs.writeFile(this.dir + '/Front door' + new Date() +'.png', imagedata, 'binary', function(err){
+      fs.writeFile(this.dir + 'Front door ' + new Date() +'.png', imagedata, 'binary', function(err){
         if (err) throw err
         console.log('File saved.')
       });

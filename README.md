@@ -70,3 +70,4 @@ right user and directory, then do:
   $ sudo apt-get install upstart
   $ sudo cp ./emerson_upstart.conf /etc/init/
   $ sudo start emerson_upstart
+

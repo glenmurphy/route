@@ -1,0 +1,4 @@
+{ 
+  "name" : "LastFM",
+  "main" : "./lastfm.js"
+}

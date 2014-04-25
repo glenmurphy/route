@@ -352,6 +352,19 @@ SonosComponent.prototype.setPlayMode = function(mode, callback) { // NORMAL, REP
   this.callAction("AVTransport", "SetPlayMode", {InstanceID : 0, NewPlayMode : mode}, this.deviceid, callback);
 };
 
+SonosComponent.prototype.seek = function(time, callback) {
+  var date = new Date(time * 1000);
+  var hours = date.getHours();
+  var minutes = date.getMinutes();
+  var seconds = date.getSeconds();
+  if (minutes < 10) minutes = "0" + minutes;
+  if (seconds < 10) seconds = "0" + seconds;
+
+  timeString =  [hours, minutes, seconds].join(":");
+  this.callAction("AVTransport", "Seek", {InstanceID : 0, Unit : "REL_TIME", Target: timeString}, this.deviceid, callback);
+};
+
+
 SonosComponent.prototype.becomeStandalone = function (callback) {
   this.callAction("AVTransport", "BecomeCoordinatorOfStandaloneGroup", {InstanceID : 0}, this.deviceid, callback);
 };
@@ -603,6 +616,35 @@ SonosComponent.prototype.updatePlayerState = function(playerState) {
   this.playerState = playerState;
 };
 
+
+var download = function(url, dest, cb) {
+  var file = fs.createWriteStream(dest);
+  var request = http.get(url, function(response) {
+    console.log("Status", response.statusCode);
+    response.pipe(file);
+    file.on('finish', function() {
+      file.close(cb);  // close() is async, call cb after close completes.
+    });
+  }).on('error', function(err) { // Handle errors
+    fs.unlink(dest); // Delete the file async. (But we don't check the result)
+    if (cb) cb(err.message);
+  });
+};
+
+var download2 = function(url, dest, cb) {
+  var request = http.get(url, function(response) {
+    var data = new Buffer('');
+    response.on('data', function(chunk) { data = Buffer.concat([data, chunk]);});
+    response.on('end', function() {
+      var file = fs.writeFile(dest, data, cb); 
+    }.bind(this));
+  }).on('error', function(err) { // Handle errors
+    fs.unlink(dest); // Delete the file async. (But we don't check the result)
+    if (cb) cb(err.message);
+  });
+};
+
+
 SonosComponent.prototype.updateTrackInfo = function(details) {
 
   // Optionally, replace spotify with an alternate URL to avoid green badging
@@ -619,31 +661,26 @@ SonosComponent.prototype.updateTrackInfo = function(details) {
     var artworkPath = os.tmpdir() + this.name + "-artwork.jpg";
     var artworkBlurPath = os.tmpdir() + "artwork-blur.jpg";
     var artworkFile = fs.createWriteStream(artworkPath);
-    var file = fs.createWriteStream(artworkPath);
 
     var system = this.system;
     if (details.artwork != this.cachedArtworkURL) {
-      var request = http.get(details.artwork, function(response) {
-        response.pipe(file);
-        file.on('finish', function() {
-          file.close();
-          // console.log("cached artwork", artworkPath, details);
+      download2(details.artwork, artworkPath, function (err){
+        if (err) console.log("Artwork download  ERROR", err)
+        console.log("Cached artwork", artworkPath, details);
 
-          this.emit("DeviceEvent", this.name + ".ArtworkSaved", {path:artworkPath}, {initializing:this.initializing});
-try {
-          var artworkBlurFile = fs.createWriteStream(artworkBlurPath);
-          im(artworkPath).scale(1000).blur(0,36).write(artworkBlurPath, function (err) {
-            if (err) {
-              console.log("! Sonos blur error", err);
-            } else {
-              var state = {"sonosArtwork": "http://" + system.listenIp + ":" + system.listenPort + "/artwork-blur.jpg"};
-              system.emit("StateEvent", state);              
-            }
+        this.emit("DeviceEvent", this.name + ".ArtworkSaved", {path:artworkPath}, {initializing:this.initializing});
+        try {
+        var artworkBlurFile = fs.createWriteStream(artworkBlurPath);
+        im(artworkPath).scale(1000).blur(0,36).write(artworkBlurPath, function (err) {
+          if (err) {
+            console.log("! Sonos blur error", err);
+          } else {
+            var state = {"sonosArtwork": "http://" + system.listenIp + ":" + system.listenPort + "/artwork-blur.jpg"};
+            system.emit("StateEvent", state);              
+          }
           });
         } catch (e) {}
         }.bind(this));
-      }.bind(this));
-    }else {
     }
     this.cachedArtworkURL = details.artwork;    
   }

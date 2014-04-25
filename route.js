@@ -60,7 +60,7 @@ Route.prototype.handleEvent = function(deviceName, event, data, flags) {
     var date = new Date(); 
     var date_string = date.toLocaleTimeString();
 
-    console.log("\n" + Route.Pad("-- " + date_string + " -- " + eventName + " ", "-", "70"));
+    console.log("\n" + Route.Pad("-- " + date_string + " -- " + eventName + " ", "-", "80"));
     try {
       if (data) console.log(JSON.stringify(data, undefined, Object.keys(data).length > 1 ? 3 : undefined));
     } catch (e){ // Not a json-able object

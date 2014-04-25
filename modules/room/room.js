@@ -21,7 +21,7 @@ Room.prototype.exec = function(command, params) {
 
 Room.prototype.set = function(key, value) {
   var state = {};
-  state[this.id + "." + key] = value;
+  state["rooms." + this.id + "." + key] = value;
   this[key] = value;
   this.emit("StateEvent", state);
 }

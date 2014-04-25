@@ -28,6 +28,7 @@ function Web(data) {
   this.socket.on('connection', this.handleSocketConnection.bind(this));
   this.socket.on('error', this.handleSocketError.bind(this));
 
+  this.handlers = data.handlers;
   this.staticServer = new static.Server(data.dir);
   this.clients = [];
   this.textResponse = null;
@@ -52,6 +53,7 @@ Web.prototype.handleEventReq = function(req, res) {
 Web.prototype.handleReq = function(req, res) {
   var info = url.parse(req.url, true);
 
+  var matchingHandler = this.handlers[info.pathname];
   // Emit requests to /event/pie?params as 'Web.pie?params'
   var prefix = "/event/";
   if (info.pathname.indexOf(prefix) == 0) {
@@ -69,6 +71,8 @@ Web.prototype.handleReq = function(req, res) {
   } else if (info.pathname == "/" && this.basedir) {
     res.writeHead(302, {'Location': this.basedir});
     res.end();
+  } else if (matchingHandler) {
+    matchingHandler(req, res);
   } else {
     if (this.debug) console.log(req.url);
     this.staticServer.serve(req, res, function (err, result) {

@@ -34,7 +34,6 @@ MusicSearch.prototype.topTracksForArtist = function(artist, callback) {
   });
 }
 
-
 MusicSearch.prototype.topTracksForQuery = function(query, callback) {
   var artist = null;
   if (query.indexOf(" by ") != -1) {
@@ -47,6 +46,14 @@ MusicSearch.prototype.topTracksForQuery = function(query, callback) {
     query = components[0];
     artist = components[1];
   }
+
+  this.topTracksForQueryRecord({track: query, artist:artist}, callback);
+}
+
+MusicSearch.prototype.topTracksForQueryRecord = function(info, callback) {
+  var artist = info.artist;
+  var query = info.track;
+  
   var params = {
     bucket: ['tracks', 'id:spotify-WW', "song_hotttnesss"],
     sort: ["song_hotttnesss-desc"],
@@ -71,7 +78,6 @@ MusicSearch.prototype.topTracksForQuery = function(query, callback) {
     callback(data.songs);
   });
 }
-
 
 
 MusicSearch.prototype.radioForArtist = function(artist, callback) {

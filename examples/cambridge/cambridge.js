@@ -20,8 +20,8 @@ var sonos = route.addDevice({
   name : "Sonos",
   init : {
     components : {
-      "Livingroom" : "10.0.1.4",
-      "Masterbed" : "10.0.1.17"
+      "Livingroom" : "10.0.1.3",
+      "Masterbed" : "10.0.1.2"
     }
   }
 });
@@ -62,7 +62,7 @@ var lutron = route.addDevice({
   type : Lutron,
   name : "Lutron",
   init : {
-    host : "10.0.1.34",
+    host : "10.0.1.13",
     username : "route",
     password: "route",
     devices : {

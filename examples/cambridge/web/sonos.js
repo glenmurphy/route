@@ -36,26 +36,24 @@ Sonos.CSS = " \
   position: relative; \
   width: 300px; \
   height: 100px; \
-  font-family: helvetica, arial, sans-serif; \
+  margin-bottom:1px; \
+  font-family: Noto Sans, helvetica, arial, sans-serif; \
   font-size: 12px; \
   padding: 0px !important; \
-  color: #fff; \
-  text-shadow:0px 1px 0px #000; \
-  border-radius:5px; \
+  color: #888; \
+  background-color: #262626; \
   cursor: pointer; \
   box-sizing:border-box; \
-  background-color: #2b3e52; \
-  border-top: 1px solid rgba(255, 255, 255, 0.3); \
-  box-shadow: inset 0 -4px 0 rgba(0,0,0,.25), 0px 1px 7px 3px rgba(0, 0, 0, 0.2); \
-  background-image: \
-    -webkit-linear-gradient(bottom, rgba(0,0,0,.05) 0%, rgba(255,255,255,.1) 100%), \
-    url(noise1.png); \
   background-clip: padding-box; \
   overflow:hidden; \
   transition: all 0.2s; \
 } \
+.sonos.playing { \
+  color:#eee; \
+  background-color: #36c; \
+} \
 .sonos:hover { \
-  background-color:#30465e; \
+  background-color:#3a3a3a; \
 } \
 .sonos-background { \
   position:absolute; \
@@ -63,8 +61,8 @@ Sonos.CSS = " \
   left:-10px; \
   width:320px; \
   height:120px; \
-  -webkit-filter: grayscale(10%) blur(5px); \
-  opacity:0.4; \
+  -webkit-filter: grayscale(10%) blur(2px); \
+  opacity:1; \
   background-position: center center; \
   background-size: cover; \
 } \
@@ -76,8 +74,8 @@ Sonos.CSS = " \
   width:64px; \
   height:64px; \
   box-sizing:border-box; \
-  border:1px solid white; \
-  box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.2); \
+  //border:1px solid white; \
+  //box-shadow: 0px 0px 0px 5px rgba(255, 255, 255, 0.2); \
   background-position: center center; \
   background-size: cover; \
 } \
@@ -143,12 +141,13 @@ Sonos.CSS = " \
   background-position:center center; \
   background-image:url(sonos-play.png), -webkit-linear-gradient(top, #f5f6f6 0%, #c7d3e1 100%); \
   transition:all 0.2s; \
+  opacity:0.2; \
 } \
-.sonos-play.playing { \
+.sonos.playing .sonos-play { \
   background-image:url(sonos-pause.png), -webkit-linear-gradient(top, #f5f6f6 0%, #c7d3e1 100%); \
-  opacity:0; \
+  opacity:1; \
 } \
-.sonos:hover .sonos-play.playing { \
+.sonos.playing:hover .sonos-play { \
   opacity:1; \
 } \
 ";
@@ -159,17 +158,16 @@ Sonos.prototype.handleTrackInfo = function(details) {
   this.nodeArtist.innerHTML = details.artist;
   this.nodeName.innerHTML = details.name;
   this.nodeAlbum.innerHTML = details.album;
-  this.nodeBackground.style.backgroundImage = "-webkit-linear-gradient(bottom, rgba(255, 0, 0, 0.4) 0%, rgba(255, 255, 255, .2) 100%)" + 
-      ((details.artwork) ? ', url(' + details.artwork + ')' : "");
-  this.nodeArtwork.style.backgroundImage = (details.artwork) ? 'url(' + details.artwork + ')' : "";
+  //this.nodeBackground.style.backgroundImage = ((details.artwork) ? 'url(' + details.artwork + ')' : "");
+  //this.nodeArtwork.style.backgroundImage = (details.artwork) ? 'url(' + details.artwork + ')' : "";
 };
 
 Sonos.prototype.handlePlayingState = function(details) {
   this.state = details.state;
   if (this.state == "PLAYING")
-    this.nodePlay.classList.add("playing");
+    this.node.classList.add("playing");
   else
-    this.nodePlay.classList.remove("playing");
+    this.node.classList.remove("playing");
 };
 
 Sonos.prototype.handlePlay = function() {

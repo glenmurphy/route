@@ -1,5 +1,6 @@
 <meta name="viewport" content="width=640, height=device-height, initial-scale=1, user-scalable=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
+<link href='http://fonts.googleapis.com/css?family=Noto+Sans' rel='stylesheet' type='text/css'>
 <!--<link rel="apple-touch-startup-image" href="title.png" />-->
 <title>Cambridge</title>
 <style>
@@ -10,12 +11,11 @@
   -webkit-user-select: none;
 }
 body {
-  background-color:#1b2229;
-  font-family:helvetica, arial, sans-serif;
+  background-color:#000;
+  font-family:Noto Sans, helvetica, arial, sans-serif;
   font-size:24px;
-  color:#999;
-  margin:0px;
-  padding:0px;
+  color:#bbb;
+  margin:15px;
 }
 p {
   margin:0;
@@ -30,29 +30,32 @@ a:hover {
 a:active {
   background-color:#f00;
 }
+.column {
+  display:inline-block;
+  margin:0px 15px 0px 0px;
+  vertical-align:top;
+}
 .room {
   display:block;
-  position:absolute;
-  top:0px;
-  padding:9px;
-  margin:1px;
+  padding:0px;
+  margin-bottom:15px;
   width:300px;
-  background-color:#212b35;
+  -box-shadow:0px 0px 3px rgba(0, 0, 0, 0.3), 0px 0px 7px rgba(0, 0, 0, 0.1);
+  background-color:#1c1c1c; //#212b35;
+  border:1px solid #393939;
 }
 .room .room-name {
   width:300px;
-  text-align:center;
+  text-align:left;
   font-size:16px;
-  font-weight:bold;
-  text-shadow:0px 1px 1px rgba(0, 0, 0, 0.5);
-  color:#686f76;
-  padding-bottom:9px;
+  margin-left:16px;
+  margin-top:12px;
+  margin-bottom:14px;
+  color:#555;
 }
 .room .group {
-  margin-bottom:16px;
 }
 .room .group:last-child {
-  margin-bottom:0px;
 }
 </style>
 <script src="/socket.io/socket.io.js"></script>
@@ -71,38 +74,39 @@ function sendEvent(name) {
 <script src="stereo.js"></script>
 <script src="volume.js"></script>
 <body>
-  <div class="room" style="left:0px;">
-    <div class="room-name">LIVING ROOM</div>
-    <div class="group" id="stereo"></div>
-    <div class="group" id="living-lights"></div>
-  </div>
-
-  <div class="room" style="left:320px;">
-    <div class="room-name">MASTER BED</div>
-    <div class="group">
-      <div id="master-bed-stereo"></div>
+  <div class="column">
+    <div class="room" style="left:20px;">
+      <div class="room-name">LIVING ROOM</div>
+      <div class="group" id="stereo"></div>
+      <div class="group" id="living-lights"></div>
     </div>
-    <div class="group">
-      <div id="master-bed-wall"></div>
+  </div><div class="column">
+    <div class="room" style="left:340px;">
+      <div class="room-name">MASTER BED</div>
+      <div class="group">
+        <div id="master-bed-stereo"></div>
+      </div>
+      <div class="group">
+        <div id="master-bed-wall"></div>
+      </div>
+    </div>
+  </div><div class="column">
+    <div class="room" style="left:660px;">
+      <div class="room-name">OFFICE</div>
+      <div id="office-main-light"></div>
+    </div>
+
+    <div class="room" style="left:660px; top:145px;">
+      <div class="room-name">KITCHEN</div>
+      <div class="group" id="kitchen-lights"></div>
+      <div class="group" id="kitchen-equipment"></div>
+    </div>
+
+    <div class="room" style="left:660px; top:345px;">
+      <div class="room-name">HOUSE</div>
+      <div class="group" id="house-state"></div>
     </div>
   </div>
-
-  <div class="room" style="left:640px;">
-    <div class="room-name">OFFICE</div>
-    <div id="office-main-light"></div>
-  </div>
-
-  <div class="room" style="left:640px; top:97px;">
-    <div class="room-name">KITCHEN</div>
-    <div class="group" id="kitchen-lights"></div>
-    <div class="group" id="kitchen-equipment"></div>
-  </div>
-
-  <div class="room" style="left:640px; top:261px;">
-    <div class="room-name">HOUSE</div>
-    <div class="group" id="house-state"></div>
-  </div>
-
 </body>
 <script>
 var socket = io.connect();
@@ -157,7 +161,7 @@ new Switch("Lutron.KitchenCeilingLights", "Ceiling", socket, $('kitchen-lights')
 new Switch("Lutron.KitchenCoffeeMachine", "Coffee", socket, $('kitchen-equipment'));
 
 // Office
-new Switch("Lutron.OfficePendantLight", "Office", socket, $('office-main-light'));
+new Switch("Lutron.OfficePendantLight", "Main light", socket, $('office-main-light'));
 
 // Bedroom
 new Stereo([

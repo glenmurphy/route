@@ -27,39 +27,38 @@ Switch.CSS = " \
   position:relative; \
   z-index:1; \
   display:inline-block; \
-  width: 96px; \
-  margin-right:6px; \
-  height: 48px; \
-  border-radius: 3px; \
-  margin-bottom: 3px; \
+  width: 99px; \
+  margin-right:1px; \
+  margin-bottom:1px; \
+  height: 64px; \
   background-clip: padding-box; \
-  background-color: #2b3e52; #1f579a; \
+  background-color: #222; \
   box-sizing:border-box; \
-  box-shadow: inset 0 -2px 0 rgba(0,0,0,.2), 0px 1px 7px 3px rgba(0, 0, 0, 0.15); \
-  background-image: \
-    -webkit-linear-gradient(bottom, rgba(0,0,0,.1) 0%, rgba(255,255,255,.1) 100%), \
-    url(noise1.png); \
-  font-family: helvetica, arial, sans-serif; \
+  font-family: Noto Sans, helvetica, arial, sans-serif; \
   font-size:14px; \
   cursor:pointer; \
   transition:all 0.1s; \
 } \
+.switch:first-child { \
+  margin-left:0px; \
+} \
 .switch:last-child { \
+  width:100px; \
   margin-right:0px; \
 } \
 .switch:hover { \
-  background-color:#30465e; #235fa7; \
+  background-color:#333; #235fa7; \
 } \
 .switch:active { \
   margin-top:2px; \
-  height: 47px; \
   box-shadow: inset 0 -1px 0 rgba(0,0,0,.2), 0px 1px 5px 2px rgba(0, 0, 0, 0.2); \
 } \
 .switch.on { \
-  background-color:#cc8635; \
+  background-color:#494; \
+  border:1px solid #5b5; \
 } \
 .switch.on:hover { \
-  background-color:#d39043; \
+  //background-color:#3a3a3a; \
 } \
 .switch-on { \
   position:absolute; \
@@ -69,16 +68,16 @@ Switch.CSS = " \
 } \
 .switch-name { \
   position:absolute; \
-  top:15px; \
+  top:22px; \
   left:0px; \
-  font-weight:bold; \
   width:100%; \
   font-size:14px; \
-  color:rgba(255, 255, 255, 0.75); \
-  text-shadow:0px 1px 3px rgba(0, 0, 0, 0.75); \
+  color:#888; \
   text-align:center; \
 } \
 .switch.on .switch-name { \
+  color:#eee; \
+  text-shadow:0px 1px 0px rgba(0, 0, 0, 0.75); \
 } \
 ";
 Switch.CSS_APPENDED = false;

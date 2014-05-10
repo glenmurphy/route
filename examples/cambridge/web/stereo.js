@@ -31,8 +31,9 @@ Stereo.CSS = " \
   display:inline-block; \
   width: 300px; \
   height: 64px; \
-  margin-bottom: 3px; \
   transition:all 0.1s; \
+  background-color:#222; \
+  margin-bottom:1px; \
 } \
 .stereo-component { \
   position:absolute; \
@@ -47,15 +48,16 @@ Stereo.CSS = " \
   text-align:center; \
   background-repeat:no-repeat; \
   background-position: center center; \
-  opacity:0.3; \
+  opacity:0.2; \
   -webkit-transition:all 0.15s; \
   cursor:pointer; \
 } \
 .stereo-component:hover { \
-  opacity:0.5; \
+  opacity:0.4; \
 } \
 .stereo-component.on { \
   opacity:1; \
+  background-color:#333; \
 } \
 .stereo-component.on:hover { \
   opacity:1; \

@@ -38,50 +38,31 @@ Status.CSS = " \
   border-radius: 3px; \
   margin-bottom: 3px; \
   background-clip: padding-box; \
-  background-color: #2b3e52; \
   box-sizing:border-box; \
-  font-family: helvetica, arial, sans-serif; \
+  font-family: Noto Sans, helvetica, arial, sans-serif; \
   font-size:14px; \
   transition:all 0.1s; \
 } \
 .status:last-child { \
   margin-right:0px; \
 } \
-.status:hover { \
-  background-color: #2b3e52; \
-} \
-.status:active { \
-  margin-top:2px; \
-  height: 47px; \
-} \
-.Status.on { \
-} \
-.Status.on:hover { \
-} \
-.status-on { \
-  position:absolute; \
-  top:0px; \
-  left:0px; \
-  width:100px; \
-} \
 .status-name { \
   position:absolute; \
   top:10px; \
-  left:0px; \
+  left:16px; \
   font-weight:bold; \
   width:100%; \
   font-size:14px; \
-  color:rgba(255, 255, 255, 0.75); \
+  color:#999; \
   text-shadow:0px 1px 3px rgba(0, 0, 0, 0.75); \
-  text-align:center; \
 } \
 .status-time { \
   position:absolute; \
   top:26px; \
+  left:16px; \
   width:100%; \
-  text-align:center; \
   font-size:10px; \
-  color:rgba(255, 255, 255, 0.75); \
+  color:#666; \
 } \
 .Status.on .status-name { \
 } \

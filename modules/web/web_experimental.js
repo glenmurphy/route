@@ -53,7 +53,8 @@ Web.prototype.handleEventReq = function(req, res) {
 Web.prototype.handleReq = function(req, res) {
   var info = url.parse(req.url, true);
 
-  var matchingHandler = this.handlers[info.pathname];
+
+  var matchingHandler = this.handlers ? this.handlers[info.pathname] : null;
   // Emit requests to /event/pie?params as 'Web.pie?params'
   var prefix = "/event/";
   if (info.pathname.indexOf(prefix) == 0) {

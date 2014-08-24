@@ -314,6 +314,7 @@ Insteon.prototype.emitDeviceStatus = function(info) {
   var date = new Date();
   var out = [info.device_name];
 
+
   // Multi switches pass their index via level
   if (info.device_name.indexOf("Multi") != -1) {
     if (info.isBroadcast) {
@@ -321,7 +322,10 @@ Insteon.prototype.emitDeviceStatus = function(info) {
     } else {
       out.push(info.level); 
     }
-  }
+  } else if (info.command_name.indexOf("Hold") == 0) {
+      out.push(info.level); 
+  } 
+
 
   // Dedupe against commands in history (e.g. a C7 event just arrived for same command)
   if ( this.useGroupEvents &&

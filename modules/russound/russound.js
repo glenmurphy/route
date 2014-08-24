@@ -164,7 +164,7 @@ Russound.prototype.handleData = function(data) {
 };
 
 Russound.prototype.handleStatus = function (status) {
-  //console.log("Status", status);
+  if (this.debug) console.log("Status", status);
 }
 
 Russound.prototype.updateSources = function() {

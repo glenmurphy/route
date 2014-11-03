@@ -63,7 +63,7 @@ PowerMateKnob.prototype.knobTurned = function(delta) {
     clearTimeout(this.holdTimeout);
   }
   console.log(this.id, delta);
-  this.emit("DeviceEvent", this.pressed ? "PushTurned" : "Turned" , {context: this.context, value: delta});
+  this.emit("DeviceEvent", this.pressed ? "PushTurned" : "Turned" , {context: this.context, value: delta, totalDelta: this.totalDelta});
 }
 
 PowerMateKnob.prototype.knobDown = function() {
@@ -81,7 +81,7 @@ PowerMateKnob.prototype.knobUp = function() {
   clearTimeout(this.holdTimeout);
 
   if (!this.turned && !this.held) this.knobPressed();
-  this.emit("DeviceEvent", "ButtonDown", {context: this.context});
+  this.emit("DeviceEvent", "ButtonUp", {context: this.context});
 }
 
 PowerMateKnob.prototype.knobPressed = function() {

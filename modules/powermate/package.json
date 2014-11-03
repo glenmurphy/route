@@ -1,0 +1,4 @@
+{ 
+  "name" : "PowerMate",
+  "main" : "./powermate.js"
+}

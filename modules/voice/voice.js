@@ -44,7 +44,7 @@ Voice.prototype.httpReq = function(req, res) {
   var info = url.parse(req.url, true);
   var query = info.query;
   res.writeHead(200);
-  console.log(info.path);
+  if (this.debug) console.log(info.path);
   if (info.path == "/phrases") {
     if (query.device) console.log("*  Voice: Sending phrases to", query.device);
     var context = this.contextForDevice(query.device);

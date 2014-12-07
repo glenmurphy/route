@@ -1,4 +1,28 @@
 { 
-  "name" : "Telnet",
-  "main" : "./telnet.js"
+  "name" : "route.io-telnet",
+  "version" : "0.1.0",
+  "main" : "./telnet.js",
+  "files" : [
+    "telnet.js"
+  ],
+  "description" : "Telnet module for route.io.",
+  "homepage" : "https://github.com/glenmurphy/route/tree/master/modules/telnet",
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/glenmurphy/route.git"
+  },
+  "bugs" : {
+    "url" : "http://github.com/glenmurphy/route/issues",
+    "email" : "glen@glenmurphy.com"
+  },
+  "author" : {
+    "name" : "Glen Murphy",
+    "email" : "glen@glenmurphy.com",
+    "url" : "http://glenmurphy.com/"
+  },
+  "contributors" : [{
+    "name" : "Nicholas Jitkoff",
+    "email" : "nicholas@jitkoff.com",
+    "url" : "http://blacktree.com/"
+  }]
 }

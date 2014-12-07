@@ -1,4 +1,28 @@
 { 
-  "name" : "Lutron RadioRA2",
-  "main" : "./lutron-radiora2.js"
+  "name" : "route.io-lutron-radiora2",
+  "version" : "0.1.0",
+  "main" : "./lutron-radiora2.js",
+  "files" : [
+    "lutron-radiora2.js"
+  ],
+  "description" : "Lutron RadioRA2 module for route.io.",
+  "homepage" : "https://github.com/glenmurphy/route/tree/master/modules/lutron-radiora2",
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/glenmurphy/route.git"
+  },
+  "bugs" : {
+    "url" : "http://github.com/glenmurphy/route/issues",
+    "email" : "glen@glenmurphy.com"
+  },
+  "author" : {
+    "name" : "Glen Murphy",
+    "email" : "glen@glenmurphy.com",
+    "url" : "http://glenmurphy.com/"
+  },
+  "contributors" : [{
+    "name" : "Nicholas Jitkoff",
+    "email" : "nicholas@jitkoff.com",
+    "url" : "http://blacktree.com/"
+  }]
 }

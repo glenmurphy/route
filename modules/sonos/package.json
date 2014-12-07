@@ -1,4 +1,33 @@
 { 
-  "name" : "Sonos",
-  "main" : "./sonos.js"
+  "name" : "route.io-sonos",
+  "version" : "0.1.1",
+  "main" : "./sonos.js",
+  "files" : [
+    "sonos.js"
+  ],
+  "description" : "Sonos module for route.io.",
+  "homepage" : "https://github.com/glenmurphy/route/tree/master/modules/sonos",
+  "dependencies" : {
+    "xml2js" : "*"
+  },
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/glenmurphy/route.git"
+  },
+  "bugs" : {
+    "url" : "http://github.com/glenmurphy/route/issues",
+    "email" : "glen@glenmurphy.com"
+  },
+  "author" : {
+    "name" : "Glen Murphy",
+    "email" : "glen@glenmurphy.com",
+    "url" : "http://glenmurphy.com/"
+  },
+  "contributors" : [{
+    "name" : "Nicholas Jitkoff",
+    "email" : "nicholas@jitkoff.com",
+    "url" : "http://blacktree.com/"
+  },{
+    "name" : "Andy Warr"
+  }]
 }

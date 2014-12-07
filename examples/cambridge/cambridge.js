@@ -1,19 +1,17 @@
 /**
  * This is what Glen uses to run his house
  */
-var PATH_TO_ROUTE = "../../";
-var PATH_TO_MODULES = "../../modules/";
-var Lutron = require(PATH_TO_MODULES + 'lutron-radiora2').LutronRadioRA2;
-var Sonos = require(PATH_TO_MODULES + 'sonos/sonos.js').Sonos;
-var Denon = require(PATH_TO_MODULES + 'denon').Denon;
-var Web = require(PATH_TO_MODULES + 'web').Web;
-var Telnet = require(PATH_TO_MODULES + 'telnet').Telnet;
-var BTProximity = require(PATH_TO_MODULES + 'bt-proximity').BTProximity;
 var http = require('http');
-var Route = require(PATH_TO_ROUTE).Route;
+var Route = require('route.io');
+
+var Lutron = require('route.io-lutron-radiora2');
+var Sonos = require('route.io-sonos');
+var Denon = require('route.io-denon');
+var Web = require('route.io-web');
+var Telnet = require('route.io-telnet');
 
 // Map of commands to routers that service that command.
-var route = new Route();
+var route = Route.create();
 
 var sonos = route.addDevice({
   type : Sonos,
@@ -21,7 +19,8 @@ var sonos = route.addDevice({
   init : {
     components : {
       "Livingroom" : "10.0.1.3",
-      "Masterbed" : "10.0.1.2"
+      "Ethanbed" : "10.0.1.7",
+      "Masterbed" : "10.0.1.14"
     }
   }
 });
@@ -35,11 +34,11 @@ var IR = route.addDevice({
     commands : {
       "A-PC" : "sendir,1:1,1,38109,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,64,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,21,22,64,21,64,22,63,22,64,21,64,22,1518,342,85,22,3810",
       "A-AppleTV" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,4892",
-      "A-Roku" : "sendir,1:1,1,38226,1,1,342,171,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,21,22,21,21,21,22,64,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,21,22,63,22,64,21,64,22,63,22,1523,341,85,22,3822",
+      "A-ChromeCast" : "sendir,1:1,1,38226,1,1,342,171,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,21,22,21,21,21,22,64,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,21,22,63,22,64,21,64,22,63,22,1523,341,85,22,3822",
       "A-PS3" : "sendir,1:1,1,38226,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,64,21,21,22,21,22,21,21,21,22,21,22,21,21,64,22,21,21,64,22,63,22,64,21,64,22,1522,342,85,22,3822",
       "B-PC" : "sendir,1:1,1,38109,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,64,21,21,22,64,21,21,22,21,22,21,21,64,22,63,22,21,22,63,22,21,22,63,22,64,21,64,22,1517,342,85,22,3810",
       "B-AppleTV" : "sendir,1:1,1,38226,1,1,342,170,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,64,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,21,22,63,22,64,21,64,22,1522,342,85,22,3822",
-      "B-Roku" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,21,22,21,21,64,22,63,22,21,22,21,21,21,22,64,21,64,22,63,22,21,22,21,21,64,22,63,22,64,21,1523,342,85,21,3822",
+      "B-ChromeCast" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,21,22,21,22,21,21,64,22,63,22,21,22,21,21,21,22,64,21,64,22,63,22,21,22,21,21,64,22,63,22,64,21,1523,342,85,21,3822",
       "B-PS3" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,21,22,63,22,64,21,21,22,21,22,21,21,21,22,21,22,63,22,21,22,21,21,64,22,63,22,64,21,1523,342,85,21,3822",
       "POWER" : "sendir,1:1,1,38226,1,1,341,171,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,21,22,63,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,64,22,21,21,21,22,21,22,21,21,21,22,21,22,21,21,21,22,64,21,64,22,63,22,64,21,64,22,63,22,64,21,1523,342,85,21,3822",
     }
@@ -111,15 +110,6 @@ var lutron = route.addDevice({
   }
 });
 
-var proximity = route.addDevice({
-  type : BTProximity,
-  name : "Proximity",
-  init : {
-    mac : "00:18:30:EB:68:BC",
-    name : "Glen"
-  }
-});
-
 var web = route.addDevice({
   type : Web,
   name : "Web",
@@ -146,8 +136,8 @@ route.addEventMap({
     "Denon.Switch.HDMI",
     "Sonos.Livingroom.Pause",
   ],
-  "Web.Livingroom.Roku" : [
-    "IR.A-Roku",
+  "Web.Livingroom.ChromeCast" : [
+    "IR.A-ChromeCast",
     "Denon.Switch.HDMI",
     "Sonos.Livingroom.Pause",
   ],
@@ -159,7 +149,7 @@ route.addEventMap({
 
   "Web.Masterbed.PC" : "IR.B-PC",
   "Web.Masterbed.AppleTV" : "IR.B-AppleTV",
-  "Web.Masterbed.Roku" : "IR.B-Roku",
+  "Web.Masterbed.ChromeCast" : "IR.B-ChromeCast",
   "Web.Masterbed.PS3" : "IR.B-PS3",
 
   "Lutron.LivingroomKeypad.Goodnight.On" : [
@@ -170,29 +160,14 @@ route.addEventMap({
   "Lutron.LivingroomKeypad.Sonos.On" : "Sonos.Livingroom.PlayPause",
   "Lutron.MasterbedKeypad.Sonos.On" : "Sonos.Masterbed.PlayPause",
   "Web.Livingroom.PlayPause" : "Sonos.Livingroom.PlayPause",
-  "Web.Masterbed.PlayPause" : "Sonos.Masterbed.PlayPause"
+  "Web.Masterbed.PlayPause" : "Sonos.Masterbed.PlayPause",
+  "Web.GlenHome" : [
+    "Lutron.LivingroomLoungeLamp.On",
+    "Lutron.HallwayPendantLights.On",
+    "Lutron.KitchenBarLights.On",
+    "Lutron.KitchenCabinetLights.On"
+  ]
 });
-
-function unlock() {
-  console.log("Attempting unlock");
-  var options = {
-    host: '10.0.1.41',
-    port: 8083,
-    path: '/ZWaveAPI/Run/devices[2].instances[0].commandClasses[0x62].Set(0)',
-    agent : false,
-    method : 'GET'
-  };
-  var req = http.request(options, function(res) {
-    console.log("Unlocked front door");
-  });
-  req.on('error', function(e) {
-    console.log("Unable to unlock front door");
-  });
-  req.end();
-}
-
-route.map("Web.Unlock", unlock);
-route.map("Proximity.Present", unlock);
 
 route.map("Web.Lutron.*", function(eventname, data) {
   lutron.exec(eventname.substring(11)); // chop off "Web.Lutron."
@@ -203,5 +178,5 @@ route.map("Web.Sonos.*", function(eventname, data) {
 });
 
 route.map("Web.Denon.*", function(eventname, data) {
-  denon.exec(eventname.substring(10)); // chop off "Web.Sonos."
+  denon.exec(eventname.substring(10)); // chop off "Web.Denon."
 });

@@ -118,4 +118,4 @@ Telnet.prototype.log = function(data) {
   this.emit("sourceEvent", "Logged");
 }
 
-exports.Telnet = Telnet;
+module.exports = Telnet;

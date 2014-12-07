@@ -1,18 +1,15 @@
 { 
-  "name" : "route.io-web",
-  "version" : "0.1.1",
-  "main" : "./web.js",
+  "name" : "route.io",
+  "version" : "0.1.0",
+  "main" : "./route.js",
   "files" : [
-    "web.js"
+    "route.js"
   ],
-  "description" : "Web module for route.io.",
-  "homepage" : "https://github.com/glenmurphy/route/tree/master/modules/web",
+  "description" : "Route links events and commands on your network-aware devices.",
+  "homepage" : "http://route.io/",
   "repository" : {
     "type" : "git",
     "url" : "https://github.com/glenmurphy/route.git"
-  },
-  "dependencies" : {
-    "socket.io" : "*"
   },
   "bugs" : {
     "url" : "http://github.com/glenmurphy/route/issues",

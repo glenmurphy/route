@@ -180,4 +180,4 @@ LutronRadioRA2.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 
-exports.LutronRadioRA2 = LutronRadioRA2;
+module.exports = LutronRadioRA2;

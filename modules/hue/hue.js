@@ -78,6 +78,8 @@ Hue.prototype.exec = function(command, params) {
     var color = null;
     var h = null, s = null, v = params.bri, ct = params.ct;
     var on = params.state == null ? true : params.state;
+    var effect = params.effect;
+    var alert = params.alert;
     var bulbs = [];
     if (params.color) {
       var colorHex = Colors.name2hex(params.color.replace(/ /g,''));
@@ -102,7 +104,7 @@ Hue.prototype.exec = function(command, params) {
 
     for (var i = 0; i < matches.length; i++) {
       var bulbID = matches[i];
-      if (bulbID) this.setBulbState(bulbID, {on:on, hue:h, sat:s, bri:v, colorTemp:ct, time:params.duration});
+      if (bulbID) this.setBulbState(bulbID, {on:on, hue:h, sat:s, bri:v, colorTemp:ct, time:params.duration, effect:effect, alert:alert});
     };
   } else if (command == "ToggleLightState") {
     var matches = this.bulbsMatchingName(params.bulbName);

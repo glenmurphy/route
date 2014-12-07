@@ -105,4 +105,4 @@ Web.prototype.handleSocketClose = function(socket) {
   }
 };
 
-exports.Web = Web;
+module.exports = Web;

@@ -1,4 +1,31 @@
 { 
-  "name" : "Web",
-  "main" : "./web.js"
+  "name" : "route.io-web",
+  "version" : "0.1.1",
+  "main" : "./web.js",
+  "files" : [
+    "web.js"
+  ],
+  "description" : "Web module for route.io.",
+  "homepage" : "https://github.com/glenmurphy/route/tree/master/modules/web",
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/glenmurphy/route.git"
+  },
+  "dependencies" : {
+    "socket.io" : "*"
+  },
+  "bugs" : {
+    "url" : "http://github.com/glenmurphy/route/issues",
+    "email" : "glen@glenmurphy.com"
+  },
+  "author" : {
+    "name" : "Glen Murphy",
+    "email" : "glen@glenmurphy.com",
+    "url" : "http://glenmurphy.com/"
+  },
+  "contributors" : [{
+    "name" : "Nicholas Jitkoff",
+    "email" : "nicholas@jitkoff.com",
+    "url" : "http://blacktree.com/"
+  }]
 }

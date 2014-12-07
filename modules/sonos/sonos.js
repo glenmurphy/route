@@ -556,4 +556,4 @@ function encodeHTML(string) {
                .replace(/>/g, '&gt;');
 }
 
-exports.Sonos = Sonos;
+module.exports = Sonos;

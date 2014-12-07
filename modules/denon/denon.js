@@ -177,4 +177,4 @@ Denon.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 
-exports.Denon = Denon;
+module.exports = Denon;

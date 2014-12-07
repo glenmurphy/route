@@ -4,7 +4,7 @@ var url = require('url');
 var util = require('util');
 var oauth = require('oauth');
 var xml2js = require('xml2js');
-var storage = require('../storage').Storage;
+var storage = require('../storage');
 
 Fitbit.PORT = 9040;
 function Fitbit(data) {

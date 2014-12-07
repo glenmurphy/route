@@ -240,4 +240,4 @@ Russound.prototype.handleError = function(e) {
 };
 
 
-exports.Russound = Russound;
+module.exports = Russound;

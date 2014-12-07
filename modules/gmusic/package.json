@@ -1,0 +1,4 @@
+{ 
+  "name" : "GMusic",
+  "main" : "./gmusic.js"
+}

@@ -93,7 +93,7 @@ Web.prototype.handleEvent = function(info) {
 }
 
 Web.prototype.handleSocketConnection = function(socket) {
-  //this.emit("DeviceEvent", "ClientConnected");
+  // this.emit("DeviceEvent", "ClientConnected");
   this.clients.push(socket);
   try {
     socket.emit('state', this.state.allValues());    
@@ -137,5 +137,10 @@ Web.prototype.stateChanged = function(newState) {
   }
 };
 
+Web.prototype.customStateChanged = function(stateName, newState) {
+  for (var i=0; i < this.clients.length; i++) {
+    this.clients[i].emit(stateName, newState);
+  }
+};
 
 exports.Web = Web;

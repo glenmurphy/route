@@ -44,30 +44,8 @@ light switch button press to turn on multiple lights and your Sonos.
 
 You can see more usages in [the examples](http://github.com/glenmurphy/route/examples/)
 
-### Configuration
-
-To get the redeye commands, you need to download the control database from 
-your RedEye <http://[REDEYEIP]/setup/maintenance.html>, then use 
-SQLLiteExplorer to find the 'signal' value for the commands you need
-in the 'command' table. The final URL is constructed using that value
-in the following:
-
-  "/cgi-bin/play_iph.sh?/[SIGNALPATH]%201"
-
-You're meant to be able to use the iOS app to extract these paths, but I could
-never get that to work.
-
 ### Installation
 
-You can run this as a service on Windows using NSSM <http://nssm.cc>:
-
-  nssm.exe install emerson-node "C:\path\to\node.exe" c:\path\to\emerson.js
-  net start emerson-node
-
-To run on Linux, you'll need to modify emerson_upstart.conf to point to the 
-right user and directory, then do:
-
-  $ sudo apt-get install upstart
-  $ sudo cp ./emerson_upstart.conf /etc/init/
-  $ sudo start emerson_upstart
-
+    npm install route.io
+    npm install route.io-sonos
+    npm install route.io-web

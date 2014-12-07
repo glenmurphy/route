@@ -80,6 +80,12 @@ function sendEvent(name) {
       <div class="group" id="stereo"></div>
       <div class="group" id="living-lights"></div>
     </div>
+
+    <div class="room" style="left:660px; top:145px;">
+      <div class="room-name">KITCHEN</div>
+      <div class="group" id="kitchen-lights"></div>
+      <div class="group" id="kitchen-equipment"></div>
+    </div>
   </div><div class="column">
     <div class="room" style="left:340px;">
       <div class="room-name">MASTER BED</div>
@@ -90,22 +96,16 @@ function sendEvent(name) {
         <div id="master-bed-wall"></div>
       </div>
     </div>
-  </div><div class="column">
     <div class="room" style="left:660px;">
       <div class="room-name">OFFICE</div>
       <div id="office-main-light"></div>
     </div>
-
-    <div class="room" style="left:660px; top:145px;">
-      <div class="room-name">KITCHEN</div>
-      <div class="group" id="kitchen-lights"></div>
-      <div class="group" id="kitchen-equipment"></div>
-    </div>
-
+    <!--
     <div class="room" style="left:660px; top:345px;">
       <div class="room-name">HOUSE</div>
       <div class="group" id="house-state"></div>
     </div>
+    -->
   </div>
 </body>
 <script>
@@ -135,10 +135,10 @@ new Stereo([
     on : "IR.A-AppleTV"
   },
   {
-    name : "Roku",
-    action : "Livingroom.Roku",
+    name : "ChromeCast",
+    action : "Livingroom.ChromeCast",
     image : "stereo-roku.png",
-    on : "IR.A-Roku"
+    on : "IR.A-ChromeCast"
   },
   {
     name : "PS3",
@@ -162,6 +162,7 @@ new Switch("Lutron.KitchenCoffeeMachine", "Coffee", socket, $('kitchen-equipment
 
 // Office
 new Switch("Lutron.OfficePendantLight", "Main light", socket, $('office-main-light'));
+new Sonos("Sonos.Ethanbed", socket, $("office-main-light"));
 
 // Bedroom
 new Stereo([
@@ -178,10 +179,10 @@ new Stereo([
     on : "IR.B-AppleTV"
   },
   {
-    name : "Roku",
-    action : "Masterbed.Roku",
+    name : "ChromeCast",
+    action : "Masterbed.ChromeCast",
     image : "stereo-roku.png",
-    on : "IR.B-Roku"
+    on : "IR.B-ChromeCast"
   },
   {
     name : "PS3",
@@ -194,8 +195,10 @@ new Sonos("Sonos.Masterbed", socket, $("master-bed-stereo"));
 new Switch("Lutron.MasterbedWallLights", "Wall lights", socket, $('master-bed-wall'));
 
 // House
+/*
 new Status({
   "Proximity.Present" : "Glen is here",
   "Proximity.Away" : "Glen is away"
 }, socket, $("house-state"));
+*/
 </script>

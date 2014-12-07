@@ -24,4 +24,4 @@ RedEye.prototype.exec = function(command) {
   request.end();
 };
 
-exports.RedEye = RedEye;
+module.exports = RedEye;

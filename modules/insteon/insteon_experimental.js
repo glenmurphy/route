@@ -362,4 +362,4 @@ Insteon.prototype.handleEnd = function() {
   this.reconnect();
 };
 
-exports.Insteon = Insteon;
+module.exports = Insteon;

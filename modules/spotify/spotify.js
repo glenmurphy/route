@@ -77,4 +77,4 @@ Spotify.prototype.playInContext = function(track, container, context) {
   this.bridge.exec("Spotify.ListenTo", {string : track, container : container, context : context});
 }
 
-exports.Spotify = Spotify;
+module.exports = Spotify;

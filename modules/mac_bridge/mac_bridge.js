@@ -87,4 +87,4 @@ Bridge.prototype.handleError = function(e) {
   this.reconnect();
 };
 
-exports.Bridge = Bridge;
+module.exports = Bridge;

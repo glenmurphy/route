@@ -182,4 +182,4 @@ Lutron.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 
-exports.Lutron = Lutron;
+module.exports = Lutron;

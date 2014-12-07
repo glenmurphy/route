@@ -124,4 +124,4 @@ Leap.prototype.handleGesture = function(gesture, frame) {
   }
 };
 
-exports.Leap = Leap;
+module.exports = Leap;

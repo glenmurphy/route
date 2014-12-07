@@ -223,4 +223,4 @@ Voice.prototype.stoppedListening = function(params) {
   this.emit("StateEvent", {listening: false});
 }
 
-exports.Voice = Voice;
+module.exports = Voice;

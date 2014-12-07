@@ -50,4 +50,4 @@ APN.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 
-exports.APN = APN;
+module.exports = APN;

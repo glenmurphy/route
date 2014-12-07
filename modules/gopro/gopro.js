@@ -38,4 +38,4 @@ GoPro.prototype.sendCommand = function(path, value) {
     if (this.debug) console.log("Error", commandURL);
   });
 }
-exports.GoPro = GoPro;
+module.exports = GoPro;

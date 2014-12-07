@@ -27,4 +27,4 @@ Storage.prototype.realKey = function(key) {
   return this.prefix ? this.prefix + ":" + key : key;
 }
 
-exports.Storage = Storage;
+module.exports = Storage;

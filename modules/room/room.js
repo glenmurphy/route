@@ -26,4 +26,4 @@ Room.prototype.set = function(key, value) {
   this.emit("StateEvent", state);
 }
 
-exports.Room = Room;
+module.exports = Room;

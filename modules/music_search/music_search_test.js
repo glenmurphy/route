@@ -1,5 +1,5 @@
 var musicSearch =  require('./musicsearch.js');
-musicSearch = new musicSearch.MusicSearch({
+musicSearch = new musicSearch({
   services : ["spotify"],
   /*PRIVATE*/ echonest_api_key: 'EEAQAFPLA25XJ2F79'
   /*END_PRIVATE

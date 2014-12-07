@@ -213,4 +213,4 @@ Meraki.prototype.handleReq = function(req, res) {
 };
 
 
-exports.Meraki = Meraki;
+module.exports = Meraki;

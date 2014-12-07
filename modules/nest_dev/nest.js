@@ -79,4 +79,4 @@ Nest.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 
-exports.Nest = Nest;
+module.exports = Nest;

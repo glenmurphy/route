@@ -27,4 +27,4 @@ Rdio.prototype.playSource = function(track) {
   this.bridge.sendEvent("Rdio.ListenTo:" + track);
 }
 
-exports.Rdio = Rdio;
+module.exports = Rdio;

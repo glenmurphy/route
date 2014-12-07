@@ -178,4 +178,4 @@ function listen(port) {
   },2000);
 }
 
-exports.Roku = Roku;
+module.exports = Roku;

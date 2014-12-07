@@ -36,4 +36,4 @@ LastFM.prototype.stoppedPlaying = function(track) {
   this.emit("DeviceEvent", "StoppedPlaying", track);
 };
 
-exports.LastFM = LastFM;
+module.exports = LastFM;

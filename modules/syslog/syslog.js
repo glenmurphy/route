@@ -36,4 +36,4 @@ Syslog.prototype.handleLog = function(evt) {
   
 }
 
-exports.Syslog = Syslog;
+module.exports = Syslog;

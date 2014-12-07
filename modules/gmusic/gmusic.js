@@ -532,4 +532,4 @@ GMusic.prototype.error = function (error, data, err, res) {
   error(error, data, err, res);
 };
 
-exports.GMusic = GMusic;
+module.exports = GMusic;

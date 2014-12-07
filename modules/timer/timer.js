@@ -75,4 +75,4 @@ Timer.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 
-exports.Timer = Timer;
+module.exports = Timer;

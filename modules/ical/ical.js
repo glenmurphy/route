@@ -45,4 +45,4 @@ iCal.prototype.updateCalendar = function(probe) {
 
 }
 
-exports.iCal = iCal;
+module.exports = iCal;

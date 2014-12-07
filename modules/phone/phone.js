@@ -42,4 +42,4 @@ Phone.prototype.CallEnded = function() {
 
 //Method for idle state
 
-exports.Phone = Phone;
+module.exports = Phone;

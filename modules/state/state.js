@@ -47,4 +47,4 @@ State.prototype.addValues = function(values) {
 
 }
 
-exports.State = State;
+module.exports = State;

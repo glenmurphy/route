@@ -239,5 +239,5 @@ MusicSearch.prototype.parseAndReturnTracks = function(songs, callback) {
 
 
 
-exports.MusicSearch = MusicSearch;
+module.exports = MusicSearch;
 

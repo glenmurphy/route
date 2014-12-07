@@ -33,4 +33,4 @@ RSS.prototype.exec = function(command, data) {
   console.log("RSS:" + command);
 };
 
-exports.RSS = RSS;
+module.exports = RSS;

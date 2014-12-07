@@ -65,4 +65,4 @@ Netatmo.prototype.getMeasurements = function() {
   setTimeout(this.getMeasurements.bind(this), 5 * 60 * 60 * 1000);
 }
 
-exports.Netatmo = Netatmo;
+module.exports = Netatmo;

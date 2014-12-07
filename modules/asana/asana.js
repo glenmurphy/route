@@ -44,4 +44,4 @@ Asana.prototype.addTask = function(params) {
   });
 }
 
-exports.Asana = Asana;
+module.exports = Asana;

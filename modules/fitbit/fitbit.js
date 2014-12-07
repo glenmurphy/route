@@ -102,4 +102,4 @@ Fitbit.prototype.handleUpdates = function(updates) {
 
 
 
-exports.Fitbit = Fitbit;
+module.exports = Fitbit;

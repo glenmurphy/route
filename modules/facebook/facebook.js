@@ -48,4 +48,4 @@ Facebook.prototype.post = function() {
   });
 };
 
-exports.Facebook = Facebook;
+module.exports = Facebook;

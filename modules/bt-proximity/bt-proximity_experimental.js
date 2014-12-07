@@ -126,4 +126,4 @@ BTProximity.prototype.handleDiscover = function(peripheral) {
   }
 };
 
-exports.BTProximity = BTProximity;
+module.exports = BTProximity;

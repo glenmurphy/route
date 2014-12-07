@@ -46,4 +46,4 @@ Time.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 
-exports.Time = Time;
+module.exports = Time;

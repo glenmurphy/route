@@ -56,4 +56,4 @@ Pebble.prototype.httpReq = function(req, res) {
 Pebble.prototype.exec = function(command, params) {
 };
 
-exports.Pebble = Pebble;
+module.exports = Pebble;

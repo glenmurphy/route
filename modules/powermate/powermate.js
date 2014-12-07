@@ -111,4 +111,4 @@ PowerMateKnob.prototype.knobLongPressed = function() {
 
 // PowerMate.prototype.exec = function(command, params) {};
 
-exports.PowerMate = PowerMate;
+module.exports = PowerMate;

@@ -20,4 +20,4 @@ Location.prototype.exec = function(command, params) {
   }
 };
 
-exports.Location = Location;
+module.exports = Location;

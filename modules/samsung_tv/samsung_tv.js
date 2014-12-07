@@ -101,4 +101,4 @@ SamsungTV.prototype.sendKey = function (key) {
   });
 }
 
-exports.SamsungTV = SamsungTV;
+module.exports = SamsungTV;

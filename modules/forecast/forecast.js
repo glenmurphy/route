@@ -56,4 +56,4 @@ Forecast.prototype.exec = function(command, data) {
   console.log("Forecast:" + command);
 };
 
-exports.Forecast = Forecast;
+module.exports = Forecast;

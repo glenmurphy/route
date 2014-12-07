@@ -89,4 +89,4 @@ Sun.prototype.exec = function(command, data) {
   console.log("Sun:" + command);
 };
 
-exports.Sun = Sun;
+module.exports = Sun;

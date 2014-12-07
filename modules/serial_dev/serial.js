@@ -36,4 +36,4 @@ Serial.prototype.send = function(string) {
 
 
 util.inherits(Serial, EventEmitter);
-exports.Serial = Serial;
+module.exports = Serial;

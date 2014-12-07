@@ -346,4 +346,4 @@ Hue.prototype.updateLightsList = function() {
   request.end();
 }
 
-exports.Hue = Hue;
+module.exports = Hue;

@@ -143,4 +143,4 @@ Web.prototype.customStateChanged = function(stateName, newState) {
   }
 };
 
-exports.Web = Web;
+module.exports = Web;

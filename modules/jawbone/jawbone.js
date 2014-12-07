@@ -89,4 +89,4 @@ Jawbone.prototype.getEvent = function(update) {
   });
 }
 
-exports.Jawbone = Jawbone;
+module.exports = Jawbone;

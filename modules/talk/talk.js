@@ -71,4 +71,4 @@ Talk.prototype.log = function(data) {
   this.emit("DeviceEvent", "Logged");
 }
 
-exports.Talk = Talk;
+module.exports = Talk;

@@ -1,0 +1,28 @@
+{ 
+  "name" : "route.io",
+  "version" : "0.1.0",
+  "main" : "./route.js",
+  "files" : [
+    "route.js"
+  ],
+  "description" : "Route links events and commands on your network-aware devices.",
+  "homepage" : "http://route.io/",
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/glenmurphy/route.git"
+  },
+  "bugs" : {
+    "url" : "http://github.com/glenmurphy/route/issues",
+    "email" : "glen@glenmurphy.com"
+  },
+  "author" : {
+    "name" : "Glen Murphy",
+    "email" : "glen@glenmurphy.com",
+    "url" : "http://glenmurphy.com/"
+  },
+  "contributors" : [{
+    "name" : "Nicholas Jitkoff",
+    "email" : "nicholas@jitkoff.com",
+    "url" : "http://blacktree.com/"
+  }]
+}

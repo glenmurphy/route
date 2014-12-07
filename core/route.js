@@ -208,4 +208,9 @@ Route.prototype.map = function(eventName, command) {
   }
 }
 
+function create(data) {
+  return new Route(data);
+}
+
 exports.Route = Route;
+exports.create = create;

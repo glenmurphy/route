@@ -128,6 +128,12 @@ Sonos.prototype.exec = function(command, params) {
     case "AdjustVolume":
       component.adjustVolume(parseInt(params.delta));
       break;
+    case "VolumeUp":
+      component.adjustVolume(2);
+      break;
+    case "VolumeDown":
+      component.adjustVolume(-1);
+      break; 
     case "Spotify.ListenTo":
       component.playSpotifyTrack(params.string);
       break;
@@ -506,6 +512,7 @@ SonosComponent.prototype.setVolume = function(volume) {
 
 SonosComponent.prototype.adjustVolume = function(delta) {
   this.getVolume(function (volume) {
+    console.log(volume, delta, volume+delta);
     this.setVolume(volume + delta);
   }.bind(this));
 };

@@ -1,0 +1,4 @@
+{ 
+  "name" : "Slimp3",
+  "main" : "./slimp3.js"
+}

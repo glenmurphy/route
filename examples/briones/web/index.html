@@ -1,0 +1,276 @@
+<meta name="viewport" content="width=640, height=device-height, initial-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<link href='http://fonts.googleapis.com/css?family=Noto+Sans' rel='stylesheet' type='text/css'>
+<!--<link rel="apple-touch-startup-image" href="title.png" />-->
+<title>Cambridge</title>
+<style>
+* {
+  -webkit-touch-callout: none;
+  -webkit-text-size-adjust: none;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  -webkit-user-select: none;
+}
+body {
+  background-color:#000;
+  font-family:Noto Sans, helvetica, arial, sans-serif;
+  font-size:24px;
+  color:#bbb;
+  margin:15px;
+}
+p {
+  margin:0;
+}
+a {
+  color:#fff;
+  text-decoration:none;
+}
+a:hover {
+  background-color:#333;
+}
+a:active {
+  background-color:#f00;
+}
+.column {
+  display:inline-block;
+  margin:0px 15px 0px 0px;
+  vertical-align:top;
+}
+.room {
+  display:block;
+  padding:0px;
+  margin-bottom:15px;
+  width:300px;
+  -box-shadow:0px 0px 3px rgba(0, 0, 0, 0.3), 0px 0px 7px rgba(0, 0, 0, 0.1);
+  background-color:#1c1c1c; //#212b35;
+  border:1px solid #393939;
+}
+.room .room-name {
+  width:300px;
+  text-align:left;
+  font-size:16px;
+  margin-left:16px;
+  margin-top:12px;
+  margin-bottom:14px;
+  color:#555;
+}
+.room .group {
+}
+.room .group:last-child {
+}
+</style>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+function sendEvent(name) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/event/" + name, true);
+  xhr.send(null);
+  return false;
+}
+</script>
+<script src="functions.js"></script>
+<script src="sonos.js"></script>
+<script src="switch.js"></script>
+<script src="status.js"></script>
+<script src="stereo.js"></script>
+<script src="volume.js"></script>
+<body>
+  <div class="column">
+    <div class="room" style="left:20px;">
+      <div class="room-name">FAMILY ROOM</div>
+      <div class="group" id="stereo"></div>
+      <div class="group" id="family-lights"></div>
+    </div>
+
+    <div class="room" style="left:660px; top:145px;">
+      <div class="room-name">KITCHEN</div>
+      <div class="group">
+        <div id="kitchen-sonos"></div>
+      </div>
+      <div class="group" id="kitchen-lights"></div>
+    </div>
+    <div class="room" style="left:340px;">
+      <div class="room-name">COMMON AREAS</div>
+      <div class="group" id="common-lights"></div>
+    </div>
+    <div class="room" style="left:660px;">
+      <div class="room-name">LANAI</div>
+      <div id="lanai-sonos"></div>
+    </div>
+    <div class="room" style="left:660px;">
+      <div class="room-name">LEGO ROOM</div>
+      <div id="lego-room-sonos"></div>
+    </div>    
+    <div class="room" style="left:340px;">
+      <div class="room-name">OUTDOOR</div>
+      <div class="group" id="outdoor-lights"></div>
+    </div>
+  </div><div class="column">
+    <div class="room" style="left:340px;">
+      <div class="room-name">MASTER BEDROOM</div>
+      <div id="master-bedroom-sonos"></div>
+      <div class="group">
+        <div id="master-bed-wall"></div>
+      </div>
+      <div class="group" id="master-lights"></div>
+    </div>
+    <div class="room" style="left:660px;">
+      <div class="room-name">OFFICE</div>
+      <div id="office-sonos"></div>
+    </div>
+    <div class="room" style="left:660px;">
+      <div class="room-name">DINING ROOM</div>
+      <div class="group" id="dining-lights"></div>
+      <div id="dining-room-sonos"></div>
+    </div>
+    <div class="room" style="left:660px;">
+      <div class="room-name">RUMPUS ROOM</div>
+      <div id="rumpus-sonos"></div>
+    </div>
+    <div class="room" style="left:660px;">
+      <div class="room-name">MASTER BATHROOM</div>
+      <div class="group" id="master-bath-lights"></div>
+      <div id="master-bath-sonos"></div>
+    </div>
+    <!--
+    <div class="room" style="left:660px; top:345px;">
+      <div class="room-name">HOUSE</div>
+      <div class="group" id="house-state"></div>
+    </div>
+    -->
+  </div>
+</body>
+<script>
+var socket = io.connect();
+socket.on('disconnect', function() {
+  socket.socket.connect();
+});
+
+// Sonoses
+new Sonos("Sonos.Kitchen", socket, $("kitchen-sonos"));
+new Sonos("Sonos.Office", socket, $("office-sonos"));
+new Sonos("Sonos.Lanai", socket, $("lanai-sonos"));
+new Sonos("Sonos.DiningRoom", socket, $("dining-room-sonos"));
+new Sonos("Sonos.MasterBedroom", socket, $("master-bedroom-sonos"));
+new Sonos("Sonos.MasterBathroom", socket, $("master-bath-sonos"));
+new Sonos("Sonos.RumpusRoom", socket, $("rumpus-sonos"));
+new Sonos("Sonos.LegoRoom", socket, $("lego-room-sonos"));
+
+
+// Kitchen
+new Switch("Lutron.KitchenSinkAndNook", "Sink & Nook", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenRecessed", "General", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenIslandPendants", "Island", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenCabinets", "Cabinets", socket, $('kitchen-lights'));
+new Switch("Lutron.MudRoomRecessed", "Mud Room", socket, $('kitchen-lights'))
+
+// Family Room
+new Switch("Lutron.FamilyRoomRecessed", "General", socket, $('family-lights'));
+new Switch("Lutron.FamilyRoomChandelier", "Chandelier", socket, $('family-lights'));
+
+// Dining Room
+new Switch("Lutron.DiningRoomRecessed", "General", socket, $('dining-lights'));
+new Switch("Lutron.DiningRoomCove", "Cove", socket, $('dining-lights'));
+new Switch("Lutron.DiningRoomChandelier", "Chandelier", socket, $('dining-lights'));
+// TODO(beng): china cabinet & art lights
+
+// Common Areas
+new Switch("Lutron.FoyerPendants", "Foyer Pendants", socket, $('common-lights'));
+new Switch("Lutron.FoyerSconces", "Foyer Sconces", socket, $('common-lights'));
+new Switch("Lutron.HallwayPendant", "Hallway Pendant", socket, $('common-lights'));
+new Switch("Lutron.HallwayRecessed", "Hallway General", socket, $('common-lights'));
+new Switch("Lutron.HallwayWallWashers", "Hallway Art", socket, $('common-lights'));
+
+// Master Bedroom
+new Switch("Lutron.MasterBedroomRecessed", "General", socket, $('master-lights'));
+new Switch("Lutron.MasterBedroomCove", "Cove", socket, $('master-lights'));
+new Switch("Lutron.MasterBedroomChandelier", "Chandelier", socket, $('master-lights'));
+
+// Master Bathroom
+new Switch("Lutron.MasterBathroomSconces", "Vanity", socket, $('master-bath-lights'));
+new Switch("Lutron.MasterBathroomRecessed", "General", socket, $('master-bath-lights'));
+new Switch("Lutron.MasterBathroomShower", "Shower", socket, $('master-bath-lights'));
+new Switch("Lutron.MasterBathroomFan", "Fan", socket, $('master-bath-lights'));
+
+new Switch("Lutron.FrontPorchPendants", "Front Porch", socket, $('outdoor-lights'));
+new Switch("Lutron.FrontDoorSconces", "Front Door", socket, $('outdoor-lights'));
+
+/*
+// Livingroom
+new Stereo([
+  {
+    name : "Sonos",
+    action : "Livingroom.Sonos",
+    image : "stereo-sonos.png",
+    on : "Denon.Switch.Sonos"
+  },
+  {
+    name : "ChromeCast",
+    action : "Livingroom.ChromeCast",
+    image : "stereo-roku.png",
+    on : "IR.A-ChromeCast"
+  },
+  {
+    name : "PS3",
+    action : "Livingroom.PS3",
+    image : "stereo-ps3.png",
+    on : "IR.A-PS3"
+  },
+], socket, $('stereo'));
+new Volume("Denon.Volume", socket, $("stereo"));
+new Sonos("Sonos.Livingroom", socket, $("stereo"));
+
+new Switch("Lutron.LivingroomLoungeLamp", "Lamp", socket, $('living-lights'));
+new Switch("Lutron.HallwayPendantLights", "Pendant", socket, $('living-lights'));
+new Switch("Lutron.KitchenDiningLights", "Dining", socket, $('living-lights'));
+
+// Kitchen
+new Switch("Lutron.KitchenBarLights", "Bar lights", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenCabinetLights", "Cabinet", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenCeilingLights", "Ceiling", socket, $('kitchen-lights'));
+new Switch("Lutron.KitchenCoffeeMachine", "Coffee", socket, $('kitchen-equipment'));
+
+// Office
+new Switch("Lutron.OfficePendantLight", "Main light", socket, $('office-main-light'));
+new Sonos("Sonos.Ethanbed", socket, $("office-main-light"));
+
+// Bedroom
+new Stereo([
+  {
+    name : "MacMini",
+    action : "Masterbed.PC",
+    image : "stereo-pc.png",
+    on : "IR.B-PC"
+  },
+  {
+    name : "AppleTV",
+    action : "Masterbed.AppleTV",
+    image : "stereo-apple.png",
+    on : "IR.B-AppleTV"
+  },
+  {
+    name : "ChromeCast",
+    action : "Masterbed.ChromeCast",
+    image : "stereo-roku.png",
+    on : "IR.B-ChromeCast"
+  },
+  {
+    name : "PS3",
+    action : "Masterbed.PS3",
+    image : "stereo-ps3.png",
+    on : "IR.B-PS3"
+  },
+], socket, $('master-bed-stereo'));
+new Sonos("Sonos.Masterbed", socket, $("master-bed-stereo"));
+new Switch("Lutron.MasterbedWallLights", "Wall lights", socket, $('master-bed-wall'));
+
+*/
+
+// House
+/*
+new Status({
+  "Proximity.Present" : "Glen is here",
+  "Proximity.Away" : "Glen is away"
+}, socket, $("house-state"));
+*/
+
+</script>

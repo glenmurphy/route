@@ -18,7 +18,7 @@ var Colors = require("./colors.js").Colors;
 // $ echo $CLIENT_ID
 // 
 // # Register the username with the Philips Hub.
-// $ curl -d "{\"username\": \"${CLIENT_ID}\", \"devicetype\": \"Automaton\"}"" ${HUB_ADDRESS}/api
+// $ curl -d "{\"username\": \"${CLIENT_ID}\", \"devicetype\": \"Automaton\"}" ${HUB_ADDRESS}/api
 // 
 // Alternatively, uncomment the updateRegistrationState below in the Hue constructor.
 //

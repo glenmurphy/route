@@ -3,6 +3,10 @@ var util = require('util');
 var net = require('net');
 var wol = require('wake_on_lan');
 
+String.prototype.endsWith = function(suffix) {
+    return this.indexOf(suffix, this.length - suffix.length) !== -1;
+};
+
 function Russound(data) {
   this.host = data.host;
   this.zoneNames = data.zoneNames;

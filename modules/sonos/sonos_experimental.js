@@ -1,5 +1,7 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
+var https = require('https');
+var request = require('request');
 var url = require('url');
 var util = require('util');
 var xml2js = require('xml2js');
@@ -31,7 +33,7 @@ function Sonos(data) {
   this.server = http.createServer(this.handleReq.bind(this)).listen(this.listenPort);
   this.cacheArtwork = data.cacheArtwork;
   this.debug = data.debug;
-
+  this.replaceSpotifyArtwork = data.replaceSpotifyArtwork || true;
   this.spotifyAccountId = data.spotifyAccountId;
   this.spotifySid = data.spotifySid;
   this.spotifyArtworkPrefix = data.spotifyArtworkPrefix;
@@ -623,20 +625,16 @@ SonosComponent.prototype.updatePlayerState = function(playerState) {
   this.playerState = playerState;
 };
 
-
-var download = function(url, dest, cb) {
-  var file = fs.createWriteStream(dest);
-  var request = http.get(url, function(response) {
-    console.log("Status", response.statusCode);
-    response.pipe(file);
-    file.on('finish', function() {
-      file.close(cb);  // close() is async, call cb after close completes.
-    });
-  }).on('error', function(err) { // Handle errors
-    fs.unlink(dest); // Delete the file async. (But we don't check the result)
-    if (cb) cb(err.message);
-  });
-};
+function getSpotifyInfo (trackId, callback) {
+  var url = "https://api.spotify.com/v1/tracks/";
+  request(url + trackId, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      callback(JSON.parse(body));
+    } else {
+      console.log("Unable to get metadata", error);
+    }
+  })
+}
 
 var download2 = function(url, dest, cb) {
   var request = http.get(url, function(response) {
@@ -652,16 +650,33 @@ var download2 = function(url, dest, cb) {
 };
 
 
+
 SonosComponent.prototype.updateTrackInfo = function(details) {
+  if (this.system.replaceSpotifyArtwork && details.url.indexOf("x-sonos-spotify:") === 0) {
+    var info = url.parse(details.url, true);
+    var trackId = info.pathname.split("%3a").pop();
+    getSpotifyInfo(trackId, function(info) {
+      details.artwork = info.album.images[0].url;
+      this.sendTrackInfo(details);
+    }.bind(this));
+  } else {
+    this.sendTrackInfo(details);
+  }
+}
+
+
+
+
+SonosComponent.prototype.sendTrackInfo = function(details) {
+
+  this.emit("DeviceEvent", this.name + ".TrackInfo", details, {initializing:this.initializing});
+
+  var state = {};
+  state["Sonos." + this.name + ".trackInfo"] = details;
+  this.emit("StateEvent", state);
 
   // Optionally, replace spotify with an alternate URL to avoid green badging
-  if (this.system.spotifyArtworkPrefix) {
-    if (details.url.indexOf("x-sonos-spotify:") === 0) {
-      var info = url.parse(details.url, true);
-      var trackId = info.pathname.split("%3a").pop();
-      details.artwork = this.system.spotifyArtworkPrefix + trackId;
-    }
-  }
+
 
   if (this.system.cacheArtwork && im) {
     var options = {url: details.artwork};
@@ -671,32 +686,25 @@ SonosComponent.prototype.updateTrackInfo = function(details) {
 
     var system = this.system;
     if (details.artwork != this.cachedArtworkURL) {
-      download2(details.artwork, artworkPath, function (err){
-        if (err) console.log("Artwork download  ERROR", err)
-        console.log("Cached artwork", artworkPath, details);
-
+      request(details.artwork).pipe(fs.createWriteStream(artworkPath)).on('finish', function(err) {
+        if (err) console.log("Artwork download  ERROR", err);
         this.emit("DeviceEvent", this.name + ".ArtworkSaved", {path:artworkPath}, {initializing:this.initializing});
         try {
-        var artworkBlurFile = fs.createWriteStream(artworkBlurPath);
-        im(artworkPath).scale(1000).blur(0,36).write(artworkBlurPath, function (err) {
-          if (err) {
-            console.log("! Sonos blur error", err);
-          } else {
-            var state = {"sonosArtwork": "http://" + system.listenIp + ":" + system.listenPort + "/artwork-blur.jpg"};
-            system.emit("StateEvent", state);              
-          }
-          });
+          var artworkBlurFile = fs.createWriteStream(artworkBlurPath);
+          im(artworkPath).scale(1000).blur(0,36).write(artworkBlurPath, function (err) {
+            if (err) {
+              console.log("! Sonos blur error", err);
+            } else {
+              var state = {"sonosArtwork": "http://" + system.listenIp + ":" + system.listenPort + "/artwork-blur.jpg"};
+              system.emit("StateEvent", state);              
+            }
+            });
         } catch (e) {}
-        }.bind(this));
+        }.bind(this)
+      );
     }
     this.cachedArtworkURL = details.artwork;    
   }
-
-  this.emit("DeviceEvent", this.name + ".TrackInfo", details, {initializing:this.initializing});
-
-  var state = {};
-  state["Sonos." + this.name + ".trackInfo"] = details;
-  this.emit("StateEvent", state);
 };
 
 SonosComponent.prototype.updateNextTrackInfo = function(details) {

@@ -626,8 +626,10 @@ SonosComponent.prototype.updatePlayerState = function(playerState) {
 };
 
 function getSpotifyInfo (trackId, callback) {
-  var url = "https://api.spotify.com/v1/tracks/";
-  request(url + trackId, function (error, response, body) {
+  var url = "https://api.spotify.com/v1/tracks/" + trackId;
+
+  console.log(url);
+  request(url, function (error, response, body) {
     if (!error && response.statusCode == 200) {
       callback(JSON.parse(body));
     } else {
@@ -637,7 +639,8 @@ function getSpotifyInfo (trackId, callback) {
 }
 
 var download2 = function(url, dest, cb) {
-  var request = http.get(url, function(response) {
+  var getter = (url.indexOf("https") === 0) ? https : http;
+  var request = getter.get(url, function(response) {
     var data = new Buffer('');
     response.on('data', function(chunk) { data = Buffer.concat([data, chunk]);});
     response.on('end', function() {
@@ -656,7 +659,9 @@ SonosComponent.prototype.updateTrackInfo = function(details) {
     var info = url.parse(details.url, true);
     var trackId = info.pathname.split("%3a").pop();
     getSpotifyInfo(trackId, function(info) {
-      details.artwork = info.album.images[0].url;
+      try {
+        details.artwork = info.album.images[0].url;
+      } catch (e){}
       this.sendTrackInfo(details);
     }.bind(this));
   } else {
@@ -686,7 +691,8 @@ SonosComponent.prototype.sendTrackInfo = function(details) {
 
     var system = this.system;
     if (details.artwork != this.cachedArtworkURL) {
-      request(details.artwork).pipe(fs.createWriteStream(artworkPath)).on('finish', function(err) {
+      download2(details.artwork, artworkPath, function(err) {
+      // request(details.artwork).pipe(fs.createWriteStream(artworkPath)).on('finish', function(err) {
         if (err) console.log("Artwork download  ERROR", err);
         this.emit("DeviceEvent", this.name + ".ArtworkSaved", {path:artworkPath}, {initializing:this.initializing});
         try {

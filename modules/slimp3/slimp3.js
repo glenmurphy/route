@@ -55,7 +55,7 @@ Slimp3.prototype.exec = function(command, data) {
 Slimp3.prototype.sendCommand = function(buf) {
     var command = new Buffer({0:"l".charCodeAt(0), length:18});
     command = Buffer.concat([command, buf]);
-    console.log("Sending:", this.addr + ":" + this.port + "\n\t", command)
+    if (this.debug) console.log("SLIMP3 Sending:", this.addr + ":" + this.port + "\n\t", command)
     this.server.send(command, 0, command.length, this.port, this.addr);
 };
 
@@ -90,7 +90,7 @@ Slimp3.prototype.connect = function() {
   this.server.on("message", this.handleMessage.bind(this));
   this.server.on("listening", function () {
     var address = this.server.address();
-    console.log("server listening " + address.address + ":" + address.port); 
+    if (this.debug) console.log("server listening " + address.address + ":" + address.port); 
     this.sendText("Server reconnected");
   }.bind(this));
   this.server.bind(Slimp3.COM_PORT);

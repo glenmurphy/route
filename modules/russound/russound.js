@@ -15,6 +15,8 @@ function Russound(data) {
   this.status = {};
   this.debug = data.debug;
   this.fadeTimeouts = {};
+  this.commandQueue = [];
+
 };
 util.inherits(Russound, EventEmitter);
 
@@ -68,11 +70,24 @@ Russound.prototype.wake = function(event) {
   });
 }
 
-Russound.prototype.sendCommand = function(command, callback) {
-  if (this.debug && command.length) console.log("Russound >", command);
-  this.client.write(command + "\r");
+
+Russound.prototype.send = function(command, callback) {
+  var isFirstRequest = (this.commandQueue.length == 0);
+  this.commandQueue.push(command);
   this.callbackStack.push(callback);
-}
+
+  if (isFirstRequest)
+    process.nextTick(this.sendNextCommand.bind(this));
+};
+
+Russound.prototype.sendNextCommand = function() {
+  if (!this.commandQueue.length) return;
+  var string = this.commandQueue.shift();
+  if (this.debug && string.length) console.log("Russound >", string);
+  this.client.write(string + "\r", "UTF8", function () {
+    setTimeout(this.sendNextCommand.bind(this), 300);  
+  }.bind(this));
+};
 
 // Russound.prototype.reconnect = function() {
 //   if (this.reconnecting_) return;
@@ -108,7 +123,7 @@ Russound.prototype.sendEvent = function(controller, zone, event, data1, data2) {
   var command = "EVENT C[" + (controller || 1) + "].Z[" + zone + "]!" + event;
   if (data1 != undefined) command += " " + data1;
   if (data2 != undefined) command += " " + data2;
-  this.sendCommand(command);
+  this.send(command);
 }
 
 Russound.prototype.parseResponse = function(data) {
@@ -183,7 +198,7 @@ Russound.prototype.updateSources = function() {
     keys.push("S[" + i + "].name");
   }
   var command = "GET " + keys.join(", ");
-  this.sendCommand(command, this.handleStatus.bind(this));
+  this.send(command, this.handleStatus.bind(this));
 }
 
 Russound.prototype.connect = function() {
@@ -208,16 +223,16 @@ Russound.prototype.reconnect = function() {
 }
 
 Russound.prototype.watchForChanges = function() {
-  this.sendCommand("WATCH System ON");
+  this.send("WATCH System ON");
   for (var i = 1; i < 9; i++) {
-   this.sendCommand("WATCH C[1].Z["+ i +"] ON");
+   this.send("WATCH C[1].Z["+ i +"] ON");
   };
   for (var i = 1; i < 8; i++) {
-   this.sendCommand("WATCH S["+ i +"] ON");
+   this.send("WATCH S["+ i +"] ON");
   };
 }
 Russound.prototype.keepAlive = function() {
-  this.sendCommand("");
+  this.send("");
 }
 
 Russound.prototype.handleConnected = function() {

@@ -5,8 +5,6 @@ var url = require("url");
 var Deserializer = require("xmlrpc/lib/deserializer");
 var Serializer = require("xmlrpc/lib/serializer");
 var querystring = require("querystring");
-var debug = require("debug")("IFTTT");
-
 
 // Provides a webhook to the WordPress module of IFTTT. Title is emitted as an event
 // All other fields are passed as parameters.

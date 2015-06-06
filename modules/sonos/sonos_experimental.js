@@ -189,6 +189,9 @@ Sonos.prototype.subscribeEvent = function(host, service, description) {
 };
 
 Sonos.prototype.componentForIP = function(ip) {
+  if (ip.indexOf("::ffff:") == 0) {
+    ip = ip.substr("::ffff:".length);
+  }
   var match =  Object.keys(this.components).filter(function(key) {return this.components[key].host === ip;}.bind(this)).shift();
   return this.components[match];
 };

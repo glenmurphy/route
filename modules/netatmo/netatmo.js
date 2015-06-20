@@ -4,6 +4,7 @@ var netatmo = require('node-netatmo');
 
 function Netatmo(data) {
   this.host = data.host;
+  this.debug = data.debug;
   this.connection = new netatmo.Netatmo();
   this.connection.on('error', function(err) { console.log("!  Netatmo error", err);})
   this.connection.setConfig( data.clientId , data.clientSecret , data.userName , data.password);

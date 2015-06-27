@@ -11,9 +11,11 @@ var querystring = require("querystring");
 // The listening port must be mapped to port 80 on the external ip address
 // Use the blog URL http://IP_ADDR/xmlrpc.php
 
+
 function IFTTT(data) {
   this.port = data.port || 8080;
   this.debug = data.debug;
+  this.key = data.key;
   this.server = http.createServer(this.handleRequest.bind(this));
   this.server.once("listening", function () {
     if (this.debug) ("*  IFTTT: listening on port", this.server.address().port);
@@ -21,6 +23,45 @@ function IFTTT(data) {
   this.server.listen(this.port);
 }
 util.inherits(IFTTT, EventEmitter);
+
+
+//   curl -X POST -H "Content-Type: application/json" -d '{"value1":"hi","value2":"there","value3":"you"}' https://maker.ifttt.com/trigger/pony/with/key/b6O5Jey3VGLt7c-0z8UIw3
+// IFTTT.prototype.exec = function(command, params) {
+//   console.log("*  IFTTT Executing: [" + command + "] : " + JSON.stringify(params));
+//   var baseURL = "https://maker.ifttt.com/trigger/" + command + "/with/key/" + this.key;
+//   var opt = url.parse(options.url);
+//   opt.headers = {};
+//   opt.method = "GET";
+//   opt.contentType = "application/json";
+//   opt.data = JSON.stringify(params),
+//   opt.success =  function(data, res) {
+//       that.success(success, JSON.parse(data), res);
+//   };
+//   opt.error =  function(data, err, res) {
+//       that.error(error, "error adding a playlist", data, err, res);
+//   };
+  
+//   var req = https.request(opt, function(res) {
+//         res.setEncoding('utf8');
+//         var body = "";
+//         res.on('data', function(chunk) {
+//             body += chunk;
+//         });
+//         res.on('end', function() {
+//             if(res.statusCode === 200) {
+//                 opt.success(body, res);
+//             } else {
+//                 opt.error(body, null, res);
+//             }
+//         });
+//         res.on('error', function() {
+//             opt.error(null, Array.prototype.slice.apply(arguments), res);
+//         });
+//     });
+//     if(typeof opt.data !== "undefined") req.write(options.data);
+//     req.end();
+// }
+
 
 IFTTT.prototype.handleRequest = function (request, response) {
   var deserializer = new Deserializer();
@@ -66,5 +107,6 @@ IFTTT.prototype.handleRequest = function (request, response) {
     response.end(xml);
   }.bind(this));
 }
+
 
 module.exports = IFTTT;

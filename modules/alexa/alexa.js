@@ -14,7 +14,9 @@ function Alexa(data) {
   this.port = data.port || 9099;
   this.testBody = data.IntentRequestTest;
   this.testRes = data.ResponseTest;
-  console.log(__dirname);
+  this.voice = data.voice;
+  this.responseStrings = ["Test"];
+  this.sessions = {};
   var options = {
       key: fs.readFileSync(data.key || __dirname + "/key.pem"),
       cert: fs.readFileSync(data.cert || __dirname + "/cert.pem"),
@@ -24,24 +26,40 @@ function Alexa(data) {
 
 util.inherits(Alexa, EventEmitter);
 
-
 Alexa.prototype.httpReq = function(req, res) { 
   var headers = req.headers;
-  var sig = headers.Signature;
-  var sigCert = headers.SignatureCertChainUrl;
-
   var body = "";
   req.on('data', function (chunk) { body += chunk; });
   req.on('end', function () {
-    if (this.testBody) body = this.testBody;
-    var response = this.handleReq(req, res, headers, body);
-    res.writeHead(200);
-    if (response) response = JSON.stringify(response);
-    res.end(response);
+    body = JSON.parse(body);
+    var sessionId = body.session.sessionId;
+    var session = this.sessions[sessionId];
+    if (!session) session = this.sessions[sessionId] = new AlexaSession(sessionId, this);
+    session.handleReq(req, res, headers, body);
   }.bind(this));
 }; 
 
-Alexa.prototype.handleReq = function(req, res, headers, body) { 
+Alexa.prototype.endSession = function(session) {
+  delete this.sessions[session.sessionId];
+}
+
+// Alexa sessions handle most of the logic, usually one or more requests
+
+function AlexaSession(sessionId, alexa) {
+  this.sessionId = sessionId;
+  this.alexa = alexa;
+};
+
+AlexaSession.prototype.handleReq = function(req, res, headers, body) { 
+  this.res = res;
+
+  if (this.alexa.debug) console.log("Alexa Request:", body, headers);
+  if (!body) {
+    this.sendResponse();
+    return;
+  }
+
+  this.responseStrings = [];
   var type = body.request.type;
 
   if (type == "IntentRequest") {
@@ -53,14 +71,53 @@ Alexa.prototype.handleReq = function(req, res, headers, body) {
        var obj = slots[key];
        params[obj.name] = obj.value;
     }
-
-    this.emit("DeviceEvent", eventType, params);
+    params.device = "AmazonEcho"; // Hardcoded for now. There are no unique ids per device
+    params.speechCallback = this.speechCallback.bind(this);
+    console.log("params.RawVoiceString", params.RawVoiceString)
+    if (params.RawVoiceString) {
+      params.string = params.RawVoiceString;
+      this.voice.handleVoiceInput(params);
+    } else {
+      this.alexa.emit("DeviceEvent", eventType, params);
+    }
+  } else if (type == "LaunchRequest") {
+      this.alexa.emit("DeviceEvent", "LaunchRequest", {});
+  } else if (type == "SessionEndedRequest") {
+    this.alexa.endSession(this);
   }
-  var responseJson = {}
-  if (this.testRes) responseJson = this.testRes;
-  return responseJson;
+  this.responseTimeout = setTimeout(this.sendResponse.bind(this), 3000);
 };
 
-//if (require.main === module) { new Alexa({IntentRequestTest:{"version":"1.0","session":{"new":false,"sessionId":"amzn1.echo-api.session.0000000-0000-0000-0000-00000000000","application":{"applicationId":"amzn1.echo-sdk-ams.app.000000-d0ed-0000-ad00-000000d00ebe"},"attributes":{"supportedHoroscopePeriods":{"daily":true,"weekly":false,"monthly":false}},"user":{"userId":"amzn1.account.AM3B00000000000000000000000"}},"request":{"type":"IntentRequest","requestId":" amzn1.echo-api.request.0000000-0000-0000-0000-00000000000","timestamp":"2015-05-13T12:34:56Z","intent":{"name":"GetZodiacHoroscopeIntent","slots":{"ZodiacSign":{"name":"ZodiacSign","value":"virgo"}}}}},ResponseTest: {"version":"1.0","sessionAttributes":{"supportedHoriscopePeriods":{"daily":true,"weekly":false,"monthly":false}},"response":{"outputSpeech":{"type":"PlainText","text":"Today will provide you a new learning opportunity.  Stick with it and the possibilities will be endless. Can I help you with anything else?"},"card":{"type":"Simple","title":"Horoscope","content":"Today will provide you a new learning opportunity.  Stick with it and the possibilities will be endless."},"reprompt":{"outputSpeech":{"type":"PlainText","text":"Can I help you with anything else?"}},"shouldEndSession":false}}});};
+AlexaSession.prototype.speechCallback = function(string, complete) {
+  if (this.responseStrings) this.responseStrings.push(string);
+  if (complete) this.sendResponse();
+}
+
+AlexaSession.prototype.sendResponse = function() {
+  clearTimeout(this.responseTimeout);
+  var responseJson = {}
+  if (this.testRes) responseJson = this.testRes;
+  this.sendResponseJson(false, this.responseStrings.join("\n"));
+  this.responseStrings = null;
+}
+
+AlexaSession.prototype.sendResponseJson = function(shouldEndSession, speech, reprompt, cardTitle, cardContent) {
+  var responseJson = { "version": "1.0", response: {}}
+  if (speech) responseJson.response.outputSpeech = { "type": "PlainText", "text": speech };
+  if (reprompt) responseJson.response.reprompt = {outputSpeech: {"type": "PlainText", "text": reprompt }};
+  if (cardTitle & cardContent) responseJson.response.card = {"type": "Simple", "title": cardTitle, "content": cardContent };
+  responseJson.response.shouldEndSession = shouldEndSession == true;
+
+  if (this.alexa.debug) console.log("Alexa response:", responseJson);
+
+  responseJson = JSON.stringify(responseJson);
+  this.res.writeHead(200, {
+    'Content-Length': responseJson.length,
+    'Content-Type': 'text/plain' });
+  this.res.end(responseJson);
+  delete this.res;
+  if (shouldEndSession) this.alexa.endSession(this);
+}
+
 
 module.exports = Alexa;

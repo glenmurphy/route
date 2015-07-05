@@ -3,6 +3,17 @@
 // Triggers the Intent name as an event, passing slots as parameters
 // Example: "Alexa.GetZodiacHoroscopeIntent" {ZodiacSign:'virgo'}
 
+// To use:
+// * Forward port 443 to the port defined below.
+// * Generate a SSL certificate 
+// * Create a skill at https://developer.amazon.com/edw/home.html#/
+// * Define a schema like:
+//   {"intents": [{"intent": "SearchMusic","slots": [{"name": "toValue", "type": "LITERAL"}]}]}
+//   and samples like
+//   SearchMusic play {Enya|toValue}
+// This will trigger as "Alexa.SearchMusic" with parameters {toValue:"enya"}
+
+
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 var url = require('url');
@@ -31,11 +42,16 @@ Alexa.prototype.httpReq = function(req, res) {
   var body = "";
   req.on('data', function (chunk) { body += chunk; });
   req.on('end', function () {
-    body = JSON.parse(body);
-    var sessionId = body.session.sessionId;
-    var session = this.sessions[sessionId];
-    if (!session) session = this.sessions[sessionId] = new AlexaSession(sessionId, this);
-    session.handleReq(req, res, headers, body);
+    if (body.length) {
+      body = JSON.parse(body);
+      var sessionId = body.session.sessionId;
+      var session = this.sessions[sessionId];
+      if (!session) session = this.sessions[sessionId] = new AlexaSession(sessionId, this);
+      session.handleReq(req, res, headers, body);
+    } else {
+      res.writeHead(200);
+      res.end("{}");
+    }
   }.bind(this));
 }; 
 

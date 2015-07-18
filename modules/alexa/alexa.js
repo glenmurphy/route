@@ -22,6 +22,7 @@ var https = require('https');
 
 function Alexa(data) {
   this.mappings = [];
+  this.debug = data.debug;
   this.port = data.port || 9099;
   this.testBody = data.IntentRequestTest;
   this.testRes = data.ResponseTest;
@@ -92,7 +93,7 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
     console.log("params.RawVoiceString", params.RawVoiceString)
     if (params.RawVoiceString) {
       params.string = params.RawVoiceString;
-      this.voice.handleVoiceInput(params);
+      this.alexa.voice.handleVoiceInput(params);
     } else {
       this.alexa.emit("DeviceEvent", eventType, params);
     }
@@ -113,7 +114,7 @@ AlexaSession.prototype.sendResponse = function() {
   clearTimeout(this.responseTimeout);
   var responseJson = {}
   if (this.testRes) responseJson = this.testRes;
-  this.sendResponseJson(false, this.responseStrings.join("\n"));
+  this.sendResponseJson(true, this.responseStrings.join("\n"));
   this.responseStrings = null;
 }
 

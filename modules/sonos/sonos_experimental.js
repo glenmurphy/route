@@ -1,5 +1,6 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
+var http = require('http');
 var https = require('https');
 var request = require('request');
 var url = require('url');
@@ -9,6 +10,10 @@ var os = require('os');
 var fs = require('fs');
 var gm = require('gm');
 var im = gm.subClass({ imageMagick: true });
+
+try { // SSDP is optional. If present, will scan.
+  var ssdp = require('node-ssdp');
+} catch (e) {}
 
 // see http://IP:1400/status/upnp for status
 // subscription logs at http://IP:1400/status/opt/log/anacapa.trace
@@ -37,22 +42,22 @@ function Sonos(data) {
   this.spotifyAccountId = data.spotifyAccountId;
   this.spotifySid = data.spotifySid;
   this.spotifyArtworkPrefix = data.spotifyArtworkPrefix;
-  this.components = data.components || { "Main" : this.host }; // Create a component list from a single host if needed
+
+  if (!(data.components) && this.host) data.components = { "Main" : this.host }
+  // Create a component list from a single host if needed
   this.defaultComponent = data.defaultComponent || "Main";
-  for (var component in this.components) { // Instantiate components
-    var newComponent = new SonosComponent({ name : component , host : this.components[component], system : this, debug: data.debug});
-    this.components[component] = newComponent;
-    newComponent.on("DeviceEvent", this.emit.bind(this, "DeviceEvent")); // reemit events
-    newComponent.on("StateEvent", this.emit.bind(this, "StateEvent"));
+
+  this.components = {};
+  this.discoveredIps = [];
+
+  for (var componentName in data.components) { // Instantiate components
+    var host = data.components[componentName];
+    this.createComponent(host, componentName);
+    this.discoveredIps.push(host);
   }
 
-  for (var first in this.components) {
-    this.components[first].getFavorites();
-    break; // only run once
-  }
+  this.scanforComponents();
 
-  setTimeout(this.subscribeEvents.bind(this), 3000); // subscribe to events. Ideally this should be gated on UID fetching
-  setInterval(this.subscribeEvents.bind(this), 59 * 60 * 1000); // Resubscribe every 59 minutes (1m overlap)
 }
 util.inherits(Sonos, EventEmitter);
 
@@ -80,6 +85,56 @@ Sonos.SERVICES = [
   //{ "Service":"/MediaServer/ContentDirectory/Event", "Description":"Content Directory" },
   //{ "Service":"/MediaRenderer/ConnectionManager/Event", "Description":"Connection Manager" },
 ];
+
+Sonos.prototype.createComponent =  function (host, name) {
+  var info = {host : host, system : this, debug: this.debug};
+  new SonosComponent(info, function(component, error) {
+    if (!error) {
+      this.addComponent(component, name || component.realName);
+    } else {
+      console.log("Could not add component:", host, error);
+    }
+  }.bind(this));
+}
+
+Sonos.prototype.addComponent = function(component, id) {
+  console.log("Adding component", id);
+  this.components[id] = component;
+  component.on("DeviceEvent", this.emit.bind(this, "DeviceEvent")); // reemit events
+  component.on("StateEvent", this.emit.bind(this, "StateEvent"));
+
+  if (!this.gotFavorites) {
+    component.getFavorites();
+    this.gotFavorites = true;
+  }
+  this.subscribeToComponentEvents(component);
+}
+
+Sonos.prototype.scanforComponents = function() {
+  if (!ssdp) return;
+  console.log("Scanning for sonos");
+  var client = new ssdp.Client();
+  var SONOS_PLAYER_UPNP_URN = 'urn:schemas-upnp-org:device:ZonePlayer:1';
+  var timeout;
+  client.on('response', function (headers, statusCode, rinfo) {
+    var host = rinfo.address;
+    if (this.discoveredIps.indexOf(host) == -1) {
+      this.discoveredIps.push(host);
+      if (headers["ST"] != SONOS_PLAYER_UPNP_URN) return;     
+      if (!headers["LOCATION"]) return;
+      this.createComponent(host);
+    }
+  }.bind(this));
+
+  // search periodcally
+  function scanDevices() {
+    console.log("Scanning for players");
+    client.search(SONOS_PLAYER_UPNP_URN);
+    clearTimeout(timeout);
+    // timeout = setTimeout(scanDevices, 5 * 60 * 1000);
+  }
+  scanDevices()
+}
 
 Sonos.prototype.exec = function(command, params) {
   var commandComponents = command.split(".");
@@ -155,15 +210,19 @@ Sonos.prototype.getComponentByID = function(id) {
 };
 
 // Notifications
-Sonos.prototype.subscribeEvents = function() {
-  for (var componentName in this.components) {
-    var component = this.components[componentName];
-    component.initializing = 0;
-    for (var service in Sonos.SERVICES) {
-      component.initializing++;
-      this.subscribeEvent(component.host, Sonos.SERVICES[service].Service, Sonos.SERVICES[service].Description);
-    }
+// Sonos.prototype.subscribeEvents = function() {
+//   for (var componentName in this.components) {
+//     var component = this.components[componentName];
+//     this.subscribeToComponentEvents(component);
+//   }
+// };
+Sonos.prototype.subscribeToComponentEvents = function(component) {
+  component.initializing = 0;
+  for (var service in Sonos.SERVICES) {
+    component.initializing++;
+    this.subscribeEvent(component.host, Sonos.SERVICES[service].Service, Sonos.SERVICES[service].Description);
   }
+  setTimeout(this.subscribeToComponentEvents.bind(this), 59 * 60 * 1000); // Resubscribe every 59 minutes (1m overlap)
 };
 
 Sonos.prototype.subscribeEvent = function(host, service, description) {
@@ -235,28 +294,30 @@ Sonos.prototype.sonosURIForSpotifyURI = function (uri) {
  *  Sonos Component
  */
 
-function SonosComponent(data) {
+function SonosComponent(data, initCallback) {
   this.name = data.name;
   this.host = data.host;
   this.volume = 0;
   this.deviceid = 1;
   this.system = data.system;
-  this.getUID();
+  this.getUID(initCallback);
   this.debug = data.debug;
 }
 util.inherits(SonosComponent, EventEmitter);
 
-SonosComponent.prototype.getUID = function() {
+SonosComponent.prototype.getUID = function(initCallback) {
   var req = http.get({hostname: this.host, port: Sonos.PORT, path: '/status/zp'}, function(res) {
     res.on('data', function(data) {
       var parser = new xml2js.Parser();
       parser.parseString(data, function (err, result) {
-        this.realName = result.ZPSupportInfo.ZPInfo[0].ZoneName[0];
+        this.name = this.realName = result.ZPSupportInfo.ZPInfo[0].ZoneName[0];
         this.uid = result.ZPSupportInfo.ZPInfo[0].LocalUID[0];
+        if (initCallback) initCallback(this, null);
       }.bind(this));
     }.bind(this));
   }.bind(this));
   req.on('error', function(e) {
+    if (initCallback) initCallback(this, e);
     console.log('!  Sonos', this.name, e.message);
   }.bind(this));
 };

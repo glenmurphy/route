@@ -1,6 +1,5 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
-var http = require('http');
 var https = require('https');
 var request = require('request');
 var url = require('url');

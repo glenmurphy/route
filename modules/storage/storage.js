@@ -1,6 +1,12 @@
 var persist = require('node-persist');
+
+var fs = require('fs');
+var dir = process.env['HOME'] + "/.route.io";
+
+if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+console.log(dir);
 persist.initSync({
-  dir:process.cwd() + "/storage",
+  dir:dir,
   parse: function (json) {
     try {
       return JSON.parse(json);

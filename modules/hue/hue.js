@@ -1,9 +1,13 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
 var util = require('util');
+var xml2js = require('xml2js');
 var crypto = require('crypto');
 var Colors = require("./colors.js").Colors;
 
+try { // SSDP is optional. If present, will scan.
+  var ssdp = require('node-ssdp');
+} catch (e) {}
 
 // Control for the Philips Hue (and LivingColors) lights
 //
@@ -24,15 +28,68 @@ var Colors = require("./colors.js").Colors;
 //
 function Hue(data) {
   this.host = data.host;
-  this.uuid = data.uuid; //crypto.createHash('md5').update(data.uuid).digest("hex");
+  this.uuid = data.uuid || "13268bf5d1c8d6712b58ac1d342c93"; //crypto.createHash('md5').update(data.uuid).digest("hex");
   this.lightNames = {};
   this.lightStates = {};
-  this.updateLightsList();
   this.requestQueue = [];
   this.debug = data.debug;
+  this.discoveredIps = [];
+
+  if (data.host) {
+    this.addBridge(data.host);
+  } else {
+    this.scanForBridges();
+  }
   //this.updateRegistrationState();
 };
 util.inherits(Hue, EventEmitter);
+
+Hue.prototype.addBridge = function(host) {
+  console.log("*  Adding Hue:", host)
+  this.host = host;
+  this.updateLightsList();
+}
+
+Hue.UPNP_URN = 'upnp:rootdevice';
+Hue.prototype.scanForBridges = function() {
+  if (!ssdp) return;
+  console.log("Scanning for hue");
+  var client = new ssdp.Client();
+  var timeout;
+  client.on('response', function (headers, statusCode, rinfo) {
+    var host = rinfo.address;
+    if (this.discoveredIps.indexOf(host) == -1) {
+      this.discoveredIps.push(host);
+      var location = headers["LOCATION"];
+
+      var req = http.get(location, function(res) {
+        res.on('data', function (data) {res.data = (res.data || "") + data}), 
+        res.on('end', function() {
+          var parser = new xml2js.Parser();
+          parser.parseString(res.data, function (err, result) {
+            var modelName = result.root.device[0].modelName[0];
+            var isHue = modelName.indexOf("Philips hue bridge") > -1;
+            if (isHue) this.addBridge(host);
+          }.bind(this));
+        }.bind(this));
+      }.bind(this));
+      req.on('error', function(e) {
+        console.log('! Hue', this.name, e.message);
+      }.bind(this));
+    }
+  }.bind(this));
+
+  // search periodcally
+  function scanDevices() {
+    console.log("Scanning for players");
+    client.search(Hue.UPNP_URN);
+    clearTimeout(timeout);
+    // timeout = setTimeout(scanDevices, 5 * 60 * 1000);
+  }
+  scanDevices()
+}
+
+
 
 // Register the uuid as a new user of the Philips Hub.
 Hue.prototype.updateRegistrationState = function() {

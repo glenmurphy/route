@@ -48,6 +48,7 @@ function Sonos(data) {
 
   this.components = {};
   this.discoveredIps = [];
+  this.componentsByIp = {};
 
   for (var componentName in data.components) { // Instantiate components
     var host = data.components[componentName];
@@ -104,6 +105,7 @@ Sonos.prototype.createComponent =  function (host, name) {
 
 Sonos.prototype.addComponent = function(component, id) {
   this.components[id] = component;
+  this.componentsByIp[component.host] = component;
   component.on("DeviceEvent", this.emit.bind(this, "DeviceEvent")); // reemit events
   component.on("StateEvent", this.emit.bind(this, "StateEvent"));
 
@@ -270,8 +272,6 @@ Sonos.prototype.handleReq = function(req, res) {
       res.end();
     }
   } else {
-    var address = req.connection.remoteAddress;
-    var component = this.componentForIP(address);
     if (component) component.handleReq(req,res);
   }
 

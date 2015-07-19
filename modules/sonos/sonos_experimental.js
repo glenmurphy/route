@@ -632,12 +632,9 @@ SonosComponent.prototype.getFavorites = function(callback) {
 };
 
 SonosComponent.prototype.handleReq = function(req, res) {
-  var data = '';
-  req.on('data', function(chunk) {
-    data += chunk;
-  });
+  req.on('data', function(chunk) { req.data = (req.data || "") + chunk;});
   req.on('end', function() {
-    this.parseNotification(data, req.url);
+    this.parseNotification(req.data, req.url);
     res.writeHead(200);
     res.end();
   }.bind(this));
@@ -801,6 +798,9 @@ SonosComponent.prototype.parseNotification = function (data, path) {
           switch (key) {
             case "TransportState":
               this.updatePlayerState(val);
+              break;
+            case "Volume":
+              playerInfo.Volume = val;
               break;
             case "CurrentTrackURI":
               playerInfo.TrackURI = val;

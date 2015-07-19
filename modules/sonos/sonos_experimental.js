@@ -272,6 +272,11 @@ Sonos.prototype.handleReq = function(req, res) {
       res.end();
     }
   } else {
+    var ip = req.connection.remoteAddress;
+    if (ip.indexOf("::ffff:") == 0) {
+      ip = ip.substr("::ffff:".length);
+    }
+    var component = this.componentsByIp[ip];
     if (component) component.handleReq(req,res);
   }
 
@@ -800,6 +805,7 @@ SonosComponent.prototype.parseNotification = function (data, path) {
               this.updatePlayerState(val);
               break;
             case "Volume":
+              this.volume = val;
               playerInfo.Volume = val;
               break;
             case "CurrentTrackURI":

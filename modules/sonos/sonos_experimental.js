@@ -55,7 +55,8 @@ function Sonos(data) {
     this.discoveredIps.push(host);
   }
 
-  this.scanforComponents();
+  // if (!data.components) 
+    this.scanforComponents();
 
 }
 util.inherits(Sonos, EventEmitter);
@@ -89,7 +90,12 @@ Sonos.prototype.createComponent =  function (host, name) {
   var info = {host : host, system : this, debug: this.debug};
   new SonosComponent(info, function(component, error) {
     if (!error) {
-      this.addComponent(component, name || component.realName);
+      var realName = name || component.realName;
+      this.addComponent(component, name);
+  
+      if (!name)
+        console.log("*  Discovered Sonos:", '"' + realName + '"', ":", '"' + host + '",' );
+
     } else {
       console.log("Could not add component:", host, error);
     }
@@ -97,7 +103,6 @@ Sonos.prototype.createComponent =  function (host, name) {
 }
 
 Sonos.prototype.addComponent = function(component, id) {
-  console.log("Adding component", id);
   this.components[id] = component;
   component.on("DeviceEvent", this.emit.bind(this, "DeviceEvent")); // reemit events
   component.on("StateEvent", this.emit.bind(this, "StateEvent"));
@@ -109,17 +114,16 @@ Sonos.prototype.addComponent = function(component, id) {
   this.subscribeToComponentEvents(component);
 }
 
+Sonos.PLAYER_UPNP_URN = 'urn:schemas-upnp-org:device:ZonePlayer:1';
 Sonos.prototype.scanforComponents = function() {
   if (!ssdp) return;
-  console.log("Scanning for sonos");
   var client = new ssdp.Client();
-  var SONOS_PLAYER_UPNP_URN = 'urn:schemas-upnp-org:device:ZonePlayer:1';
   var timeout;
   client.on('response', function (headers, statusCode, rinfo) {
     var host = rinfo.address;
     if (this.discoveredIps.indexOf(host) == -1) {
       this.discoveredIps.push(host);
-      if (headers["ST"] != SONOS_PLAYER_UPNP_URN) return;     
+      if (headers["ST"] != Sonos.PLAYER_UPNP_URN) return;     
       if (!headers["LOCATION"]) return;
       this.createComponent(host);
     }
@@ -127,8 +131,8 @@ Sonos.prototype.scanforComponents = function() {
 
   // search periodcally
   function scanDevices() {
-    console.log("Scanning for players");
-    client.search(SONOS_PLAYER_UPNP_URN);
+    if (this.debug) console.log("Scanning for sonos");
+    client.search(Sonos.PLAYER_UPNP_URN);
     clearTimeout(timeout);
     // timeout = setTimeout(scanDevices, 5 * 60 * 1000);
   }

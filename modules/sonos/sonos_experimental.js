@@ -227,7 +227,7 @@ Sonos.prototype.subscribeToComponentEvents = function(component) {
     component.initializing++;
     this.subscribeEvent(component.host, Sonos.SERVICES[service].Service, Sonos.SERVICES[service].Description);
   }
-  setTimeout(this.subscribeToComponentEvents.bind(this), 59 * 60 * 1000); // Resubscribe every 59 minutes (1m overlap)
+  setTimeout(this.subscribeToComponentEvents.bind(this, component), 59 * 60 * 1000); // Resubscribe every 59 minutes (1m overlap)
 };
 
 Sonos.prototype.subscribeEvent = function(host, service, description) {
@@ -754,7 +754,7 @@ SonosComponent.prototype.sendTrackInfo = function(details) {
     var artworkFile = fs.createWriteStream(artworkPath);
 
     var system = this.system;
-    if (details.artwork != this.cachedArtworkURL) {
+    if (details.artwork && details.artwork != this.cachedArtworkURL) {
       request(details.artwork).pipe(fs.createWriteStream(artworkPath)).on('finish', function(err) {
         if (err) console.log("Artwork download  ERROR", err);
         this.emit("DeviceEvent", this.name + ".ArtworkSaved", {path:artworkPath}, {initializing:this.initializing});

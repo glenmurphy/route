@@ -805,8 +805,8 @@ SonosComponent.prototype.parseNotification = function (data, path) {
               this.updatePlayerState(val);
               break;
             case "Volume":
-              this.volume = val;
-              playerInfo.Volume = val;
+              this.volume = parseInt(val);
+              playerInfo.Volume = parseInt(val);
               break;
             case "CurrentTrackURI":
               playerInfo.TrackURI = val;

@@ -834,7 +834,7 @@ SonosComponent.prototype.parseNotification = function (data, path) {
                 this.emit("DeviceEvent", this.name + (val == "1" ? ".Muted" : ".Unmuted"));
               }
               this.muteState = val;
-
+              playerInfo.Muted = val == "1" ? true : false;
               break;
             default:
               //console.log(key, status[key]);

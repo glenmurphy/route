@@ -13,15 +13,17 @@ function Web(data) {
 
   if (data.securePort) {
     var options = {
-        key: fs.readFileSync(data.key),
-        cert: fs.readFileSync(data.cert),
+        key:  data.key,
+        cert: data.cert,
+        ca: data.ca
     }
+
+    this.password = data.password;
     this.secureServer = https.createServer(options, this.handleReq.bind(this)).listen(data.securePort || 8081);    
     this.secureSocket = io.listen(this.secureServer, { log: false });
     this.secureSocket.on('connection', this.handleSocketConnection.bind(this));
     this.secureSocket.on('error', this.handleSocketError.bind(this));
   }
-
   this.server = http.createServer(this.handleReq.bind(this)).listen(data.port || 8080);
   if (data.eventPort) this.eventServer = http.createServer(this.handleEventReq.bind(this)).listen(data.eventPort);
   this.socket = io.listen(this.server, { log: false });
@@ -52,8 +54,7 @@ Web.prototype.handleEventReq = function(req, res) {
 
 Web.prototype.handleReq = function(req, res) {
   var info = url.parse(req.url, true);
-
-
+  
   var matchingHandler = this.handlers ? this.handlers[info.pathname] : null;
   // Emit requests to /event/pie?params as 'Web.pie?params'
   var prefix = "/event/";

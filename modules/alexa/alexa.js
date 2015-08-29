@@ -11,7 +11,11 @@
 //   {"intents": [{"intent": "SearchMusic","slots": [{"name": "toValue", "type": "LITERAL"}]}]}
 //   and samples like
 //   SearchMusic play {Enya|toValue}
-// This will trigger as "Alexa.SearchMusic" with parameters {toValue:"enya"}
+//   This will trigger as "Alexa.SearchMusic" with parameters {toValue:"enya"}
+// * Alternatively, {"intent": "Command", "slots": [{"name": "RawVoiceString", "type": "LITERAL"}]}
+//   will will pass raw strings to the voice module, if set at this.voice 
+
+
 
 
 var EventEmitter = require('events').EventEmitter;
@@ -31,8 +35,9 @@ function Alexa(data) {
   this.devices = data.devices;
   this.sessions = {};
   var options = {
-      key: fs.readFileSync(data.key || __dirname + "/key.pem"),
-      cert: fs.readFileSync(data.cert || __dirname + "/cert.pem"),
+      key:  data.key,
+      cert: data.cert,
+      ca: data.ca
   }
   this.secureServer = https.createServer(options, this.httpReq.bind(this)).listen(this.port);    
 };

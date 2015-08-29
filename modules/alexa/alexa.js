@@ -28,6 +28,7 @@ function Alexa(data) {
   this.testRes = data.ResponseTest;
   this.voice = data.voice;
   this.responseStrings = ["Test"];
+  this.devices = data.devices;
   this.sessions = {};
   var options = {
       key: fs.readFileSync(data.key || __dirname + "/key.pem"),
@@ -45,10 +46,16 @@ Alexa.prototype.httpReq = function(req, res) {
   req.on('end', function () {
     if (body.length) {
       body = JSON.parse(body);
-      var sessionId = body.session.sessionId;
-      var session = this.sessions[sessionId];
-      if (!session) session = this.sessions[sessionId] = new AlexaSession(sessionId, this);
-      session.handleReq(req, res, headers, body);
+
+      if (this.debug) console.log("Event:", body)
+      if (body.session) {
+        var sessionId = body.session.sessionId;
+        var session = this.sessions[sessionId];
+        if (!session) session = this.sessions[sessionId] = new AlexaSession(sessionId, this);
+        session.handleReq(req, res, headers, body);        
+      } else if (body.header) {
+        this.handleLightsReq(req, res, headers, body);  
+      }
     } else {
       res.writeHead(200);
       res.end("{}");
@@ -58,6 +65,65 @@ Alexa.prototype.httpReq = function(req, res) {
 
 Alexa.prototype.endSession = function(session) {
   delete this.sessions[session.sessionId];
+}
+
+//http://login.amazon.com/website
+Alexa.prototype.getDevices = function() {
+  var devices = this.devices; // devices can be an array or a function
+  if (Object.prototype.toString.call(devices) == '[object Function]') {
+    devices = devices();
+  }
+  return devices;
+}
+
+Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
+  var event = body; 
+  var namespace = event.header.namespace;
+  var name = event.header.name;
+  var response = null;
+  if (namespace === "Discovery" && name === "DiscoverAppliancesRequest") {
+    var deviceArray = this.getDevices();
+     response = {"header":{"namespace":"Discovery","name":"DiscoverAppliancesResponse","payloadVersion":"1"},
+        "payload":{"discoveredAppliances": deviceArray}};
+  }
+  if (namespace === "Control") {
+    if (name === "SwitchOnOffRequest") {
+      var action = event.payload.switchControlAction;
+      var appliance = event.payload.appliance;
+      var applianceId = appliance.applianceId;
+      if (this.debug) console.log("AlexaOnOff:", action, appliance);
+      if (action === "TURN_ON") {
+        this.emit("DeviceEvent", applianceId + ".On");
+      } else if (action === "TURN_OFF") {
+        this.emit("DeviceEvent", applianceId + ".Off");
+      }
+      response = {"header":{"namespace":"Control","name":"SwitchOnOffResponse","payloadVersion":"1"},"payload":{"success":true}};
+    } 
+    if (name === "AdjustNumericalSettingRequest") {
+      var type = event.payload.adjustmentType;
+      var value = event.payload.adjustmentValue;
+      var appliance = event.payload.appliance;
+      var applianceId = appliance.applianceId;
+      if (type === "ABSOLUTE") {
+        this.emit("DeviceEvent", applianceId + ".Set." + value, {amount:value});
+      } else if (type === "RELATIVE") {
+        this.emit("DeviceEvent", applianceId + ".Adjust." + value, {amount:value});
+      }
+      if (this.debug) console.log("AlexaNumerical:", applianceId, type, value);
+      response = {"header":{"namespace":"Control","name":"AdjustNumericalSettingResponse","payloadVersion":"1"},"payload":{"success":true}}
+    }
+  }
+  if (namespace === "System" && name === "HealthCheckRequest") {
+    response = {"header":{"namespace":"System","name":"HealthCheckResponse","payloadVersion":"1"},"payload":{"isHealthy":true,"description":"The system is currently healthy"}};
+  }
+
+  var responseJson = JSON.stringify(response);
+
+  if (this.debug) console.log("response", responseJson)
+  res.writeHead(200, {
+    'Content-Length': responseJson.length,
+    'Content-Type': 'text/plain' });
+  res.end(responseJson);
 }
 
 // Alexa sessions handle most of the logic, usually one or more requests
@@ -90,7 +156,7 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
     }
     params.device = "AmazonEcho"; // Hardcoded for now. There are no unique ids per device
     params.speechCallback = this.speechCallback.bind(this);
-    console.log("params.RawVoiceString", params.RawVoiceString)
+    if (this.alexa.debug) console.log("params.RawVoiceString", params.RawVoiceString)
     if (params.RawVoiceString) {
       params.string = params.RawVoiceString;
       this.alexa.voice.handleVoiceInput(params);

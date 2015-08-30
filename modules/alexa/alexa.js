@@ -31,7 +31,7 @@ function Alexa(data) {
   this.testBody = data.IntentRequestTest;
   this.testRes = data.ResponseTest;
   this.voice = data.voice;
-  this.responseStrings = ["Test"];
+  this.responseStrings = [];
   this.devices = data.devices;
   this.sessions = {};
   var options = {

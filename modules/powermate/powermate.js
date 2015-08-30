@@ -3,13 +3,15 @@
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 var url = require('url');
-var http = require('http');
+var io = require('socket.io');
 
 function PowerMate(data) {
   this.port = data.port || 9003
   this.devices = data.devices;
   this.knobs = {};
-  this.server = http.createServer(this.httpReq.bind(this)).listen(this.port);
+  this.socket = require('socket.io')(this.port)
+  this.socket.on('connection', this.handleSocketConnection.bind(this));
+  this.socket.on('error', this.handleSocketError.bind(this));
 };
 util.inherits(PowerMate, EventEmitter);
 
@@ -24,37 +26,42 @@ PowerMate.prototype.getKnob = function(id) {
 	return knob;
 } 
 
-PowerMate.prototype.httpReq = function(req, res) { 
-  res.writeHead(200);
-  res.end();
-  var info = url.parse(req.url, true);
-  var query = info.query;
-  this.getKnob(query.device).handleEvent(query.event, query.value);
-}; 
+PowerMate.prototype.handleSocketConnection = function(socket) {
+  this.clients.push(socket);
+  socket.on('message', this.handleSocketMessage.bind(this));
+  socket.on('error', this.handleSocketError.bind(this));
+  socket.on('disconnect', this.handleSocketClose.bind(this, socket));
+  socket.on('hostname', function(hostname) {
+    console.log("hostname", hostname);
+    socket.hostname = hostname;
+  }.bind(this));
+  socket.on('knob-up', function() {
+    this.getKnob(socket.hostname).knobUp();
+    console.log("knob-up");
+  }.bind(this));
+  socket.on('knob-down', function() {
+    this.getKnob(socket.hostname).knobDown();
+    console.log("knob-down");
+  }.bind(this));
+  socket.on('knob-turn', function(delta) {
+    this.getKnob(socket.hostname).knobTurned(delta);
+    console.log("knob-turn", delta);
+  }.bind(this));
+
+};
+
+PowerMate.prototype.handleSocketError = function(socket) {
+  console.log("!  PM Web socket error", socket);
+};
+
+PowerMate.prototype.handleSocketClose = function(socket) {};
 
 
 // Knob functions
-
-
 function PowerMateKnob(id) {
   this.id = id;
 }
 util.inherits(PowerMateKnob, EventEmitter);
-
-
-PowerMateKnob.prototype.handleEvent = function(event, value) {
-  switch(event) {
-    case "KnobUp":
-      this.knobUp(value);
-      break;
-    case "KnobDown":
-      this.knobDown(value);
-      break;
-    case "KnobTurn":
-      this.knobTurned(value);
-      break;
-  }
-}
 
 PowerMateKnob.prototype.knobTurned = function(delta) {
  
@@ -107,8 +114,5 @@ PowerMateKnob.prototype.knobLongPressed = function() {
   this.held = true;
   this.emit("DeviceEvent", "KnobLongPressed", {context: this.context});
 }
-
-
-// PowerMate.prototype.exec = function(command, params) {};
 
 module.exports = PowerMate;

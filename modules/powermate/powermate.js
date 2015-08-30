@@ -12,6 +12,7 @@ function PowerMate(data) {
   this.socket = require('socket.io')(this.port)
   this.socket.on('connection', this.handleSocketConnection.bind(this));
   this.socket.on('error', this.handleSocketError.bind(this));
+  this.sendRawEvents = data.sendRawEvents;
 };
 util.inherits(PowerMate, EventEmitter);
 
@@ -27,8 +28,6 @@ PowerMate.prototype.getKnob = function(id) {
 } 
 
 PowerMate.prototype.handleSocketConnection = function(socket) {
-  this.clients.push(socket);
-  socket.on('message', this.handleSocketMessage.bind(this));
   socket.on('error', this.handleSocketError.bind(this));
   socket.on('disconnect', this.handleSocketClose.bind(this, socket));
   socket.on('hostname', function(hostname) {
@@ -37,17 +36,16 @@ PowerMate.prototype.handleSocketConnection = function(socket) {
   }.bind(this));
   socket.on('knob-up', function() {
     this.getKnob(socket.hostname).knobUp();
-    console.log("knob-up");
+    if (this.debug) console.log("knob-up");
   }.bind(this));
   socket.on('knob-down', function() {
     this.getKnob(socket.hostname).knobDown();
-    console.log("knob-down");
+    if (this.debug) console.log("knob-down");
   }.bind(this));
   socket.on('knob-turn', function(delta) {
     this.getKnob(socket.hostname).knobTurned(delta);
-    console.log("knob-turn", delta);
+    if (this.debug) console.log("knob-turn", delta);
   }.bind(this));
-
 };
 
 PowerMate.prototype.handleSocketError = function(socket) {
@@ -62,6 +60,9 @@ function PowerMateKnob(id) {
   this.id = id;
 }
 util.inherits(PowerMateKnob, EventEmitter);
+
+PowerMateKnob.DOUBLE_PRESS_DELAY = 200;
+
 
 PowerMateKnob.prototype.knobTurned = function(delta) {
  
@@ -85,29 +86,45 @@ PowerMateKnob.prototype.knobTurned = function(delta) {
 }
 
 PowerMateKnob.prototype.knobDown = function() {
+  if (this.sendRawEvents) this.emit("DeviceEvent", "KnobDown", {context: this.context});
+
   this.pressed = true;
   this.turned = false;
   this.held = false;
   this.flicked = false
   this.totalDelta = 0;
   this.totalDistance = 0;
-  this.holdTimeout = setTimeout(this.knobLongPressed.bind(this), 600);
-
-  this.emit("DeviceEvent", "KnobDown", {context: this.context});
+  
+  if (this.doubleTimeout) {
+    clearTimeout(this.doubleTimeout);
+    delete this.doubleTimeout;
+    this.knobDoublePressed();
+    this.held = true;
+  } else { // could do double-tap-hold, but that is a bit much.
+    this.holdTimeout = setTimeout(this.knobLongPressed.bind(this), 600);
+  }
 }
 
 PowerMateKnob.prototype.knobUp = function() {
+  if (this.sendRawEvents) this.emit("DeviceEvent", "KnobUp", {context: this.context});
   this.totalDelta = 0;
   this.totalDistance = 0;
   this.pressed = false;
   clearTimeout(this.holdTimeout);
 
-  if (!this.turned && !this.held) this.knobPressed();
-  this.emit("DeviceEvent", "KnobUp", {context: this.context});
+  if (!this.turned && !this.held) {
+    // send normal press after a delay
+    this.doubleTimeout = setTimeout(this.knobPressed.bind(this), PowerMateKnob.DOUBLE_PRESS_DELAY);
+  };
 }
 
 PowerMateKnob.prototype.knobPressed = function() {
   this.emit("DeviceEvent", "KnobPressed", {context: this.context});
+  delete this.doubleTimeout;
+}
+
+PowerMateKnob.prototype.knobDoublePressed = function() {
+  this.emit("DeviceEvent", "KnobDoublePressed", {context: this.context});
 }
 
 PowerMateKnob.prototype.knobLongPressed = function() {

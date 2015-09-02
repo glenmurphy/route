@@ -9,14 +9,14 @@ var url = require('url');
 function Web(data) {
   this.app = express();
 
+  // Override handlers and directories
+  for (var path in data.handlers) this.app.all(path, data.handlers[path]);
+  for (var path in data.dirs) this.app.use(path, express.static(data.dirs[path]));
+    
   // Redirect root requests
   if (data.rootRedirect) this.app.all('/', function (req, res) {
     res.redirect(data.rootRedirect);
   }.bind(this));
-
-  // Override handlers and directories
-  for (var path in data.handlers) this.app.all(path, data.handlers[path]);
-  for (var path in data.dirs) this.app.use(path, express.static(data.dirs[path]));
 
   this.app.use('/event', this.handleEventReq.bind(this));
   this.app.use('/state', this.handleStateReq.bind(this));

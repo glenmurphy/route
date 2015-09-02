@@ -68,6 +68,17 @@ Alexa.prototype.httpReq = function(req, res) {
   }.bind(this));
 }; 
 
+// Create a device with standard values defined
+Alexa.createDevice = function(id, name, description, details, isReachable) {
+ var device = {"manufacturerName": "n/a", "modelName": "n/a", "version": "1", "isReachable": true, "additionalApplianceDetails": {}};
+  device.friendlyName = name;
+  device.friendlyDescription = description;
+  device.applianceId = id;
+  device.additionalApplianceDetails = details;
+  device.isReachable = typeof isReachable === 'undefined' ? true : isReachable;
+  return device;
+}
+
 Alexa.prototype.endSession = function(session) {
   delete this.sessions[session.sessionId];
 }

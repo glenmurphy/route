@@ -107,11 +107,12 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
       var action = event.payload.switchControlAction;
       var appliance = event.payload.appliance;
       var applianceId = appliance.applianceId.replace("#", ".");
+      var params = appliance.additionalApplianceDetails;
       if (this.debug) console.log("AlexaOnOff:", action, appliance);
       if (action === "TURN_ON") {
-        this.emit("DeviceEvent", applianceId + ".On");
+        this.emit("DeviceEvent", applianceId + ".On", params);
       } else if (action === "TURN_OFF") {
-        this.emit("DeviceEvent", applianceId + ".Off");
+        this.emit("DeviceEvent", applianceId + ".Off", params);
       }
       response = {"header":{"namespace":"Control","name":"SwitchOnOffResponse","payloadVersion":"1"},"payload":{"success":true}};
     } 
@@ -120,10 +121,12 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
       var value = event.payload.adjustmentValue;
       var appliance = event.payload.appliance;
       var applianceId = appliance.applianceId.replace("#", ".");
+      var params = appliance.additionalApplianceDetails;
+      params.value = value;
       if (type === "ABSOLUTE") {
-        this.emit("DeviceEvent", applianceId + ".Set." + value, {amount:value});
+        this.emit("DeviceEvent", applianceId + ".Set." + value, params);
       } else if (type === "RELATIVE") {
-        this.emit("DeviceEvent", applianceId + ".Adjust." + value, {amount:value});
+        this.emit("DeviceEvent", applianceId + ".Adjust." + value, params);
       }
       if (this.debug) console.log("AlexaNumerical:", applianceId, type, value);
       response = {"header":{"namespace":"Control","name":"AdjustNumericalSettingResponse","payloadVersion":"1"},"payload":{"success":true}}

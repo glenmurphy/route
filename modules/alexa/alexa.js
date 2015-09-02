@@ -73,9 +73,9 @@ Alexa.createDevice = function(id, name, description, details, isReachable) {
  var device = {"manufacturerName": "n/a", "modelName": "n/a", "version": "1", "isReachable": true, "additionalApplianceDetails": {}};
   device.friendlyName = name;
   device.friendlyDescription = description;
-  device.applianceId = id;
-  device.additionalApplianceDetails = details;
-  device.isReachable = typeof isReachable === 'undefined' ? true : isReachable;
+  device.applianceId = id.replace(".", "#"); // Periods are not allowed
+  if (details) device.additionalApplianceDetails = details;
+  if (typeof isReachable !== 'undefined') device.isReachable = isReachable;
   return device;
 }
 
@@ -106,7 +106,7 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
     if (name === "SwitchOnOffRequest") {
       var action = event.payload.switchControlAction;
       var appliance = event.payload.appliance;
-      var applianceId = appliance.applianceId;
+      var applianceId = appliance.applianceId.replace("#", ".");
       if (this.debug) console.log("AlexaOnOff:", action, appliance);
       if (action === "TURN_ON") {
         this.emit("DeviceEvent", applianceId + ".On");
@@ -119,7 +119,7 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
       var type = event.payload.adjustmentType;
       var value = event.payload.adjustmentValue;
       var appliance = event.payload.appliance;
-      var applianceId = appliance.applianceId;
+      var applianceId = appliance.applianceId.replace("#", ".");
       if (type === "ABSOLUTE") {
         this.emit("DeviceEvent", applianceId + ".Set." + value, {amount:value});
       } else if (type === "RELATIVE") {

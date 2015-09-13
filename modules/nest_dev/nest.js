@@ -28,9 +28,8 @@ Nest.prototype.statusUpdated = function(data) {
   for (var deviceId in data.device) {
     if (data.device.hasOwnProperty(deviceId)) {
       var device = data.shared[deviceId];
-      //console.log(deviceId, device.name, device);
-      var shortName = device.name.replace(/ /g,"");
-
+      // console.log(deviceId, device.name, device);
+      var shortName = device.name.replace(/ /g,"") || deviceId;
       this.ids[deviceId] = shortName;
       this.names[shortName] = deviceId;
       this.handleDeviceData(deviceId, device);
@@ -44,7 +43,7 @@ Nest.prototype.handleDeviceData = function(deviceId, data) {
   if (deviceId) {
     // console.log('SubscribedDevice: ' + deviceId);
     // if (this.debug) console.log(JSON.stringify(data));
-    var shortName = data.name.replace(/ /g,"");
+    var shortName = data.name.replace(/ /g,"") || deviceId;
     var temperature = nest.ctof(data.current_temperature);
     data.current_temperature_f = Math.round(temperature);
     var target_temperature = nest.ctof(data.target_temperature);

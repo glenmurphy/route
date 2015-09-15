@@ -68,6 +68,11 @@ Nest.prototype.setTemperature = function(thermostat, temperature) {
   nest.setTemperature(deviceId, nest.ftoc(temperature));
 }
 
+Nest.prototype.setTargetTemperatureType = function(thermostat, type) {
+  var deviceId = this.names[thermostat];
+  console.log(thermostat, type);
+  nest.setTargetTemperatureType(deviceId, type);
+}
 
 Nest.prototype.exec = function(command, data) {
   this.log(command);

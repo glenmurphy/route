@@ -92,7 +92,7 @@ Sonos.prototype.createComponent =  function (host, name) {
   new SonosComponent(info, function(component, error) {
     if (!error) {
       var realName = name || component.realName;
-      this.addComponent(component, name);
+      this.addComponent(component, realName);
   
       if (!name)
         console.log("*  Discovered Sonos:", '"' + realName + '"', ":", '"' + host + '",' );
@@ -449,8 +449,13 @@ SonosComponent.prototype.becomeStandalone = function (callback) {
   this.callAction("AVTransport", "BecomeCoordinatorOfStandaloneGroup", {InstanceID : 0}, this.deviceid, callback);
 };
 
+SonosComponent.prototype.joinGroup = function (component, callback) {
+  var groupId = component.coordinator || component.uid;
+  this.setCurrentURI("x-rincon:" + component.uid, undefined, callback);
+};
+
 SonosComponent.prototype.addGroupMember = function (newComponent, callback) {
-  newComponent.setCurrentURI("x-rincon:" + this.uid, undefined, callback);
+  newComponent.joinGroup(this, callback);
 };
 
 SonosComponent.prototype.removeGroupMember = function (newComponent, callback) {
@@ -737,7 +742,7 @@ SonosComponent.prototype.updateTrackInfo = function(details) {
 
 
 SonosComponent.prototype.sendTrackInfo = function(details) {
-
+  this.trackInfo = details;
   this.emit("DeviceEvent", this.name + ".TrackInfo", details, {initializing:this.initializing});
 
   var state = {};
@@ -777,6 +782,7 @@ SonosComponent.prototype.sendTrackInfo = function(details) {
 };
 
 SonosComponent.prototype.updateNextTrackInfo = function(details) {
+  this.nextTrackInfo = details;
   this.emit("DeviceEvent", this.name + ".NextTrackInfo", details, {initializing:this.initializing});
 
   var state = {};

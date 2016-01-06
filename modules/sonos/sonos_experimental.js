@@ -56,7 +56,7 @@ function Sonos(data) {
     this.discoveredIps.push(host);
   }
 
-  // if (!data.components) 
+  if (!data.components) 
     this.scanforComponents();
 
 }

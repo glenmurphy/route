@@ -10,6 +10,9 @@ function Web(data) {
   this.dir = data.dir;
   this.server = http.createServer(this.handleReq.bind(this)).listen(data.port ? data.port : 8000);
 
+  this.username = data.username;
+  this.password = data.password;
+
   this.socket = io.listen(this.server, { log: false });
   this.socket.on('connection', this.handleSocketConnection.bind(this));
   this.socket.on('error', this.handleSocketError.bind(this));
@@ -32,7 +35,7 @@ Web.MIMETYPES = {
 };
 
 Web.prototype.exec = function(command, details) {
-  
+
 };
 
 Web.prototype.initStateObserver = function(route, state) {
@@ -47,10 +50,28 @@ Web.prototype.handleStateChanged = function(state, data) {
 };
 
 Web.prototype.handleReq = function(req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
   var query = url.parse(req.url);
   var page = query.pathname.split("/");
 
+  var header = req.headers['authorization']||'';        // get the header
+  var token = header.split(/\s+/).pop()||'';            // and the encoded auth token
+  var auth = new Buffer(token, 'base64').toString();    // convert from base64
+  var parts = auth.split(/:/);                          // split on colon
+  var username = parts[0];
+  var password = parts[1];
+
+  if (this.username && (this.username != username || this.password != password)) {
+    console.log("Web: failed login");
+    res.writeHead(401, {
+      'WWW-Authenticate' : 'Basic realm="login"'
+    });
+
+    //res.setHeader('WWW-Authenticate', 'Basic realm="need login"');
+    res.end('Authorization required');
+    return;
+  }
+
+  res.writeHead(200, {'Content-Type': 'text/plain'});
   // Emit requests to /event/pie as 'Web.pie'
   if (page.length > 2 && page[1] == 'event' && page[2] != "") {
     this.emit("DeviceEvent", page[2]);

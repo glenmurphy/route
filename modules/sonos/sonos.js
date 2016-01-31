@@ -16,8 +16,8 @@ function Sonos(data) {
   for (var dev in ifaces) {
     var alias = 0;
     for (var i in ifaces[dev]) {
-      if (ifaces[dev][i].family == 'IPv4' && 
-          ifaces[dev][i].address && 
+      if (ifaces[dev][i].family == 'IPv4' &&
+          ifaces[dev][i].address &&
           ifaces[dev][i].address != "127.0.0.1")
         ips.push(ifaces[dev][i].address);
     }
@@ -161,7 +161,10 @@ Sonos.prototype.subscribeEvent = function(host, service, description) {
 };
 
 Sonos.prototype.componentForIP = function(ip) {
-  var match =  Object.keys(this.components).filter(function(key) {return this.components[key].host === ip}.bind(this)).shift();
+  if (ip.indexOf("::ffff:") == 0) {
+    ip = ip.substr("::ffff:".length);
+  }
+  var match = Object.keys(this.components).filter(function(key) {return this.components[key].host === ip}.bind(this)).shift();
   return this.components[match];
 };
 
@@ -181,7 +184,7 @@ Sonos.prototype.metadataForInfo = function (info) {
 
 
 /**
- * 
+ *
  */
 function SonosComponent(data) {
   this.name = data.name;
@@ -221,7 +224,7 @@ SonosComponent.prototype.callAction = function(service, action, arguments, devic
   this.sendCommand(endpoint, xmlns + '#' + action, body, callback);
 };
 
-SonosComponent.prototype.sendCommand = function(endpoint, action, body, callback) { 
+SonosComponent.prototype.sendCommand = function(endpoint, action, body, callback) {
   var data = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>' + body + '</s:Body></s:Envelope>';
   if (this.debug) console.log("> Sonos:", data);
   var request = http.request({
@@ -245,7 +248,7 @@ SonosComponent.prototype.sendCommand = function(endpoint, action, body, callback
       }
     });
   });
-  
+
   request.on('error', function() {});
   request.end(data);
 };
@@ -454,7 +457,7 @@ SonosComponent.prototype.parseMetadata = function (metadata, callback) {
     metaInfo.artist = streamcontent.artist || xmlValue(meta, "dc:creator");
     metaInfo.album = xmlValue(meta, "upnp:album");
     if (xmlValue(meta, "upnp:albumArtURI")) metaInfo.artwork = url.resolve("http://" + this.host + ":" + Sonos.PORT, xmlValue(meta, "upnp:albumArtURI"));
-    
+
     callback(metaInfo);
   }.bind(this));
 };
@@ -537,7 +540,7 @@ SonosComponent.prototype.parseNotification = function (data) {
     }.bind(this));
   } catch (e) {
     console.log("Sonos: parse error" + e, e.stack);
-  } 
+  }
 };
 
 function xmlValue(element, key) {

@@ -8,6 +8,9 @@ function LutronRadioRA2(data) {
   this.username = data.username || "lutron";
   this.password = data.password || "integration";
 
+  if (data.refreshInterval)
+    setInterval(this.refreshStatus.bind(this), data.refreshInterval);
+
   // Map of device names to ids.
   this.devices = data.devices ? data.devices : {};
   
@@ -120,6 +123,15 @@ LutronRadioRA2.prototype.parseData = function(data) {
   }
 }
 
+LutronRadioRA2.prototype.refreshStatus = function() {
+  console.log("Lutron RadioRA2 Refreshing Status");
+  // Get the status of all the devices we know about.
+  for (var name in this.devices) {
+    var id = this.devices[name].id;
+    this.send("?OUTPUT," + id);
+  }
+};
+
 // Connection
 LutronRadioRA2.prototype.connect = function() {
   this.reconnecting_ = false;
@@ -143,11 +155,7 @@ LutronRadioRA2.prototype.reconnect = function() {
 LutronRadioRA2.prototype.handleConnected = function() {
   console.log("Lutron RadioRA2 Connected");
 
-  // Get the status of all the devices we know about.
-  for (var name in this.devices) {
-    var id = this.devices[name].id;
-    this.send("?OUTPUT," + id);
-  }
+  this.refreshStatus();
 };
 
 LutronRadioRA2.prototype.handleData = function(data) {

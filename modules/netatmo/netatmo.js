@@ -10,7 +10,7 @@ function Netatmo(data) {
   this.connection.on('error', function(err) { console.log("!  Netatmo error", err);})
   this.connection.setConfig( data.clientId , data.clientSecret , data.userName , data.password);
   this.connection.getToken(function(err) {
-    if (err) return console.log('getToken: ' + err.message);
+    if (err) return console.log('! Netatmo error: getToken: ' + err.message);
     if (this.debug) console.log("*  Netatmo logged in");
     // good to go!
     this.check()
@@ -20,13 +20,13 @@ util.inherits(Netatmo, EventEmitter);
 
 Netatmo.prototype.check = function() {
   this.connection.getUser(function(err, results) {
-    if (err) return console.log('getUser: ' + err.message);
+    if (err) return console.log('! Netatmo error: getUser: ' + err.message);
     if (results.status !== 'ok')  { console.log('getUser not ok'); return console.log(results); }
     if (this.debug) console.log("D  Netatmo user:", results.body);
     this.devices = results.body.devices;
   }.bind(this));
   this.connection.getDevices(function(err, results) {
-    if (err) return console.log('getDevices: ' + err.message);
+    if (err) return console.log('! Netatmo error: getDevices: ' + err.message);
     if (results.status !== 'ok')  { console.log('getDevices not ok'); return console.log(results); }
     if (this.debug) console.log("D  Netatmo devices:", results.body);
     this.devices = results.body.devices;
@@ -50,8 +50,11 @@ Netatmo.prototype.getMeasurements = function() {
       };
     var name = device.module_name;
     this.connection.getMeasurement(params, function(device, err, results) {
-      if (err) return console.log('getMeasurement: ' + err.message);
-      if (results.status !== 'ok')  { console.log('getMeasurement not ok', results); return console.log(results); }
+      if (err) return console.log('! Netatmo error: getMeasurement: ' + err.message);
+      if (results.status !== 'ok')  {
+        console.log('! NETATMO ERROR:', results);
+        return;
+      }
       var measurements = results.body[0].value[0];
       var status = {}
       for (var i = 0; i < measurements.length; i++) {

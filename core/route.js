@@ -73,6 +73,9 @@ Route.prototype.handleEvent = function(deviceName, event, data, flags) {
       var commands = this.eventMap[matchingEvents[i]];
       this.execCommands(commands, data, eventName);
     }
+
+    // Send one final newline after events are executed
+    console.log("");
   }
 
   // Let any state observers know if anything changed.

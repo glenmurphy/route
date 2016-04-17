@@ -75,6 +75,7 @@ Route.prototype.handleEvent = function(deviceName, event, data, flags) {
     }
 
     // Send one final newline after events are executed
+    // so that their log messages are separated from unrelated ones
     console.log("");
   }
 

@@ -6,6 +6,7 @@ function Netatmo(data) {
   this.host = data.host;
   this.debug = data.debug;
   this.connection = new netatmo.Netatmo();
+  this.connection.logger.info = function(msg, props) { console.log("*  Netatmo:", msg); if (props) console.log(props);  }
   this.connection.on('error', function(err) { console.log("!  Netatmo error", err);})
   this.connection.setConfig( data.clientId , data.clientSecret , data.userName , data.password);
   this.connection.getToken(function(err) {

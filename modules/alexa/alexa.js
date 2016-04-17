@@ -5,7 +5,7 @@
 
 // To use:
 // * Forward port 443 to the port defined below.
-// * Generate a SSL certificate 
+// * Generate a SSL certificate https://goo.gl/A6vi9I
 // * Create a skill at https://developer.amazon.com/edw/home.html#/
 // * Define a schema like:
 //   {"intents": [{"intent": "SearchMusic","slots": [{"name": "toValue", "type": "LITERAL"}]}]}
@@ -14,9 +14,6 @@
 //   This will trigger as "Alexa.SearchMusic" with parameters {toValue:"enya"}
 // * Alternatively, {"intent": "Command", "slots": [{"name": "RawVoiceString", "type": "LITERAL"}]}
 //   will will pass raw strings to the voice module, if set at this.voice 
-
-
-
 
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
@@ -34,6 +31,8 @@ function Alexa(data) {
   this.responseStrings = [];
   this.devices = data.devices;
   this.sessions = {};
+  this.waitForContext = data.waitForContext; // Wait briefly for a context to be set 
+  this.context = undefined;
   var options = {
       key:  data.key,
       cert: data.cert,
@@ -67,6 +66,21 @@ Alexa.prototype.httpReq = function(req, res) {
     }
   }.bind(this));
 }; 
+
+Alexa.prototype.setContext = function(context) {
+  clearTimeout(this.contextTimeout);
+  this.contextTimeout = setTimeout(this.clearContext.bind(this), 3000);
+  this.context = context
+  this.emit("context")
+  console.log("* ECHO CONTEXT: ", context, new Date())
+}
+
+Alexa.prototype.clearContext = function(context) {
+  this.context = undefined
+  console.log("* CLEAR CONTEXT: ", context, new Date())
+
+}
+
 
 // Create a device with standard values defined
 Alexa.createDevice = function(id, name, description, details, isReachable) {
@@ -108,6 +122,9 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
       var appliance = event.payload.appliance;
       var applianceId = appliance.applianceId.replace("#", ".");
       var params = appliance.additionalApplianceDetails;
+      if (this.context) params.context = this.context
+
+      console.log("Alexa Context!", this.context)
       if (this.debug) console.log("AlexaOnOff:", action, appliance);
       if (action === "TURN_ON") {
         this.emit("DeviceEvent", applianceId + ".On", params);
@@ -173,15 +190,33 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
        var obj = slots[key];
        params[obj.name] = obj.value;
     }
-    params.device = "AmazonEcho"; // Hardcoded for now. There are no unique ids per device
+    params.device = this.alexa.context; // Hardcoded for now. There are no unique ids per device
+    params.context = this.alexa.context;
     params.speechCallback = this.speechCallback.bind(this);
     if (this.alexa.debug) console.log("params.RawVoiceString", params.RawVoiceString)
-    if (params.RawVoiceString) {
-      params.string = params.RawVoiceString;
-      this.alexa.voice.handleVoiceInput(params);
+
+    var startTime = new Date()
+    var sendTheEvent = function() {
+      if (new Date() - startTime > 2000) return; // it took too long, ignore this call
+      params.device = this.alexa.context;
+      params.context = this.alexa.context;
+      console.log("*  Sending Alexa Event", new Date() - startTime)
+      if (params.RawVoiceString) {
+        params.string = params.RawVoiceString;
+        this.alexa.voice.handleVoiceInput(params);
+      } else {
+        this.alexa.emit("DeviceEvent", eventType, params);
+      } 
+    }.bind(this)
+
+    if (!params.context && this.alexa.waitForContext) {
+      console.log("* Waiting for Alexa Context: ", this.alexa.context, new Date())
+      // Wait for the context to be set before calling this
+      this.alexa.once('context', sendTheEvent);     
     } else {
-      this.alexa.emit("DeviceEvent", eventType, params);
+      sendTheEvent()
     }
+
   } else if (type == "LaunchRequest") {
       this.alexa.emit("DeviceEvent", "LaunchRequest", {});
   } else if (type == "SessionEndedRequest") {
@@ -189,6 +224,8 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
   }
   this.responseTimeout = setTimeout(this.sendResponse.bind(this), 3000);
 };
+
+
 
 AlexaSession.prototype.speechCallback = function(string, complete) {
   if (this.responseStrings) this.responseStrings.push(string);

@@ -41,6 +41,10 @@ Netatmo.prototype.getMeasurements = function() {
   var allDevices = this.devices.concat(this.modules);
   for (var i in allDevices) {
     var device = allDevices[i];
+
+    if (device.type == "NAModule3") { // Ignore rain modules for now
+      continue;
+    }
     var params = {
       device_id : this.deviceId,
       module_id : device._id,
@@ -50,9 +54,9 @@ Netatmo.prototype.getMeasurements = function() {
       };
     var name = device.module_name;
     this.connection.getMeasurement(params, function(device, err, results) {
-      if (err) return console.log('! Netatmo error: getMeasurement: ' + err.message);
+      if (err) return console.log('! Netatmo error: getMeasurement: ', name,  err.message);
       if (results.status !== 'ok')  {
-        console.log('! NETATMO ERROR:', results);
+        console.log('! NETATMO ERROR:', name, results);
         return;
       }
       var measurements = results.body[0].value[0];

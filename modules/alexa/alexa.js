@@ -31,6 +31,7 @@ function Alexa(data) {
   this.responseStrings = [];
   this.devices = data.devices;
   this.sessions = {};
+  this.applications = data.applications || {}
   this.waitForContext = data.waitForContext; // Wait briefly for a context to be set 
   this.context = undefined;
   var options = {
@@ -67,9 +68,28 @@ Alexa.prototype.httpReq = function(req, res) {
   }.bind(this));
 }; 
 
+Alexa.CONTEXT_RESET = 3000;
+Alexa.CONTEXT_TIMEOUT = 2000;
+Alexa.prototype.getContext = function(callback) {
+  var startTime = new Date()
+  if (this.context || !this.waitForContext) {
+    callback(this.context);
+  } else {
+    this.once('context', function() {
+      if (new Date() - startTime > Alexa.CONTEXT_TIMEOUT) {
+        console.log("!  Alexa: could not determine context")
+        callback(undefined)
+      } else {
+        console.log("*  Alexa: using context", this.context)
+        callback(this.context)
+      }
+   }.bind(this));     
+  }
+}
+
 Alexa.prototype.setContext = function(context) {
   clearTimeout(this.contextTimeout);
-  this.contextTimeout = setTimeout(this.clearContext.bind(this), 3000);
+  this.contextTimeout = setTimeout(this.clearContext.bind(this), Alexa.CONTEXT_RESET);
   this.context = context
   this.emit("context")
   console.log("* ECHO CONTEXT: ", context, new Date())
@@ -139,6 +159,7 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
       var appliance = event.payload.appliance;
       var applianceId = appliance.applianceId.replace("#", ".");
       var params = appliance.additionalApplianceDetails;
+      if (this.context) params.context = this.context
       params.value = value;
       if (type === "ABSOLUTE") {
         this.emit("DeviceEvent", applianceId + ".Set." + value, params);
@@ -181,54 +202,51 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
   this.responseStrings = [];
   var type = body.request.type;
 
-  if (type == "IntentRequest") {
-    var eventType = body.request.intent.name;
-    var slots = body.request.intent.slots;
+  var params = {}
+  params.speechCallback = this.speechCallback.bind(this);
 
-    var params = {}
+  var applicationId = body.session.application.applicationId;
+  var applicationName = undefined;
+  if (this.alexa.applications) {
+    applicationName = this.alexa.applications[applicationId]
+  }
+
+  var eventType
+  if (type == "IntentRequest") {
+    eventType = body.request.intent.name;
+    var slots = body.request.intent.slots;
     for (var key in slots) {
        var obj = slots[key];
        params[obj.name] = obj.value;
     }
-    params.device = this.alexa.context; // Hardcoded for now. There are no unique ids per device
-    params.context = this.alexa.context;
-    params.speechCallback = this.speechCallback.bind(this);
-    if (this.alexa.debug) console.log("params.RawVoiceString", params.RawVoiceString)
+  } else if (type == "LaunchRequest") {
+    eventType = applicationName + ".LaunchRequest";
+  } else if (type == "SessionEndedRequest") {
+    this.alexa.endSession(this);
+  }
 
-    var startTime = new Date()
-    var sendTheEvent = function() {
-      if (new Date() - startTime > 2000) return; // it took too long, ignore this call
-      params.device = this.alexa.context;
-      params.context = this.alexa.context;
-      console.log("*  Sending Alexa Event", new Date() - startTime)
+  if (eventType) {
+    this.alexa.getContext(function(context) {
+      if (context) {
+        params.device = context;
+        params.context = context;
+      }
       if (params.RawVoiceString) {
         params.string = params.RawVoiceString;
         this.alexa.voice.handleVoiceInput(params);
       } else {
         this.alexa.emit("DeviceEvent", eventType, params);
       } 
-    }.bind(this)
-
-    if (!params.context && this.alexa.waitForContext) {
-      console.log("* Waiting for Alexa Context: ", this.alexa.context, new Date())
-      // Wait for the context to be set before calling this
-      this.alexa.once('context', sendTheEvent);     
-    } else {
-      sendTheEvent()
-    }
-
-  } else if (type == "LaunchRequest") {
-      this.alexa.emit("DeviceEvent", "LaunchRequest", {});
-  } else if (type == "SessionEndedRequest") {
-    this.alexa.endSession(this);
+    }.bind(this));
   }
+
   this.responseTimeout = setTimeout(this.sendResponse.bind(this), 3000);
 };
 
 
 
 AlexaSession.prototype.speechCallback = function(string, complete) {
-  if (this.responseStrings) this.responseStrings.push(string);
+  if (this.responseStrings && string) this.responseStrings.push(string);
   if (complete) this.sendResponse();
 }
 
@@ -236,7 +254,8 @@ AlexaSession.prototype.sendResponse = function() {
   clearTimeout(this.responseTimeout);
   var responseJson = {}
   if (this.testRes) responseJson = this.testRes;
-  this.sendResponseJson(true, this.responseStrings.join("\n"));
+  var responses = this.responseStrings || []
+  this.sendResponseJson(true, responses.join("\n"));
   this.responseStrings = null;
 }
 
@@ -250,6 +269,10 @@ AlexaSession.prototype.sendResponseJson = function(shouldEndSession, speech, rep
   if (this.alexa.debug) console.log("Alexa response:", responseJson);
 
   responseJson = JSON.stringify(responseJson);
+  if (!this.res) {
+    "!  Alexa: No response object"
+    return;
+  }
   this.res.writeHead(200, {
     'Content-Length': responseJson.length,
     'Content-Type': 'text/plain' });

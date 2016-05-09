@@ -91,11 +91,13 @@ Sonos.prototype.createComponent =  function (host, name) {
   var info = {host : host, system : this, debug: this.debug};
   new SonosComponent(info, function(component, error) {
     if (!error) {
-      var realName = name || component.realName;
-      this.addComponent(component, realName);
+      var id = name || component.realName;
+      id = id.replace(" ","") // remove spaces for the ID version of the name
+      component.name = id;
+      this.addComponent(component, id);
   
-      if (!name)
-        console.log("*  Discovered Sonos:", '"' + realName + '"', ":", '"' + host + '",' );
+      if (id)
+        console.log("*  Discovered Sonos:", '"' + id + '"', ":", '"' + host + '",' );
 
     } else {
       console.log("Could not add component:", host, error);
@@ -318,7 +320,7 @@ SonosComponent.prototype.getUID = function(initCallback) {
     res.on('data', function(data) {
       var parser = new xml2js.Parser();
       parser.parseString(data, function (err, result) {
-        this.name = this.realName = result.ZPSupportInfo.ZPInfo[0].ZoneName[0];
+        this.realName = result.ZPSupportInfo.ZPInfo[0].ZoneName[0];
         this.uid = result.ZPSupportInfo.ZPInfo[0].LocalUID[0];
         if (initCallback) initCallback(this, null);
       }.bind(this));

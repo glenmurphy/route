@@ -1,21 +1,14 @@
 //This is a function for use on AWS Lambda to bridge lighting.
-//
-// You also need to submit a request per https://developer.amazon.com/public/binaries/content/assets/html/alexa-lighting-api.html
 
-// Skill adapter display name
-// Route.io
+// Create a home skill
+// Create a lambda function (content below) 
+// Information: https://developer.amazon.com/public/solutions/alexa/alexa-skills-kit/docs/steps-to-create-a-smart-home-skill
 
-// Skill adapter description
-// Control route.io devices
+// Setup login with amazon: https://developer.amazon.com/lwa/sp/overview.html
+// You may have to create one with a valid return URL:
+// something like https://pitangui.amazon.com/api/skill/link/M2NVWMSP5HFVG1
 
-// AWS Lambda function name
-// (something like arn:aws:lambda:us-east-1:XXXXXXXXXX:function:automatonBridge)
-
-// OAuth Client ID
-// amzn1.application-oa2-client.a119ff41c4074715ae3c7fabb7d8295a
-
-// OAuth Client Secret
-// 27672e57489a523f1d8c4b1c2ff918e1cc96f1a5452f2679d32dadab2c368eb2
+// Add the test skill at: http://alexa.amazon.com/spa/index.html#skills/smartHome
 
 // OAuth Scope
 // profile
@@ -28,8 +21,6 @@
 
 // Amazon Customer ID
 // (get from https://amazon.com/profile (id will be appened))
-
-
 
 exports.handler = function(event, context) {
     var eventJson = JSON.stringify(event);

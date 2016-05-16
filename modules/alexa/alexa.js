@@ -107,6 +107,7 @@ Alexa.createDevice = function(id, name, description, details, isReachable) {
  var device = {"manufacturerName": "n/a", "modelName": "n/a", "version": "1", "isReachable": true, "additionalApplianceDetails": {}};
   device.friendlyName = name;
   device.friendlyDescription = description;
+  device.actions = ["setPercentage", "incrementPercentage", "decrementPercentage", "turnOff", "turnOn"]
   device.applianceId = id.replace(".", "#"); // Periods are not allowed
   if (details) device.additionalApplianceDetails = details;
   if (typeof isReachable !== 'undefined') device.isReachable = isReachable;
@@ -131,47 +132,53 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
   var namespace = event.header.namespace;
   var name = event.header.name;
   var response = null;
-  if (namespace === "Discovery" && name === "DiscoverAppliancesRequest") {
+  if (namespace === "Alexa.ConnectedHome.Discovery" && name === "DiscoverAppliancesRequest") {
     var deviceArray = this.getDevices();
-     response = {"header":{"namespace":"Discovery","name":"DiscoverAppliancesResponse","payloadVersion":"1"},
+     response = {"header":{"namespace":"Alexa.ConnectedHome.Discovery","name":"DiscoverAppliancesResponse","payloadVersion":"2"},
         "payload":{"discoveredAppliances": deviceArray}};
   }
-  if (namespace === "Control") {
-    if (name === "SwitchOnOffRequest") {
-      var action = event.payload.switchControlAction;
+
+ if (namespace === "Alexa.ConnectedHome.System" && name === "HealthCheckRequest") {
+    response = {"header":{"namespace":"System","name":"HealthCheckResponse","payloadVersion":"2"},"payload":{"isHealthy":true,"description":"The system is currently healthy"}};
+  } else if (namespace === "Alexa.ConnectedHome.Control") {
       var appliance = event.payload.appliance;
       var applianceId = appliance.applianceId.replace("#", ".");
       var params = appliance.additionalApplianceDetails;
       if (this.context) params.context = this.context
 
-      console.log("Alexa Context!", this.context)
-      if (this.debug) console.log("AlexaOnOff:", action, appliance);
-      if (action === "TURN_ON") {
-        this.emit("DeviceEvent", applianceId + ".On", params);
-      } else if (action === "TURN_OFF") {
-        this.emit("DeviceEvent", applianceId + ".Off", params);
+      var confirmName = undefined
+      switch (name) {
+        case "TurnOnRequest":
+          this.emit("DeviceEvent", applianceId + ".On", params);
+          confirmName = "TurnOnConfirmation";
+          break;
+        case "TurnOffRequest":
+          this.emit("DeviceEvent", applianceId + ".Off", params);
+          confirmName = "TurnOffConfirmation";
+          break;
+        case "SetPercentageRequest":
+          var value = event.payload.percentageState
+          this.emit("DeviceEvent", applianceId + ".Set." + value, params);
+          confirmName = "SetPercentageConfirmation";
+          break;
+        case "IncrementPercentageRequest": 
+          var value = event.payload.deltaPercentage.value
+          this.emit("DeviceEvent", applianceId + ".Adjust." + value, params);
+          confirmName = "IncrementPercentageConfirmation";
+          break;
+        case "DecrementPercentageRequest": 
+          var value = -event.payload.deltaPercentage.value
+          this.emit("DeviceEvent", applianceId + ".Adjust." + value, params);
+          confirmName = "DecrementPercentageConfirmation";
       }
-      response = {"header":{"namespace":"Control","name":"SwitchOnOffResponse","payloadVersion":"1"},"payload":{"success":true}};
-    } 
-    if (name === "AdjustNumericalSettingRequest") {
-      var type = event.payload.adjustmentType;
-      var value = event.payload.adjustmentValue;
-      var appliance = event.payload.appliance;
-      var applianceId = appliance.applianceId.replace("#", ".");
-      var params = appliance.additionalApplianceDetails;
-      if (this.context) params.context = this.context
-      params.value = value;
-      if (type === "ABSOLUTE") {
-        this.emit("DeviceEvent", applianceId + ".Set." + value, params);
-      } else if (type === "RELATIVE") {
-        this.emit("DeviceEvent", applianceId + ".Adjust." + value, params);
-      }
-      if (this.debug) console.log("AlexaNumerical:", applianceId, type, value);
-      response = {"header":{"namespace":"Control","name":"AdjustNumericalSettingResponse","payloadVersion":"1"},"payload":{"success":true}}
-    }
-  }
-  if (namespace === "System" && name === "HealthCheckRequest") {
-    response = {"header":{"namespace":"System","name":"HealthCheckResponse","payloadVersion":"1"},"payload":{"isHealthy":true,"description":"The system is currently healthy"}};
+
+      response = { "header": {
+        "messageId": "a0c739b9-4c12-48c9-88c7-fc2e1f051b0b",
+        "name": confirmName,
+        "namespace": "Alexa.ConnectedHome.Control",
+        "payloadVersion": "2"
+    }, "payload": {} }
+
   }
 
   var responseJson = JSON.stringify(response);

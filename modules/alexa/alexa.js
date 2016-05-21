@@ -157,7 +157,7 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
           confirmName = "TurnOffConfirmation";
           break;
         case "SetPercentageRequest":
-          var value = event.payload.percentageState
+          var value = event.payload.percentageState.value
           this.emit("DeviceEvent", applianceId + ".Set." + value, params);
           confirmName = "SetPercentageConfirmation";
           break;

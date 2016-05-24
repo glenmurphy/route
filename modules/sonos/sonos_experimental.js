@@ -324,6 +324,7 @@ SonosComponent.prototype.getUID = function(initCallback) {
     res.on('data', function(data) {
       var parser = new xml2js.Parser();
       parser.parseString(data, function (err, result) {
+        if (!result.ZPSupportInfo.ZPInfo) return
         this.realName = result.ZPSupportInfo.ZPInfo[0].ZoneName[0];
         this.uid = result.ZPSupportInfo.ZPInfo[0].LocalUID[0];
         if (initCallback) initCallback(this, null);

@@ -158,16 +158,19 @@ Alexa.prototype.handleLightsReq = function(req, res, headers, body) {
           break;
         case "SetPercentageRequest":
           var value = event.payload.percentageState.value
+          params.value = value
           this.emit("DeviceEvent", applianceId + ".Set." + value, params);
           confirmName = "SetPercentageConfirmation";
           break;
         case "IncrementPercentageRequest": 
           var value = event.payload.deltaPercentage.value
+          params.value = value
           this.emit("DeviceEvent", applianceId + ".Adjust." + value, params);
           confirmName = "IncrementPercentageConfirmation";
           break;
         case "DecrementPercentageRequest": 
           var value = -event.payload.deltaPercentage.value
+          params.value = value
           this.emit("DeviceEvent", applianceId + ".Adjust." + value, params);
           confirmName = "DecrementPercentageConfirmation";
       }

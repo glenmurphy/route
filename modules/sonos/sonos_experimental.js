@@ -145,12 +145,16 @@ Sonos.prototype.scanforComponents = function() {
 
 Sonos.prototype.exec = function(command, params) {
   var commandComponents = command.split(".");
-  var component = commandComponents.shift();
-  component = this.components[component];
+  var componentName = commandComponents.shift();
+  var component = this.components[componentName];
   if (component) {
     command = commandComponents.join(".");
   } else {
     component = this.components[this.defaultComponent];
+  }
+
+  if (!component) {
+    console.log("No component found for", componentName)
   }
 
   console.log("*  Sonos Executing: " + command, component.name, params);

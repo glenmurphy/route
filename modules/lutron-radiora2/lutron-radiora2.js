@@ -21,6 +21,17 @@ function LutronRadioRA2(data) {
     this.deviceIds[id] = name;
   }
 
+  // Create Button -> ID map.
+  for (var name in this.devices) {
+    if (this.devices[name].type == LutronRadioRA2.TYPE_KEYPAD) {
+      button_map = {};
+      for (var button_id in this.devices[name].buttons) {
+        button_map[this.devices[name].buttons[button_id]] = button_id;
+      }
+      this.devices[name].button_map = button_map;
+    }
+  }
+
   this.debug = false;
   this.commandQueue = [];
   this.connect();
@@ -62,15 +73,23 @@ LutronRadioRA2.prototype.exec = function(command) {
 
   var segments = command.split(".");
 
+  var device = this.devices[deviceName];
   var deviceName = segments.shift();
-  var deviceType = this.devices[deviceName].type;
+  var deviceType = device.type;
   deviceId = (deviceName in this.devices) ? this.devices[deviceName].id : deviceName;
 
   if (deviceType == LutronRadioRA2.TYPE_LIGHT) {
     var action = segments.shift().toLowerCase();
-    var level = (action == "on") ? 100 : (action == "off") ? 0 : level;
+    var level = (action == "on") ? 100 : (action == "off") ? 0 : (action == "set") ? segments.shift() : level;
     if (!isNaN(level))
       this.send("#OUTPUT," + [deviceId, 1, level].join(","));
+  } else if (deviceType == LutronRadioRA2.TYPE_KEYPAD) {
+    var button = segments.shift();
+    var buttonId = (button in device.button_map) ? device.button_map[button] : button;
+    // Actions don't matter, we're just going to push the button.
+    this.send("#DEVICE," + [deviceId, buttonId, 3].join(","));
+    // And then release the button
+    this.send("#DEVICE," + [deviceId, buttonId, 4].join(","));
   }
   //var componentId = segments.shift();
   //var fields = segments;

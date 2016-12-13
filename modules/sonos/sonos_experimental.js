@@ -761,8 +761,8 @@ SonosComponent.prototype.sendTrackInfo = function(details) {
 
   if (this.system.cacheArtwork && im) {
     var options = {url: details.artwork};
-    var artworkPath = os.tmpdir() + this.name + "-artwork.jpg";
-    var artworkBlurPath = os.tmpdir() + "artwork-blur.jpg";
+    var artworkPath = os.tmpdir() + "/" + this.name + "-artwork.jpg";
+    var artworkBlurPath = os.tmpdir() + "/" + "artwork-blur.jpg";
     var artworkFile = fs.createWriteStream(artworkPath);
 
     var system = this.system;

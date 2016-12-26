@@ -21,8 +21,8 @@ try { // SSDP is optional. If present, will scan.
 // $ export CLIENT_ID=$(uuidgen | sed -e s/\-//g)
 // $ echo $CLIENT_ID
 // 
-// # Register the username with the Philips Hub.
-// $ curl -d "{\"username\": \"${CLIENT_ID}\", \"devicetype\": \"Automaton\"}" ${HUB_ADDRESS}/api
+// # Register the username with the Philips Hub. Use this for the 'UUID' field when adding the device. 
+// $ curl -d "{\"devicetype\": \"Automaton\"}" ${HUB_ADDRESS}/api
 // 
 // Alternatively, uncomment the updateRegistrationState below in the Hue constructor.
 //

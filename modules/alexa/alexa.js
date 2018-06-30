@@ -241,7 +241,7 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
 
   if (eventType) {
 
-    if (params.context) this.alexa.setContext(params.context)
+    // if (params.context) this.alexa.setContext(params.context)
 
     this.alexa.getContext(function(context) {
       if (context) {

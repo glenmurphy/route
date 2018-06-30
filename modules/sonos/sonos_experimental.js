@@ -155,6 +155,7 @@ Sonos.prototype.exec = function(command, params) {
 
   if (!component) {
     console.log("No component found for", componentName)
+    return;
   }
 
   console.log("*  Sonos Executing: " + command, component.name, params);

@@ -121,6 +121,8 @@ Voice.prototype.handleVoiceInput = function(params) {
       resultParams.context = context;
     }
 
+   resultParams.speechCallback = params.speechCallback
+
     var events = this.route.allEventsMatchingName("Voice." + string);
     if (this.debug) console.log("Voice." + string + ":", events);
     var event = events.shift();

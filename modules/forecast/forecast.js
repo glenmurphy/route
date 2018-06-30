@@ -9,6 +9,7 @@ function Forecast(data) {
   this.longitude = data.longitude;
   this.forecastKey = data.forecastKey
   this.currentConditions = undefined;
+  this.name = data.name || "Forecast"
   this.fetchRainForecast();
 };
 util.inherits(Forecast, EventEmitter);
@@ -43,7 +44,9 @@ Forecast.prototype.parseRainForecast = function(data, headers) {
       this.currentConditions = newConditions;
       this.emit("DeviceEvent", newConditions.replace(" ", ""));
     }
-    this.emit("StateEvent", {Forecast:data});
+    var state = {}
+    state[this.name] = data
+    this.emit("StateEvent", state);
     nextCheck = Math.max(10, Math.min(nextCheck, 1800));
     if (this.debug) console.log("Forecast checking in", nextCheck);
     setTimeout(this.fetchRainForecast.bind(this), nextCheck * 1000);

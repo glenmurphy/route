@@ -1,0 +1,4 @@
+{ 
+  "name" : "ecobee",
+  "main" : "./ecobee.js"
+}

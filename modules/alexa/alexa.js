@@ -30,6 +30,7 @@ function Alexa(data) {
   this.voice = data.voice;
   this.responseStrings = [];
   this.devices = data.devices;
+  this.echos = data.echos;
   this.sessions = {};
   this.applications = data.applications || {}
   this.waitForContext = data.waitForContext; // Wait briefly for a context to be set 
@@ -47,11 +48,11 @@ util.inherits(Alexa, EventEmitter);
 Alexa.prototype.httpReq = function(req, res) { 
   var headers = req.headers;
   var body = "";
+  
   req.on('data', function (chunk) { body += chunk; });
   req.on('end', function () {
     if (body.length) {
       body = JSON.parse(body);
-
       if (this.debug) console.log("Event:", body)
       if (body.session) {
         var sessionId = body.session.sessionId;
@@ -221,6 +222,9 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
     applicationName = this.alexa.applications[applicationId]
   }
 
+  var device = body.context.System.device.deviceId
+  params.context = this.alexa.echos[device] || device
+  
   var eventType
   if (type == "IntentRequest") {
     eventType = body.request.intent.name;
@@ -236,6 +240,9 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
   }
 
   if (eventType) {
+
+    if (params.context) this.alexa.setContext(params.context)
+
     this.alexa.getContext(function(context) {
       if (context) {
         params.device = context;

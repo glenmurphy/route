@@ -1,0 +1,4 @@
+{ 
+  "name" : "Caltrain",
+  "main" : "./caltrain.js"
+}

@@ -321,7 +321,10 @@ util.inherits(SonosComponent, EventEmitter);
 
 SonosComponent.prototype.getUID = function(initCallback) {
   var req = http.get({hostname: this.host, port: Sonos.PORT, path: '/status/zp'}, function(res) {
-    res.on('data', function(data) {
+    data = ""
+    res.setEncoding('utf8');
+    res.on('data', function(chunk) { data += chunk; });
+    res.on('end', function () {
       var parser = new xml2js.Parser();
       parser.parseString(data, function (err, result) {
         if (!result.ZPSupportInfo.ZPInfo) return

@@ -626,23 +626,25 @@ SonosComponent.prototype.getFavorites = function(callback) {
           var trackInfo = result["s:Envelope"]["s:Body"][0]["u:BrowseResponse"][0];
           parser.parseString(trackInfo.Result[0], function (err, result) {
             var results = result["DIDL-Lite"].item;
-            var favorites = [];
-            for (var i = 0; i < results.length; i++) {
-              var meta = results[i];
-              var albumURI = meta["upnp:albumArtURI"] ? url.resolve("http://" + this.host + ":" + Sonos.PORT, meta["upnp:albumArtURI"][0]) : undefined;
+            if (results) {
+              var favorites = [];
+              for (var i = 0; i < results.length; i++) {
+                var meta = results[i];
+                var albumURI = meta["upnp:albumArtURI"] ? url.resolve("http://" + this.host + ":" + Sonos.PORT, meta["upnp:albumArtURI"][0]) : undefined;
 
-              var favoriteInfo = {
-                name : meta["dc:title"][0],
-                description : meta["r:description"][0],
-                type : meta["r:type"][0],
-                url : meta.res[0]._,
-                urlMetadata : meta["r:resMD"][0],
-                artwork : albumURI
+                var favoriteInfo = {
+                  name : meta["dc:title"][0],
+                  description : meta["r:description"][0],
+                  type : meta["r:type"][0],
+                  url : meta.res[0]._,
+                  urlMetadata : meta["r:resMD"][0],
+                  artwork : albumURI
+                };
+                favorites.push(favoriteInfo);
               };
-              favorites.push(favoriteInfo);
-            };
-            this.system.favorites = favorites;
-            this.emit("StateEvent", {"sonosFavorites" : favorites});
+              this.system.favorites = favorites;
+              this.emit("StateEvent", {"sonosFavorites" : favorites});
+            }
           }.bind(this));
         }.bind(this));
       } catch (e) {

@@ -223,7 +223,9 @@ AlexaSession.prototype.handleReq = function(req, res, headers, body) {
   }
 
   var device = body.context.System.device.deviceId
-  params.context = this.alexa.echos[device] || device
+
+
+  // params.context = this.alexa.echos[device] || device
   
   var eventType
   if (type == "IntentRequest") {

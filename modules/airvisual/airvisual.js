@@ -38,10 +38,29 @@ AirVisual.prototype.parseAirQuality = function(data, headers) {
 
   try {
     data = JSON.parse(data);
-    var newConditions = data.data.current.pollution;
-    if (this.currentConditions != newConditions) {
-      this.currentConditions = newConditions;
-      this.emit("DeviceEvent", JSON.stringify(newConditions).replace(" ", ""));
+    var aqi = data.data.current.pollution.aqius;
+    if (this.aqi != aqi) {
+      this.aqi = aqi;
+
+      var category;
+
+      if (aqi <= 50) {
+	    category = "Good";
+	  } else if (aqi <= 100) {
+	    category = "Moderate";
+	  } else if (aqi <= 150) {
+	    category = "UnhealthyForSensitiveGroups";
+	  } else if (aqi <= 200) {
+	    category = "Unhealthy";
+	  } else if (aqi <= 300) {
+	    category = "VeryUnhealthy";
+	  } else if (aqi > 300) {
+	    category = "Hazardous";
+	  } else {
+	  	category = "Unknown";
+	  }
+
+      this.emit("DeviceEvent", category);
     }
     var state = {};
     state[this.name] = data.data;

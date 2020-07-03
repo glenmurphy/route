@@ -7,6 +7,7 @@ function LutronRadioRA2(data) {
   this.port = data.port || 23;
   this.username = data.username || "lutron";
   this.password = data.password || "integration";
+  this.advancedTapDetection = data.advancedTapDetection || false;
 
   if (data.refreshInterval)
     setInterval(this.refreshStatus.bind(this), data.refreshInterval);
@@ -31,8 +32,8 @@ function LutronRadioRA2(data) {
       this.devices[name].button_map = button_map;
     }
   }
-
-  this.debug = false;
+  this.buttonStates = {};
+  this.debug = data.debug;
   this.commandQueue = [];
   this.connect();
 };
@@ -128,6 +129,7 @@ LutronRadioRA2.prototype.parseData = function(data) {
       } else if (deviceType == LutronRadioRA2.TYPE_KEYPAD && device.buttons) {
         var buttonText = (componentId in device.buttons) ? device.buttons[componentId] : componentId;
         var state = LutronRadioRA2.StateText(fields[0]);
+        if (this.advancedTapDetection) this.evaluateTaps(deviceName, buttonText, (state == "On"));
         this.emit("DeviceEvent", [deviceName, buttonText, state].join("."));
       } else {
         this.emit("DeviceEvent", eventString);
@@ -142,10 +144,50 @@ LutronRadioRA2.prototype.parseData = function(data) {
   }
 }
 
+LutronRadioRA2.holdTime = 500;
+LutronRadioRA2.doubleTapTime = 500;
+
+LutronRadioRA2.prototype.evaluateTaps = function(deviceName, buttonName, pressed) {
+  var now = new Date().getTime();
+  var buttonId = deviceName + "." + buttonName;
+
+  var stateInfo = this.buttonStates[buttonId] || {};
+  if (pressed) { // Pressed button
+      stateInfo.tapCount = (stateInfo.tapCount || 0) + 1; 
+      clearTimeout(stateInfo.tapTimer);
+      delete stateInfo.tapTimer;
+    stateInfo.holdTimer = setTimeout(() => { 
+        this.emit("DeviceEvent", [deviceName, buttonName, stateInfo.tapCount == 1 ? "Hold" : "TapAndHold"].join("."));
+        delete stateInfo.holdTimer;
+        delete stateInfo.tapCount;
+      }, LutronRadioRA2.holdTime)
+  } else { // Release Button
+    if (stateInfo.holdTimer) { // Timer still exists if hold hasn't been triggered, so taps should be emitted
+      clearTimeout(stateInfo.holdTimer);
+      clearTimeout(stateInfo.tapTimer);
+      this.emit("DeviceEvent", [deviceName, buttonName, "Tap"].join(".")); // Emitted for both single and double taps
+      if (stateInfo.tapCount == 1) {
+        stateInfo.tapTimer = setTimeout(() => { 
+          this.emit("DeviceEvent", [deviceName, buttonName, "SingleTap"].join("."));
+          delete stateInfo.tapCount;
+          delete stateInfo.tapTimer;
+        }, LutronRadioRA2.doubleTapTime)
+      } else if (stateInfo.tapCount == 2) {
+        console.log("double")
+        this.emit("DeviceEvent", [deviceName, buttonName, "DoubleTap"].join("."));
+        delete stateInfo.tapCount;
+      }
+    }
+    this.buttonStates[buttonId] = stateInfo;
+  }
+}
+
+
 LutronRadioRA2.prototype.refreshStatus = function() {
   console.log("Lutron RadioRA2 Refreshing Status");
   // Get the status of all the devices we know about.
   for (var name in this.devices) {
+    if (this.devices[name].type = LutronRadioRA2.TYPE_KEYPAD) continue;
     var id = this.devices[name].id;
     this.send("?OUTPUT," + id);
   }

@@ -12,7 +12,7 @@ var im = gm.subClass({ imageMagick: true });
 
 try { // SSDP is optional. If present, will scan.
   var ssdp = require('node-ssdp');
-} catch (e) {}
+} catch (e) { console.error(e.message)}
 
 // see http://IP:1400/status/upnp for status
 // subscription logs at http://IP:1400/status/opt/log/anacapa.trace
@@ -26,6 +26,7 @@ function Sonos(data) {
     var alias = 0;
     for (var i in ifaces[dev]) {
       if (ifaces[dev][i].family == 'IPv4' && 
+          ifaces[dev][i].internal == false &&
           ifaces[dev][i].address && 
           ifaces[dev][i].address != "127.0.0.1")
         ips.push(ifaces[dev][i].address);
@@ -56,8 +57,9 @@ function Sonos(data) {
     this.discoveredIps.push(host);
   }
 
-  if (!data.components) 
+  if (!data.components) {
     this.scanforComponents();
+  }
 
 }
 util.inherits(Sonos, EventEmitter);

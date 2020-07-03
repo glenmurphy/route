@@ -249,7 +249,7 @@ Hue.prototype.updateBulbState = function(bulbID) {
     }.bind(this));
   }.bind(this));
 
-  request.on('error', function(e) {console.log("Error:" + e.message)});
+  request.on('error', function(e) { if (this.debug) console.error("Hue Error:", bulbID, e.message)});
   request.end();
 };
 

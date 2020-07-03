@@ -31,7 +31,6 @@ function Telnet(data) {
     this.commandIds[id] = name;
   }
 
-  this.debug = false;
   this.commandQueue = [];
   this.connect();
 };
@@ -94,8 +93,6 @@ Telnet.prototype.reconnect = function() {
 
 Telnet.prototype.handleData = function(data) {
   data = (data + "").trim();
-  if (this.debug) console.log("< ", data);
-  
   this.parseData(data.split("\r\n").shift());
 };
 

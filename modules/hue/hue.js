@@ -1,5 +1,6 @@
 var EventEmitter = require('events').EventEmitter;
 var http = require('http');
+var https = require('https');
 var util = require('util');
 var xml2js = require('xml2js');
 var crypto = require('crypto');
@@ -26,10 +27,15 @@ try { // SSDP is optional. If present, will scan.
 // 
 // Alternatively, uncomment the updateRegistrationState below in the Hue constructor.
 //
+
+
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+
 function Hue(data) {
   this.host = data.host;
   this.uuid = data.uuid || "13268bf5d1c8d6712b58ac1d342c93"; //crypto.createHash('md5').update(data.uuid).digest("hex");
   this.lightNames = {};
+  this.devices = data.devices || {};
   this.lightStates = {};
   this.requestQueue = [];
   this.debug = data.debug;
@@ -48,6 +54,8 @@ Hue.prototype.addBridge = function(host) {
   console.log("*  Adding Hue:", host)
   this.host = host;
   this.updateLightsList();
+  this.updateDevices();
+
 }
 
 Hue.UPNP_URN = 'upnp:rootdevice';
@@ -292,7 +300,6 @@ Hue.prototype.sendNextRequest = function() {
           }
         }
         if (retry && !(requestInfo.tries > 5)) {
-          console.log("retrying", requestInfo);
           requestInfo.tries = (requestInfo.tries || 0) + 1;
           this.requestQueue.unshift(requestInfo);
         }
@@ -361,6 +368,48 @@ Hue.prototype.setBulbState = function(bulbID, values) {
   }
 }
 
+Hue.prototype.subscribeToEvents = function() {
+  var request = https.request({
+    headers: {
+      "Accept": "text/event-stream",
+      "hue-application-key": this.uuid
+    },
+    host : this.host,
+    path : "/eventstream/clip/v2",
+    method: 'GET'
+    }, function(res) {
+      if (res.statusCode == 200) {
+        var body = ''; 
+        res.setEncoding('utf8');
+        res.on('data', function (d) {
+          try {
+            let json = d.split("data:").pop().trim()
+            this.handleEvent(JSON.parse(json))
+          } catch (e) {
+            // console.debug("No", d.trim(), e);
+          }
+        }.bind(this));
+        res.on('end', function () {
+        
+        }.bind(this));
+    }
+  }.bind(this));
+
+  request.on('error', function(e) {console.log("!  Hue error:\t\t",e)});
+  request.end();
+}
+
+Hue.prototype.handleEvent = function(events) {
+
+  events.forEach((event) => {
+    event.data.forEach((d) => {
+      //console.log("d", JSON.stringify(d,null,2))
+      let name = this.devices[d.id] || d.id;
+      this.emit("DeviceEvent", name, d[d.type]);
+    })
+  })
+}
+
 Hue.prototype.updateLightsList = function() {
   var request = http.request({
     port : 80,
@@ -387,11 +436,59 @@ Hue.prototype.updateLightsList = function() {
                 this.updateBulbState(key);                
                 count++;
               }
-                      if (this.debug) console.log(this.lightNames);
+              
+              if (this.debug) console.log("Lights", this.lightNames);
 
               this.emit("DeviceEvent", "Connected");
+
             }
            
+          } catch (e) {
+            console.log("!  Hue parse error: " + e);
+          }
+        }.bind(this));
+    }
+  }.bind(this));
+
+  request.on('error', function(e) {console.log("!  Hue:\t\t" + e)});
+  request.end();
+}
+
+Hue.prototype.parseDevices = function(devices) {
+  if (devices.errors.length) {
+    console.log("Hue Error", devices.errors);
+    return;
+  }
+
+  devices.data.forEach((device) => {
+    this.devices[device.id] = device.metadata.name;
+    device.services.forEach((service, i) => {
+      let name = device.metadata.name + "." + service.rtype;
+      if (service.rtype == "button") name += "." + i
+      this.devices[service.rid] = name;
+    })
+  })
+  console.log("Hue Devices:", this.devices);
+  return;
+}
+
+Hue.prototype.updateDevices = function() {
+  var request = https.request({
+    headers: {
+      "hue-application-key": this.uuid
+    },
+    host : this.host,
+    path : "/clip/v2/resource/device",
+    method: 'GET'
+    }, function(res) {
+      if (res.statusCode == 200) {
+        var body = ''; 
+        res.on('data', function (d) {body += d;});
+        res.on('end', function () {
+          try {
+            this.subscribeToEvents();
+            this.parseDevices(JSON.parse(body))
+            this.emit("DeviceEvent", "Connected");
           } catch (e) {
             console.log("!  Hue parse error: " + e);
           }

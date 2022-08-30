@@ -173,7 +173,6 @@ LutronRadioRA2.prototype.evaluateTaps = function(deviceName, buttonName, pressed
           delete stateInfo.tapTimer;
         }, LutronRadioRA2.doubleTapTime)
       } else if (stateInfo.tapCount == 2) {
-        console.log("double")
         this.emit("DeviceEvent", [deviceName, buttonName, "DoubleTap"].join("."));
         delete stateInfo.tapCount;
       }
@@ -187,7 +186,7 @@ LutronRadioRA2.prototype.refreshStatus = function() {
   console.log("Lutron RadioRA2 Refreshing Status");
   // Get the status of all the devices we know about.
   for (var name in this.devices) {
-    if (this.devices[name].type = LutronRadioRA2.TYPE_KEYPAD) continue;
+    if (this.devices[name].type == LutronRadioRA2.TYPE_KEYPAD) continue;
     var id = this.devices[name].id;
     this.send("?OUTPUT," + id);
   }
